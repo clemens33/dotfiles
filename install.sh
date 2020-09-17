@@ -8,6 +8,10 @@ ln -s ${BASEDIR}/vimrc ~/.vimrc
 # tmux
 ln -s ${BASEDIR}/tmux.conf ~/.tmux.conf
 
+# git
+ln -s ${BASEDIR}/gitconfig ~/.gitconfig
+#cat ${BASEDIR}/gitconfig >> ~/.gitconfig
+
 # zsh
 #ln -s ${BASEDIR}/zshrc ~/.zshrc
 

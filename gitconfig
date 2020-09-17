@@ -1,0 +1,8 @@
+[user]
+	name = Clemens K
+	email =	yongwu33@gmail.com
+[merge]
+	defaultToUpstream = true
+	tool = vimdiff
+[core]
+	editor = vim
