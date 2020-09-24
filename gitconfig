@@ -1,8 +1,7 @@
 [user]
-	name = Clemens K
-	email =	yongwu33@gmail.com
-[merge]
-	defaultToUpstream = true
-	tool = vimdiff
+	name = clemens33
+	email = yongwu33@gmail.com
 [core]
-	editor = vim
+	autocrlf = input
+[credential]
+	helper = cache --timeout=3600
