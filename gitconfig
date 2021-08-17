@@ -1,7 +1,9 @@
+[include]
+	path = ~/.gitconfig.local
 [user]
 	name = clemens33
 	email = yongwu33@gmail.com
 [core]
 	autocrlf = input
 [credential]
-	helper = cache --timeout=3600
+	helper = cache --timeout=86400
