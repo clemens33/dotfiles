@@ -8,6 +8,7 @@
     ~/.tmux.conf: tmux.conf
     ~/.vimrc: vimrc
     ~/.gitconfig: gitconfig
+    ~/.bash_aliases: bash_aliases
 
 - create:
     - ~/.vim/undo-history
