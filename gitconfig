@@ -1,9 +1,14 @@
+[includeIf "gitdir:~/projects/mic/"]
+    path = .gitconfig-mic
+
 [include]
 	path = ~/.gitconfig.local
 [user]
 	name = clemens33
-	email = yongwu33@gmail.com
+	email = clemens.kr@gmail.com
 [core]
 	autocrlf = input
 [credential]
 	helper = cache --timeout=86400
+[init]
+	defaultBranch = main
