@@ -1,17 +1,18 @@
 - defaults:
-    link:
-      relink: true
+      link:
+          relink: true
 
-- clean: ['~']
+- clean: ["~"]
 
 - link:
-    ~/.tmux.conf: tmux.conf
-    ~/.vimrc: vimrc
-    ~/.gitconfig: gitconfig
-    ~/.bash_aliases: bash_aliases
+      ~/.tmux.conf: tmux.conf
+      ~/.vimrc: vimrc
+      ~/.gitconfig: gitconfig
+      ~/.bash_aliases: bash_aliases
+      ~/.gitconfig-mic: gitconfig-mic
 
 - create:
-    - ~/.vim/undo-history
+      - ~/.vim/undo-history
 
 - shell:
-  - [git submodule update --init --recursive, Installing submodules]
+      - [git submodule update --init --recursive, Installing submodules]
