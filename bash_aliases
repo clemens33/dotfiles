@@ -4,7 +4,7 @@ alias expl='"explorer.exe"'
 alias naut='/usr/bin/nautilus'
 
 # github cli copilot
-alias ??='gh copilot suggest -t shell'
+alias ?='gh copilot suggest -t shell'
 alias gh?='gh copilot suggest -t gh'
 alias git?='gh copilot suggest -t git'
-alias ?='source clicp'
+alias ??='source clicp'
