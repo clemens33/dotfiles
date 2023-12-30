@@ -1,28 +1,19 @@
 - defaults:
-        link:
-              relink: true
+          link:
+                  relink: true
 
 - clean: ["~"]
 
 - link:
-        ~/.tmux.conf: tmux.conf
-        ~/.vimrc: vimrc
-        ~/.gitconfig: gitconfig
-        ~/.bash_aliases: bash_aliases
-        ~/.gitconfig-mic: gitconfig-mic
+          ~/.tmux.conf: tmux.conf
+          ~/.vimrc: vimrc
+          ~/.gitconfig: gitconfig
+          ~/.bash_aliases: bash_aliases
+          ~/.gitconfig-mic: gitconfig-mic
+          ~/.local/bin/clicp: clicp.sh
 
 - create:
-        - ~/.vim/undo-history
+          - ~/.vim/undo-history
 
 - shell:
-        # this requires github cli and the github copilot cli extension
-        # https://github.com/cli/cli/blob/trunk/docs/install_linux.md
-        # https://docs.github.com/en/copilot/github-copilot-in-the-cli/using-github-copilot-in-the-cli
-        - [mkdir -p ~/.local/bin, Create ~/.local/bin]
-        - [
-                curl -o ~/.local/bin/cps https://raw.githubusercontent.com/yongkangchen/cps/main/cps,
-                Download cps,
-          ]
-        - [chmod +x ~/.local/bin/cps, Make cps executable]
-        # update install submodules
-        - [git submodule update --init --recursive, Installing submodules]
+          - [git submodule update --init --recursive, Installing submodules]
