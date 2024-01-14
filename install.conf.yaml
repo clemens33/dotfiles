@@ -11,9 +11,12 @@
           ~/.bash_aliases: bash_aliases
           ~/.gitconfig-mic: gitconfig-mic
           ~/.local/bin/clicp: clicp.sh
+          # ~/.local/bin/clicpf: clicp_fish.sh
+          ~/.config/fish/config.fish: config.fish
 
 - create:
           - ~/.vim/undo-history
 
 - shell:
+          - [mkdir -p ~/.config/fish]
           - [git submodule update --init --recursive, Installing submodules]
