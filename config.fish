@@ -12,3 +12,10 @@ alias g='gh copilot suggest -t shell'
 alias ghg='gh copilot suggest -t gh'
 alias gitg='gh copilot suggest -t git'
 #alias gg='source clicpf'
+
+# simulate bash export
+function export
+    for var in $argv
+        eval set -gx (string split -m 1 "=" -- $var)
+    end
+end
