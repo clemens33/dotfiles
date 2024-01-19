@@ -2,6 +2,9 @@ if status is-interactive
     # Commands to run in interactive sessions can go here
 end
 
+set -gx PATH $PATH ~/.local/bin
+set -gx PATH $PATH ~/bin
+
 # relevant for opening folder/files within sublime directly from within wsl
 alias subl='"/mnt/c/Program Files/Sublime Text/subl.exe"'
 alias expl='"explorer.exe"'
