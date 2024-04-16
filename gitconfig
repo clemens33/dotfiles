@@ -1,6 +1,5 @@
-[includeIf "gitdir:~/projects/mic/"]
+[includeIf "gitdir:/home/ckriech/projects/mic/"]
     path = ~/.gitconfig-mic
-
 [include]
 	path = ~/.gitconfig.local
 [user]
