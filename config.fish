@@ -4,6 +4,8 @@ end
 
 set -gx PATH $PATH ~/.local/bin
 set -gx PATH $PATH ~/bin
+set -gx PATH $PATH ~/.nvm/versions/node/v18.16.0/bin
+set -gx PATH $PATH ~/.nvm/versions/node/v18.16.0/bin/npm
 
 # relevant for opening folder/files within sublime directly from within wsl
 alias subl='"/mnt/c/Program Files/Sublime Text/subl.exe"'
