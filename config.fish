@@ -24,3 +24,5 @@ function export
         eval set -gx (string split -m 1 "=" -- $var)
     end
 end
+
+uv generate-shell-completion fish | source
