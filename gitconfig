@@ -1,5 +1,3 @@
-[includeIf "gitdir:/home/ckriech/projects/mic/"]
-    path = ~/.gitconfig-mic
 [include]
 	path = ~/.gitconfig.local
 [user]
@@ -11,3 +9,5 @@
 	helper = cache --timeout=86400
 [init]
 	defaultBranch = main
+[includeIf "gitdir:/home/ckriech/projects/mic/"]
+    path = ~/.gitconfig-mic

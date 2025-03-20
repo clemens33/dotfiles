@@ -1,0 +1,5 @@
+[user]
+    name = ckriech_miccust
+    email = clemens.kriechbaumer@mic-cust.com
+[credential "https://github.com"]
+	helper = !gh auth git-credential

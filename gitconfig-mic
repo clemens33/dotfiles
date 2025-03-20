@@ -3,3 +3,5 @@
     email = clemens.kriechbaumer@mic-cust.com
 [credential "https://gitea.shared.miccust.dev"]
     helper = store --file=/home/ckriech/.ssh/mic/gitea.shared.miccust.dev/git-credentials
+[includeIf "hasconfig:remote.*.url:https://github.com/**"]
+    path = ~/.gitconfig-mic-github
