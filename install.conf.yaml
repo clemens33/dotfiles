@@ -10,6 +10,7 @@
           ~/.gitconfig: gitconfig
           ~/.bash_aliases: bash_aliases
           ~/.gitconfig-mic: gitconfig-mic
+          ~/.gitconfig-mic-github: gitconfig-mic-github
           ~/.local/bin/clicp: clicp.sh
           # ~/.local/bin/clicpf: clicp_fish.sh
           ~/.config/fish/config.fish: config.fish
