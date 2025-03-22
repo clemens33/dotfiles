@@ -16,7 +16,7 @@ alias naut='/usr/bin/nautilus'
 alias g='gh copilot suggest -t shell'
 alias ghg='gh copilot suggest -t gh'
 alias gitg='gh copilot suggest -t git'
-#alias gg='source clicpf'
+#alias gg='source clicp_fish.sh'
 
 # simulate bash export
 function export
@@ -24,5 +24,7 @@ function export
         eval set -gx (string split -m 1 "=" -- $var)
     end
 end
+
+set -U fish_function_path $fish_function_path ~/.config/fish/functions/mic
 
 uv generate-shell-completion fish | source
