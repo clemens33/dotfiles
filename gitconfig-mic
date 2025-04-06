@@ -6,3 +6,5 @@
 # requires git version >= 2.36
 [includeIf "hasconfig:remote.*.url:https://github.com/mic-cust/**"]
     path = ~/.gitconfig-mic-github
+[includeIf "hasconfig:remote.*.url:https://github.com/mic-cust-copilot/**"]
+    path = ~/.gitconfig-mic-github
