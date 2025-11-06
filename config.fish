@@ -28,3 +28,9 @@ end
 set -U fish_function_path $fish_function_path ~/.config/fish/functions/mic
 
 uv generate-shell-completion fish | source
+# fnm
+set FNM_PATH $HOME/.local/share/fnm
+if test -d $FNM_PATH
+  set -gx PATH $FNM_PATH $PATH
+  fnm env --use-on-cd | source
+end
