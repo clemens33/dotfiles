@@ -2,6 +2,9 @@ if status is-interactive
     # Commands to run in interactive sessions can go here
 end
 
+# Disable greeting message
+set -g fish_greeting
+
 set -gx PATH $PATH ~/.local/bin
 set -gx PATH $PATH ~/bin
 set -gx PATH $PATH ~/.nvm/versions/node/v18.16.0/bin
