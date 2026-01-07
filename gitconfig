@@ -11,3 +11,9 @@
 	defaultBranch = main
 [includeIf "gitdir:/home/ckriech/projects/mic/"]
     path = ~/.gitconfig-mic
+[credential "https://github.com"]
+	helper = 
+	helper = !/usr/bin/gh auth git-credential
+[credential "https://gist.github.com"]
+	helper = 
+	helper = !/usr/bin/gh auth git-credential
