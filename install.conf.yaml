@@ -9,6 +9,7 @@
           ~/.vimrc: vimrc
           ~/.gitconfig: gitconfig
           ~/.bash_aliases: bash_aliases
+          ~/.bash/functions/mic: bash/functions/mic
           ~/.gitconfig-mic: gitconfig-mic
           ~/.gitconfig-mic-github: gitconfig-mic-github
           ~/.local/bin/clicp: clicp.sh
@@ -21,4 +22,5 @@
 
 - shell:
           - [mkdir -p ~/.config/fish]
+          - [mkdir -p ~/.bash/functions]
           - [git submodule update --init --recursive, Installing submodules]
