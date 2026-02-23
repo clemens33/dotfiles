@@ -5,6 +5,7 @@
 	email = clemens.kr@gmail.com
 [core]
 	autocrlf = input
+	pager = delta
 [credential]
 	helper = cache --timeout=86400
 [init]
@@ -17,3 +18,13 @@
 [credential "https://gist.github.com"]
 	helper = 
 	helper = !/usr/bin/gh auth git-credential
+[interactive]
+	diffFilter = delta --color-only
+[delta]
+	navigate = true
+	side-by-side = true
+	line-numbers = true
+	dark = true
+	syntax-theme = DarkNeon
+[merge]
+	conflictStyle = zdiff3
