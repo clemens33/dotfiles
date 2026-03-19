@@ -1,20 +1,3 @@
-if status is-interactive
-    # SSH agent - cache passphrase for 24h (86400 seconds)
-    if not set -q SSH_AUTH_SOCK
-        set -l agent_file $HOME/.ssh/ssh-agent.fish
-        if test -f $agent_file
-            source $agent_file >/dev/null
-        end
-        if not ssh-add -l >/dev/null 2>&1
-            eval (ssh-agent -c) >/dev/null
-            set -e SSH_AGENT_LAUNCHER
-            echo "set -gx SSH_AUTH_SOCK $SSH_AUTH_SOCK" >$agent_file
-            echo "set -gx SSH_AGENT_PID $SSH_AGENT_PID" >>$agent_file
-            ssh-add -t 86400 ~/.ssh/id_ed25519
-        end
-    end
-end
-
 # Disable greeting message
 set -g fish_greeting
 

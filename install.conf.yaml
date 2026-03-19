@@ -16,6 +16,7 @@
           # ~/.local/bin/clicpf: clicp_fish.sh
           ~/.config/fish/config.fish: config.fish
           ~/.config/fish/functions: fish/functions
+          ~/.config/nvim: nvim
 
 - create:
           - ~/.vim/undo-history
