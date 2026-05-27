@@ -12,4 +12,40 @@ cd "${BASEDIR}"
 git -C "${DOTBOT_DIR}" submodule sync --quiet --recursive
 git submodule update --init --recursive "${DOTBOT_DIR}"
 
+# ---------------------------------------------------------------------------
+# Preflight: stale-symlink cleanup before Dotbot creates per-skill children
+# ---------------------------------------------------------------------------
+
+# ~/.claude/skills must end up as a REAL directory (both layers contribute
+# per-skill symlinks into it). If it currently exists as ANY symlink, drop it.
+if [ -L "$HOME/.claude/skills" ]; then
+    rm "$HOME/.claude/skills"
+fi
+
+# ~/.claude/agents stays a directory symlink owned by the private overlay.
+# Remove only if it points outside the current private overlay tree.
+if [ -L "$HOME/.claude/agents" ]; then
+    real="$(readlink -f "$HOME/.claude/agents" 2>/dev/null || true)"
+    case "$real" in
+        "${BASEDIR}"/dotfiles-mic/*) ;;  # OK, current overlay
+        *) rm "$HOME/.claude/agents" ;;  # stale (old location, missing, etc.)
+    esac
+fi
+
+# ---------------------------------------------------------------------------
+# Public layer install
+# ---------------------------------------------------------------------------
+
 "${BASEDIR}/${DOTBOT_DIR}/${DOTBOT_BIN}" -d "${BASEDIR}" -c "${CONFIG}" "${@}"
+
+# ---------------------------------------------------------------------------
+# Private overlay (optional submodule)
+# ---------------------------------------------------------------------------
+
+if [ -e "${BASEDIR}/dotfiles-mic/.git" ] && [ -f "${BASEDIR}/dotfiles-mic/install.conf.yaml" ]; then
+    echo "→ Installing private overlay (dotfiles-mic)..."
+    "${BASEDIR}/${DOTBOT_DIR}/${DOTBOT_BIN}" \
+        -d "${BASEDIR}/dotfiles-mic" \
+        -c "${BASEDIR}/dotfiles-mic/install.conf.yaml" \
+        "${@}"
+fi

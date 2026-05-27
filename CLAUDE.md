@@ -1,10 +1,12 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+@shared/AGENTS.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository. The shared AGENTS.md above carries the cross-tool operating doctrine; the sections below describe the repo itself.
 
 ## Overview
 
-Personal dotfiles for Ubuntu WSL with fish shell on Windows host. Uses Dotbot for symlink management.
+Personal dotfiles for Ubuntu WSL with fish shell on Windows host. Uses Dotbot for symlink management. Also bundles AI coding tool configuration (Claude Code, Codex, OpenCode, Gemini) and a shared skill set.
 
 ## Commands
 
@@ -19,8 +21,13 @@ Personal dotfiles for Ubuntu WSL with fish shell on Windows host. Uses Dotbot fo
 ## Architecture
 
 **Dotbot** manages symlinks via `install.conf.yaml`:
-- Links configs to `~/.config/fish/`, `~/.gitconfig`, `~/.vimrc`, etc.
+- Shell/editor/git/WSL utility links (`~/.config/fish/`, `~/.gitconfig`, `~/.vimrc`, …)
 - Fish functions directory is symlinked entirely (`fish/functions/` → `~/.config/fish/functions/`)
+- AI tool instructions: `shared/AGENTS.md` → `~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, `~/.config/opencode/AGENTS.md`, `~/.gemini/GEMINI.md`
+- AI tool settings: `claude/`, `codex/`, `opencode/`, `gemini/` configs
+- Per-skill symlinks into `~/.claude/skills/` and `~/.codex/skills/` (NOT a directory symlink, so an optional private overlay can contribute its own skills into the same target)
+
+**AI skill layers:** the 24 generic skills in `skills/` are the public layer. A private overlay (`dotfiles-mic/`, optional git submodule) can add domain-specific skills + agents on machines with access to it. The wrapper `./install` script handles both layers — public always, private only if submodule is populated. See the **manage-skills** skill for the two-layer model.
 
 **Fish shell** (`config.fish`):
 - MIC k8s functions loaded from `fish/functions/mic/` via `fish_function_path`

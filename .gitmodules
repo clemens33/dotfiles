@@ -2,3 +2,6 @@
 	path = dotbot
 	url = https://github.com/anishathalye/dotbot
 	ignore = dirty
+[submodule "dotfiles-mic"]
+	path = dotfiles-mic
+	url = git@github.com:clemens33/dotfiles-mic.git

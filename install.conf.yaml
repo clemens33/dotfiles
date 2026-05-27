@@ -1,27 +1,137 @@
 - defaults:
-          link:
-                  relink: true
+    link:
+      relink: true
+      create: true
 
 - clean: ["~"]
 
-- link:
-          ~/.tmux.conf: tmux.conf
-          ~/.vimrc: vimrc
-          ~/.gitconfig: gitconfig
-          ~/.bash_aliases: bash_aliases
-          ~/.bash/functions/mic: bash/functions/mic
-          ~/.gitconfig-mic: gitconfig-mic
-          ~/.gitconfig-mic-github: gitconfig-mic-github
-          ~/.local/bin/clicp: clicp.sh
-          # ~/.local/bin/clicpf: clicp_fish.sh
-          ~/.config/fish/config.fish: config.fish
-          ~/.config/fish/functions: fish/functions
-          ~/.config/nvim: nvim
-
 - create:
-          - ~/.vim/undo-history
+    - ~/.vim/undo-history
+    - ~/.claude
+    - ~/.claude/skills
+    - ~/.codex
+    - ~/.codex/skills
+    - ~/.config/fish
+    - ~/.config/opencode
+    - ~/.gemini
+    - ~/.bash/functions
+
+# Shell / editor / git / WSL utility links (legacy public dotfiles content)
+- link:
+    ~/.tmux.conf: tmux.conf
+    ~/.vimrc: vimrc
+    ~/.gitconfig: gitconfig
+    ~/.bash_aliases: bash_aliases
+    ~/.bash/functions/mic: bash/functions/mic
+    ~/.gitconfig-mic: gitconfig-mic
+    ~/.gitconfig-mic-github: gitconfig-mic-github
+    ~/.local/bin/clicp: clicp.sh
+    ~/.config/fish/config.fish: config.fish
+    ~/.config/fish/functions: fish/functions
+    ~/.config/nvim: nvim
+
+# AI tool instructions — all four tools share one doctrine file (shared/AGENTS.md)
+- link:
+    ~/.claude/CLAUDE.md:
+      path: shared/AGENTS.md
+      force: true
+    ~/.codex/AGENTS.md:
+      path: shared/AGENTS.md
+      force: true
+    ~/.config/opencode/AGENTS.md:
+      path: shared/AGENTS.md
+      force: true
+    ~/.gemini/GEMINI.md:
+      path: shared/AGENTS.md
+      force: true
+
+# AI tool settings + MCP configs
+- link:
+    ~/.claude/settings.json:
+      path: claude/settings.json
+      force: true
+    ~/.codex/config.toml:
+      path: codex/config.toml
+      force: true
+    ~/.config/opencode/config.json:
+      path: opencode/config.json
+      force: true
+    ~/.gemini/settings.json:
+      path: gemini/settings.json
+      force: true
+
+# Claude Code skills — per-skill symlinks (not a directory symlink, so the private
+# overlay can contribute its own skills into the same target directory).
+- link:
+    ~/.claude/skills/adr: skills/adr
+    ~/.claude/skills/arch-docs: skills/arch-docs
+    ~/.claude/skills/caveman: skills/caveman
+    ~/.claude/skills/code-review: skills/code-review
+    ~/.claude/skills/collab: skills/collab
+    ~/.claude/skills/diagnose: skills/diagnose
+    ~/.claude/skills/drawio-diagrams-enhanced: skills/drawio-diagrams-enhanced
+    ~/.claude/skills/gha-security-review: skills/gha-security-review
+    ~/.claude/skills/grill-with-docs: skills/grill-with-docs
+    ~/.claude/skills/humanizer: skills/humanizer
+    ~/.claude/skills/improve-codebase-architecture: skills/improve-codebase-architecture
+    ~/.claude/skills/large-feature: skills/large-feature
+    ~/.claude/skills/manage-skills: skills/manage-skills
+    ~/.claude/skills/refactor-audit: skills/refactor-audit
+    ~/.claude/skills/scope: skills/scope
+    ~/.claude/skills/security-review: skills/security-review
+    ~/.claude/skills/setup-matt-pocock-skills: skills/setup-matt-pocock-skills
+    ~/.claude/skills/skill-reducer: skills/skill-reducer
+    ~/.claude/skills/tdd: skills/tdd
+    ~/.claude/skills/to-issues: skills/to-issues
+    ~/.claude/skills/to-prd: skills/to-prd
+    ~/.claude/skills/triage: skills/triage
+    ~/.claude/skills/viz: skills/viz
+    ~/.claude/skills/zoom-out: skills/zoom-out
+
+# Codex skills — same per-skill pattern
+- link:
+    ~/.codex/skills/adr: skills/adr
+    ~/.codex/skills/arch-docs: skills/arch-docs
+    ~/.codex/skills/caveman: skills/caveman
+    ~/.codex/skills/code-review: skills/code-review
+    ~/.codex/skills/collab: skills/collab
+    ~/.codex/skills/diagnose: skills/diagnose
+    ~/.codex/skills/drawio-diagrams-enhanced: skills/drawio-diagrams-enhanced
+    ~/.codex/skills/gha-security-review: skills/gha-security-review
+    ~/.codex/skills/grill-with-docs: skills/grill-with-docs
+    ~/.codex/skills/humanizer: skills/humanizer
+    ~/.codex/skills/improve-codebase-architecture: skills/improve-codebase-architecture
+    ~/.codex/skills/large-feature: skills/large-feature
+    ~/.codex/skills/manage-skills: skills/manage-skills
+    ~/.codex/skills/refactor-audit: skills/refactor-audit
+    ~/.codex/skills/scope: skills/scope
+    ~/.codex/skills/security-review: skills/security-review
+    ~/.codex/skills/setup-matt-pocock-skills: skills/setup-matt-pocock-skills
+    ~/.codex/skills/skill-reducer: skills/skill-reducer
+    ~/.codex/skills/tdd: skills/tdd
+    ~/.codex/skills/to-issues: skills/to-issues
+    ~/.codex/skills/to-prd: skills/to-prd
+    ~/.codex/skills/triage: skills/triage
+    ~/.codex/skills/viz: skills/viz
+    ~/.codex/skills/zoom-out: skills/zoom-out
 
 - shell:
-          - [mkdir -p ~/.config/fish]
-          - [mkdir -p ~/.bash/functions]
-          - [git submodule update --init --recursive, Installing submodules]
+    - command: mkdir -p ~/.config/fish
+      description: Ensure fish config dir
+    - command: mkdir -p ~/.bash/functions
+      description: Ensure bash functions dir
+    # Merge MCP servers into ~/.claude.json (file holds runtime state, can't symlink)
+    - command: |
+        if command -v jq >/dev/null 2>&1; then
+          CLAUDE_JSON="$HOME/.claude.json"
+          MCP_JSON="claude/mcpServers.json"
+          if [ -f "$CLAUDE_JSON" ]; then
+            jq --slurpfile mcp "$MCP_JSON" '.mcpServers = $mcp[0]' "$CLAUDE_JSON" > /tmp/claude.json.tmp && mv /tmp/claude.json.tmp "$CLAUDE_JSON"
+          else
+            jq -n --slurpfile mcp "$MCP_JSON" '{mcpServers: $mcp[0]}' > "$CLAUDE_JSON"
+          fi
+          echo "Merged MCP servers into $CLAUDE_JSON"
+        else
+          echo "WARNING: jq not found, skipping Claude Code MCP merge"
+        fi
+      description: Merging Claude Code MCP servers
