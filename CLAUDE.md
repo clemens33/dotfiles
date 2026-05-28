@@ -30,18 +30,11 @@ Personal dotfiles for Ubuntu WSL with fish shell on Windows host. Uses Dotbot fo
 **AI skill layers:** the 24 generic skills in `skills/` are the public layer. A private overlay (`dotfiles-mic/`, optional git submodule) can add domain-specific skills + agents on machines with access to it. The wrapper `./install` script handles both layers — public always, private only if submodule is populated. See the **manage-skills** skill for the two-layer model.
 
 **Fish shell** (`config.fish`):
-- MIC k8s functions loaded from `fish/functions/mic/` via `fish_function_path`
 - PATH includes: `~/.local/bin`, `~/bin`, nvm, go
 - fnm for node version management
 - `gh copilot` aliases: `g` (shell), `ghg` (gh), `gitg` (git)
+- Loads `~/.config/fish/functions/mic/` when present (provided by the private overlay)
 
 **Git config** uses conditional includes:
 - Default: personal (`clemens33`)
-- In `~/projects/mic/`: auto-switches to work config (`gitconfig-mic`)
-
-**K8s functions** (prefix conventions):
-- `kc*` - kubectl wrappers (e.g., `kcml`, `kcda`)
-- `ac*` - ArgoCD wrappers
-- `aw*` - Argo Workflows wrappers
-
-Suffixes indicate environment: `ml` (ML dev), `da` (Analytics dev), `et` (EMEA test), `ep` (EMEA prod), `at` (AMER test), `ap` (AMER prod)
+- `[includeIf "gitdir:~/projects/mic/"]` references `~/.gitconfig-mic`, installed only when the private overlay is present. Silently no-op without overlay.

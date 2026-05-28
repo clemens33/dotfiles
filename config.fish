@@ -15,7 +15,6 @@ alias naut='/usr/bin/nautilus'
 alias g='gh copilot suggest -t shell'
 alias ghg='gh copilot suggest -t gh'
 alias gitg='gh copilot suggest -t git'
-#alias gg='source clicp_fish.sh'
 
 # simulate bash export
 function export
@@ -24,7 +23,11 @@ function export
     end
 end
 
-set -U fish_function_path $fish_function_path ~/.config/fish/functions/mic
+# Load private overlay fish functions when present (dotfiles-mic provides
+# org-specific k8s/argo helpers in ~/.config/fish/functions/mic when installed).
+if test -d ~/.config/fish/functions/mic
+    set -U fish_function_path $fish_function_path ~/.config/fish/functions/mic
+end
 
 uv generate-shell-completion fish | source
 # fnm

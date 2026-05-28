@@ -14,21 +14,15 @@
     - ~/.config/fish
     - ~/.config/opencode
     - ~/.gemini
-    - ~/.bash/functions
 
-# Shell / editor / git / WSL utility links (legacy public dotfiles content)
+# Shell / editor / git / WSL utility links
 - link:
     ~/.tmux.conf: tmux.conf
     ~/.vimrc: vimrc
     ~/.gitconfig: gitconfig
     ~/.bash_aliases: bash_aliases
-    ~/.bash/functions/mic: bash/functions/mic
-    ~/.gitconfig-mic: gitconfig-mic
-    ~/.gitconfig-mic-github: gitconfig-mic-github
-    ~/.local/bin/clicp: clicp.sh
     ~/.config/fish/config.fish: config.fish
     ~/.config/fish/functions: fish/functions
-    ~/.config/nvim: nvim
 
 # AI tool instructions — all four tools share one doctrine file (shared/AGENTS.md)
 - link:
@@ -118,8 +112,6 @@
 - shell:
     - command: mkdir -p ~/.config/fish
       description: Ensure fish config dir
-    - command: mkdir -p ~/.bash/functions
-      description: Ensure bash functions dir
     # Merge MCP servers into ~/.claude.json (file holds runtime state, can't symlink)
     - command: |
         if command -v jq >/dev/null 2>&1; then
