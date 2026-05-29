@@ -101,6 +101,9 @@ trust_level = "trusted"
 [projects."/home/ckriech/projects/dotfiles-mic"]
 trust_level = "trusted"
 
+[projects."/home/ckriech/projects/mic/analytics-products/products/cust-analytics"]
+trust_level = "trusted"
+
 [mcp_servers.serena]
 command = "uvx"
 args = ["--from", "git+https://github.com/oraios/serena", "serena", "start-mcp-server", "--context", "ide-assistant"]
