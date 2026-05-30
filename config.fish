@@ -24,9 +24,13 @@ function export
 end
 
 # Load private overlay fish functions when present (dotfiles-mic provides
-# org-specific k8s/argo helpers in ~/.config/fish/functions/mic when installed).
-if test -d ~/.config/fish/functions/mic
-    set -U fish_function_path $fish_function_path ~/.config/fish/functions/mic
+# org-specific k8s/argo helpers in ~/.config/fish/functions-mic when installed).
+# Non-universal + contains-guard: avoids the duplicate-append-on-every-shell
+# pollution that `set -U` caused here previously.
+if test -d ~/.config/fish/functions-mic
+    if not contains ~/.config/fish/functions-mic $fish_function_path
+        set -a fish_function_path ~/.config/fish/functions-mic
+    end
 end
 
 uv generate-shell-completion fish | source
