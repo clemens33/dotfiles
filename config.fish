@@ -46,3 +46,7 @@ fish_add_path /usr/local/go/bin ~/go/bin
 
 # opencode
 fish_add_path /home/ckriech/.opencode/bin
+
+# >>> grok installer >>>
+fish_add_path $HOME/.grok/bin
+# <<< grok installer <<<
