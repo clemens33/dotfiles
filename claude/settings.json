@@ -1,11 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
-  "//model": "Model is NOT configured here. Claude Code reads ANTHROPIC_MODEL env var. fish: set -Ux ANTHROPIC_MODEL claude-opus-4-8 | bash: add 'export ANTHROPIC_MODEL=claude-opus-4-8' to ~/.profile | Check: echo $ANTHROPIC_MODEL",
-  "//effort": "xhigh default + fastMode false on purpose: fast mode runs a low-latency serving tier that clamps effective effort to high, so the two are mutually exclusive. Keep fast off to get real xhigh; flip /fast per-task when you want speed over depth.",
   "respectGitignore": true,
   "cleanupPeriodDays": 365,
-  "autoUpdatesChannel": "latest",
-  "feedbackSurveyRate": 0,
   "includeCoAuthoredBy": false,
   "permissions": {
     "deny": [
@@ -17,12 +13,16 @@
     "defaultMode": "bypassPermissions"
   },
   "enableAllProjectMcpServers": true,
+  "enabledPlugins": {
+    "context-mode@context-mode": true
+  },
+  "feedbackSurveyRate": 0,
   "alwaysThinkingEnabled": true,
   "effortLevel": "xhigh",
   "fastMode": false,
+  "autoUpdatesChannel": "latest",
   "autoMemoryEnabled": true,
   "skipDangerousModePermissionPrompt": true,
-  "enabledPlugins": {
-    "context-mode@context-mode": true
-  }
+  "//model": "Model is NOT configured here. Claude Code reads ANTHROPIC_MODEL env var. fish: set -Ux ANTHROPIC_MODEL claude-opus-4-8 | bash: add 'export ANTHROPIC_MODEL=claude-opus-4-8' to ~/.profile | Check: echo $ANTHROPIC_MODEL",
+  "//effort": "effortLevel controls reasoning depth, independent of fastMode. xhigh = deep default. fastMode is a separate speed/cost knob: ~2.5x faster output at higher per-token cost (burns quota faster), WITHOUT reducing reasoning depth. Off by default to avoid the premium quota burn; flip /fast per-task for interactive speed. fast + xhigh can run together."
 }
