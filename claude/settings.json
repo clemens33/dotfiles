@@ -19,10 +19,10 @@
   "feedbackSurveyRate": 0,
   "alwaysThinkingEnabled": true,
   "effortLevel": "xhigh",
-  "fastMode": false,
+  "fastMode": true,
   "autoUpdatesChannel": "latest",
   "autoMemoryEnabled": true,
   "skipDangerousModePermissionPrompt": true,
   "//model": "Model is NOT configured here. Claude Code reads ANTHROPIC_MODEL env var. fish: set -Ux ANTHROPIC_MODEL claude-opus-4-8 | bash: add 'export ANTHROPIC_MODEL=claude-opus-4-8' to ~/.profile | Check: echo $ANTHROPIC_MODEL",
-  "//effort": "effortLevel controls reasoning depth, independent of fastMode. xhigh = deep default. fastMode is a separate speed/cost knob: ~2.5x faster output at higher per-token cost (burns quota faster), WITHOUT reducing reasoning depth. Off by default to avoid the premium quota burn; flip /fast per-task for interactive speed. fast + xhigh can run together."
+  "//effort": "fast + deep by default: fastMode true (~2.5x faster output, higher per-token cost / faster quota burn) + effortLevel xhigh (deep reasoning). The two are independent — fastMode is speed/cost only, effortLevel is depth only. This trades quota burn for both speed and quality; flip /fast off per-task if you need to conserve quota."
 }
