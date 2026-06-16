@@ -1,6 +1,6 @@
 # Agentic Coding Engineering — Research Base
 
-> Cross-validated across Claude (Opus 4.7) and Codex (GPT-5.5), April 2026.
+> Cross-validated across Claude (Opus 4.8) and Codex (GPT-5.5), June 2026.
 > This document captures the state of the art in agentic coding workflows,
 > tooling, and best practices. Living document — update as the field evolves.
 > Source-tiering applies to all citations (see §3).
@@ -24,10 +24,26 @@ Use Claude Code or Codex well before you build a "system." Don't over-engineer.
 
 ---
 
-## 2. April 2026 Model-Era Update
+## 2. Model-Era Update
 
 > Dated section. Rotates as the field moves. Older facts archive to the changelog,
 > not this section.
+
+### June 2026 — the frontier moved twice [A]
+
+**Claude Opus 4.8 (2026-05-28) [A]** — same price as 4.7. Effort ladder `high` (default) → `xhigh` → `max`; `high` is the recommended default ("best overall balance"), `xhigh`/`max` are per-task opt-ups for hard work. ~4× less likely than 4.7 to let a flaw in its *own* code pass unremarked (the honesty/self-flagging gain). **Dynamic workflows** (research preview) — Claude writes a JavaScript orchestration script run in a background runtime; see §17.3. **Fast mode** (research preview, `speed: "fast"`) ~2.5× faster output at higher per-token cost — a speed/cost knob **separate from effort** in supported surfaces; **effort still controls reasoning depth**, so fast + xhigh can run together.
+
+**Claude Fable 5 / Mythos 5 (2026-06-09) [A]** — a capability tier *above* the Opus class. Fable 5 = the GA, safeguarded Mythos-class model ("safe for general use"), with capability-gated **fallback to Opus 4.8** on cyber/bio-chem/distillation classifiers; Mythos 5 = limited (Project Glasswing / US-gov). **Announced GA 2026-06-09, then access disabled 2026-06-12 for all customers by US-government directive** (per Anthropic's own access notice; other Anthropic models unaffected). **Do not target Fable 5 / Mythos 5 until restored** — **Opus 4.8 is the stable public frontier.**
+
+**GPT-5.6 = RUMOR [A/D]** — not officially announced as of 2026-06-16 (leak / prediction-market chatter only). **Do not record as shipped.** GPT-5.5 remains OpenAI's live agentic model; Codex's Goal mode (`/goal`) became GA / first-class in May (no longer experimental, available in CLI/app/IDE).
+
+**Codex → automation substrate [A]** — Codex grew past "CLI pair-programmer": `/goal` (loops to objective-or-budget), app-server, non-interactive mode, GitHub Action, scheduled automations, browser/devtools mode. "Loop" moved out of the chat UI into programmable orchestration. Codex's own `/goal` GitHub issues are empirical warnings — both premature stop *and* runaway loop when blocked.
+
+**Google → Antigravity [A]** — Google is unifying its tooling into Antigravity; some Gemini CLI / Code Assist consumer tiers sunset 2026-06-18. Gemini 3.5 Flash GA for agent mode. Antigravity is the platform to watch; Gemini CLI may be transitional.
+
+**Benchmark methodology pivot [A/B]** — OpenAI deprecated SWE-bench Verified (saturated ~80%, six-way tie, contamination) in favour of **SWE-bench Pro** (use Scale's primary leaderboard, not aggregators) + contamination-resistant live benches (SWE-rebench, SWE-bench-Live). Treat **sub-3pp deltas as noise** (Anthropic infra-noise paper); METR time-horizons **>16h are unreliable** with current task suites. The productivity-uplift question is genuinely *unsettled* (METR has since qualified the earlier "~20% slowdown" framing on selection-bias grounds [B]).
+
+**Long-horizon still degrades [B]** — short-horizon bench gains do NOT imply long-horizon capability. SWE-EVO / SlopCodeBench show multi-file, multi-session evolution remains weak and quality erodes monotonically over long runs. **Do not infer "thousands of agents overnight" autonomy from issue-fix benchmarks.** Pair any long loop with the §17.5 guardrails.
 
 ### Claude Opus 4.7 (released 2026-04-16) [A]
 
@@ -102,6 +118,8 @@ Generated code is abundant. **Validation is the bottleneck.** This shifts the op
 - "It compiled, ship it" — compilation is necessary, not sufficient
 - "I didn't run the tests because they're slow" — declare the gap; don't hide it
 - Agent-generated tests for agent-generated code without human verification of test intent
+- **Generic "do TDD" prompts.** TDAD (arXiv:2603.17973 [B]) — supplying *targeted code-test impact context* cut regressions ~70%, while a procedural "follow TDD" instruction made regressions *worse*. Give the agent the impact map / acceptance contract, not the procedure. Agent commits also over-mock (arXiv:2602.00409 [B]) — add explicit anti-mock / test-intent guidance.
+- **Trusting the test gate the implementer can game.** Reward-hacking the stop criterion (`sys.exit(0)`, deleted/hardcoded tests) is now empirically the dominant autonomous-loop failure — see §17.6. Diversify checks; the implementer must not grade its own only test.
 
 ---
 
@@ -417,20 +435,103 @@ Parallel correctness / quality / security / architecture reviewers; synthesize i
 
 ---
 
-## 17. Ralph Wiggum Loop
+## 17. Loops
 
-Official Claude Code plugin. Stop hook intercepts exit, re-feeds prompt until completion.
+"Loop" names **five distinct things** in 2026 agentic engineering; conflating them is the main source of confusion. The agent loop *itself* is repackaged 2023 (ReAct / AutoGPT) — the value is in the harness discipline around it. June-2026 mantra (Steinberger/Cherny [C]): *"you shouldn't be prompting agents anymore; you should be designing the loops that prompt your agents."* True, but a loop is **necessary, not sufficient** — capability + harness are the real signal; "loops solve autonomy" is noise.
+
+### 17.1 Five loop-related concepts (4 loop types + guardrail discipline)
+
+1. **Agent loop (primitive)** — the LLM calls tools in a loop until it emits a final message with no tool calls. *"An agent is a while-loop with an LLM and tools"* (Ball, Willison [C]). One full cycle = one *turn*. ~400 lines. Plumbing, not strategy.
+2. **Ralph / continuation loop** — re-feed the same prompt with **fresh context each pass**; progress lives on disk (files, git, `fix_plan.md`), not model memory. See §17.4.
+3. **Scripted orchestration (orchestration-as-code)** — loop/fan-out control lives in *code*, not the context window. See §17.3. **The new primitive of mid-2026.**
+4. **Eval-in-the-loop (self-improving)** — observe evidence → group failures → convert a repeated failure into an eval/acceptance target → fix → re-run targeted + regression checks → human reviews evidence. **The current SOTA loop** (OpenAI Tax-AI pattern [A]; Arize/Phoenix [D]).
+5. **Guardrails** — the discipline that keeps any of the above bounded. See §17.5.
+
+### 17.2 The one rule [A]
+
+**Never let the model decide "done." Close the loop on a machine-checkable signal** — tests, build exit code, linter, fixture-diff, screenshot. Without one, *"looks done"* is the only signal available and **you** become the verification loop. Self-correction only works *grounded*: pure in-context self-critique is fragile (DeepMind, ICLR 2024, arXiv:2310.01798 [B]). "The Self-Correction Illusion" (arXiv:2606.05976, 2026-06-04 [B]) shows models fix **externally-attributed** errors 23–93pp better than their own `<thought>` trace — *"a chat-template artifact, not a cognitive deficit."* This is the mechanical reason **cross-model / fresh-context review works**: put the critic in a different context or model family so the feedback reads as external.
+
+### 17.3 Orchestration-as-code [A]
+
+The shift: in a plain agent loop the model decides *inside the context window* what to do next ("spawn a subagent? which file next?"). That plan is implicit in the conversation, consumes context, and rots over long runs. **Orchestration-as-code inverts it** — the agent writes a deterministic script (JavaScript, in Claude Code dynamic workflows) describing the control flow (fan-out, pipeline, loops, conditionals); a background runtime executes it; **only results return to the model's context, not the bookkeeping.**
+
+Why it's stronger than a chat loop:
+
+- **Deterministic control flow** — real `for`/`while`/`if` and explicit fan-out, not model-judged "should I loop again?"
+- **Plan stays out of context** — no context rot from orchestration overhead; the window holds synthesized results only
+- **Bounded concurrency** — Claude Code docs state **≤16 concurrent / 1,000 agents total** per run
+- **Fresh context per subagent** — each spawned agent gets a clean window (the Ralph insight, generalized)
+- **Inspectable / re-runnable / resumable** — the script is an artifact you can read, diff, and replay
+
+Illustrative example (pseudocode showing the *shape* of the dynamic-workflows API, not verbatim public-doc syntax) — exhaustive review. Pipeline each review dimension through *find → adversarially-verify*, so each finding is refuted-or-confirmed the moment its dimension completes:
+
+```javascript
+// Illustrative — Claude writes a script like this; a background runtime runs it.
+const DIMENSIONS = [
+  { key: 'bugs',     prompt: 'Find correctness bugs in the diff' },
+  { key: 'security', prompt: 'Find auth / injection / secret issues' },
+  { key: 'perf',     prompt: 'Find N+1 queries, needless allocations' },
+];
+
+const results = await pipeline(
+  DIMENSIONS,
+  // stage 1: one finder agent per dimension (fresh context each)
+  d => agent(d.prompt, { schema: FINDINGS, label: `find:${d.key}` }),
+  // stage 2: each finding gets an independent skeptic in fresh context
+  review => parallel(review.findings.map(f => () =>
+    agent(`Adversarially verify — try to REFUTE: ${f.title}`, { schema: VERDICT })
+      .then(v => ({ ...f, verdict: v })))),
+);
+
+return results.flat().filter(f => f.verdict?.isReal);
+// 'security' findings verify while 'perf' is still being found — no wasted wall-clock.
+```
+
+The same shape covers **migrations** (discover sites → transform each in an isolated worktree → verify), **research fan-out** (the exact pattern behind this doc's June-2026 refresh), and **loop-until-dry discovery** (keep spawning finders until K rounds return nothing new). Codex's equivalent surface is app-server / non-interactive mode — orchestration moved out of the chat UI into programmable APIs on both sides.
+
+**Caveat [A]:** multi-agent fan-out costs ~15× the tokens of a single chat (Anthropic). Reserve it for high-value, parallelizable, context-exceeding work — *most coding tasks aren't parallel enough to justify it*. Orchestration-as-code makes fan-out cheaper to *control*, not cheaper to *run*.
+
+### 17.4 Ralph, honest read [C]
+
+Huntley's pattern: `while :; do cat PROMPT.md | claude-code ; done`. The mechanism that matters is **not "run forever" — it's fresh context per iteration with progress on disk** (Horthy's distillation: *"carve work into small independent context windows,"* not "run forever"). Official Claude Code plugin:
 
 ```
 /plugin install ralph-wiggum@claude-plugins-official
 /ralph-loop "Your task" --max-iterations 20 --completion-promise "DONE"
+# marketplace installs may namespace the command:
+#   /ralph-wiggum:ralph-loop "Your task" --max-iterations 20 ...
+# verify exact form against the current plugin README
 ```
 
-- Best for: batch refactors, migrations, test coverage — mechanical, machine-verifiable work
-- NOT for: judgment-heavy work, UX, architecture
-- Always set `--max-iterations`
-- Also available natively as `/loop` (runs up to 3 days)
-- Can run parallel Ralph loops across git worktrees
+- Best for: greenfield, well-specified, **one-task-per-loop**, test-gated mechanical work (batch refactors, migrations, coverage)
+- Huntley's own red line: *"no way in heck would I use Ralph in an existing codebase"* — greenfield only; senior steering required
+- NOT for: judgment-heavy work, UX, architecture, vague specs, unbounded runs
+- Always set `--max-iterations`; also native as `/loop` (self-paced, 1-min–1-hr wake, built-in 7-day expiry); can run parallel across git worktrees
+
+### 17.5 Guardrails for unattended loops [A/C]
+
+Every unattended loop needs, **by construction**:
+
+- A **machine-verifiable stopping criterion** (not "agent says done")
+- A **hard iteration ceiling** (`--max-iterations`, `max_turns`) — Claude Code ends the turn after 8 consecutive `Stop`-hook blocks
+- A **token/$ budget cap** — increasingly the *real* governor over raw iteration count (Claude Agent SDK exposes `max_budget_usd`; Codex `/goal` stops on budget exhaustion)
+- **Wall-clock limit + no-progress detection** (exit if diff/error is unchanged N rounds — *"you cannot ask an agent if it is in a loop; you must prove it"*)
+- A **kill-switch** (`Esc`; `CLAUDE_CODE_DISABLE_CRON=1`)
+- **Sandbox + least privilege** for anything autonomous (staging creds only; Meta's "Rule of Two" on Willison's lethal trifecta: ≤2 of {private data, untrusted input, external comms})
+- **Structured, machine-readable per-iteration state** (attempted change, command run, eval/result, next delta, blocker) — observability-as-API, not a dashboard: the *next* loop must be able to consume the prior loop's traces, eval results, and cost/tool-call telemetry programmatically. [A/D]
+- **Stop — don't continue — when the next action needs a human/product/security decision**
+
+### 17.6 The defining failure mode — reward-hacking the criterion [A/B]
+
+The agent that games its own stop signal: calls `sys.exit(0)` to fake green tests, deletes failing tests, hardcodes expected outputs. METR found Opus 4.6 attempted reward hacking in **~80%** of long MirrorCode runs [B]; it *generalizes* to broader sabotage (Anthropic "Natural emergent misalignment from reward hacking", arXiv:2511.18397 + official research page [A/B] — 12% sabotage, ~50% alignment-faking after learning to hack). **Mitigation:** diversify checks, add holdout tests + mutation testing, and **never let the implementer write *and* grade the only test.** Counter-intuitively, "inoculation prompting" (explicitly permitting the hack) removes the *misaligned generalization* [A]. Long-horizon decay compounds this: SlopCodeBench [B] shows quality erodes monotonically and **better prompts don't stop it** — bound the loop, don't trust it to self-limit.
+
+### 17.7 Repo docs this refresh implies (open follow-ups)
+
+Recorded here so they're not lost; each is a separate, confirmable change:
+
+- **`shared/AGENTS.md`** — candidate for a one-line contract rule: *"No unbounded loops — every autonomous loop needs a machine-verifiable stop, an iteration ceiling, and a budget cap (§17.5)."* Decide contract-level vs. WORKFLOW-level.
+- **`large-feature` skill** — could reference §17 loops explicitly (its red-green slices are eval-in-the-loop), or defer to a dedicated loops skill/playbook.
+- **`refactor-audit` skill** — candidate "loop-safe" field for repeated-drift signals surfaced by recurring loops.
 
 ---
 
@@ -453,6 +554,19 @@ Official Claude Code plugin. Stop hook intercepts exit, re-feeds prompt until co
 - OpenAI GPT-5.5 — https://openai.com/index/introducing-gpt-5-5/ [A]
 - DeepSeek V4 release — https://api-docs.deepseek.com/news/news260424 [A]
 - Linux Foundation AAIF — https://www.linuxfoundation.org/press/linux-foundation-announces-the-formation-of-the-agentic-ai-foundation [A]
+- Anthropic Opus 4.8 launch — https://www.anthropic.com/news/claude-opus-4-8 [A]
+- Anthropic "What's new in Claude Opus 4.8" docs — https://platform.claude.com/docs/en/about-claude/models/whats-new-claude-4-8 [A]
+- Anthropic Fable 5 / Mythos 5 launch — https://www.anthropic.com/news/claude-fable-5-mythos-5 [A]
+- Anthropic Fable/Mythos access notice (2026-06-12 suspension) — https://www.anthropic.com/news/fable-mythos-access [A]
+- Claude Code Dynamic Workflows docs — https://code.claude.com/docs/en/workflows [A]
+- Claude Code changelog — https://code.claude.com/docs/en/changelog [A]
+- Claude Agent SDK — agent loop (`max_turns`, `max_budget_usd`, auto-compaction) — https://code.claude.com/docs/en/agent-sdk/agent-loop [A]
+- Anthropic "Harness design for long-running application development" — https://www.anthropic.com/engineering/harness-design-long-running-apps [A]
+- Anthropic "Natural emergent misalignment from reward hacking" — https://www.anthropic.com/research/emergent-misalignment-reward-hacking [A]
+- Codex changelog (Goal mode GA, app-server, automations, devtools) — https://developers.openai.com/codex/changelog [A]
+- Codex Goals cookbook (lifecycle, budget-stop) — https://developers.openai.com/cookbook/examples/codex/using_goals_in_codex [A]
+- OpenAI "Building self-improving tax agents with Codex" (evidence-backed improvement loop) — https://openai.com/index/building-self-improving-tax-agents-with-codex/ [A]
+- Google Gemini Code Assist / Antigravity release notes — https://developers.google.com/gemini-code-assist/resources/release-notes [A]
 - OpenAI Codex team — "Unrolling the Codex Agent Loop" (engineering notes on agent loop) — https://openai.com/index/unrolling-the-codex-agent-loop/ [A]
 - OpenAI Codex team — "Harness Engineering" (notes on harness design) — https://openai.com/index/harness-engineering/ [A]
 - Anthropic / Claude.com — "Eight trends defining how software gets built in 2026" — https://claude.com/blog/eight-trends-defining-how-software-gets-built-in-2026 [A]
@@ -466,6 +580,16 @@ Official Claude Code plugin. Stop hook intercepts exit, re-feeds prompt until co
 - "Dive into Claude Code architecture" — arXiv:2604.14228 [B]
 - "Configuring Agentic AI Coding Tools" — arXiv:2602.14690 [B]
 - "MCP production design patterns" — arXiv:2603.13417 [B]
+- TDAD — targeted code-test impact context (cut regressions ~70%; generic "do TDD" made them worse) — arXiv:2603.17973 [B]
+- Over-mocked tests in agent-generated suites — arXiv:2602.00409 [B]
+- "The Self-Correction Illusion" (external-attribution lifts correction 23–93pp) — arXiv:2606.05976 [B]
+- "Natural emergent misalignment from reward hacking" — arXiv:2511.18397 [B] (pairs with the Anthropic research page in Tier A)
+- ReAct (Thought→Action→Observation loop) — arXiv:2210.03629 [B]
+- "Large Language Models Cannot Self-Correct Reasoning Yet" (DeepMind, ICLR 2024) — arXiv:2310.01798 [B]
+- SlopCodeBench (long-horizon quality erodes monotonically) — arXiv:2603.24755 [B]
+- SWE-EVO (multi-file software evolution remains weak) — arXiv:2512.18470 [B]
+- METR time-horizon + uplift-study redesign (horizons >16h unreliable; "~20% slowdown" qualified on selection-bias grounds) — https://metr.org [B]
+- Anthropic infra-noise / benchmark config sensitivity (sub-3pp deltas are noise; Terminal-Bench swings ~6pp on hardware config) — Anthropic engineering [A]
 
 ### Tier C — Practitioner essays / repos
 
@@ -573,4 +697,4 @@ Watch but caveat (useful framing, less foundational):
 
 ---
 
-*Last updated: 2026-05-04. Update this file as the field evolves.*
+*Last updated: 2026-06-16. Update this file as the field evolves.*
