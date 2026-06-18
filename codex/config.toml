@@ -1,6 +1,9 @@
 model = "gpt-5.5"
 personality = "pragmatic"
-model_reasoning_effort = "high"
+# xhigh: deepest GPT-5.5 reasoning by default. Above OpenAI's medium default
+# (and our prior "high"). Trades ~2x quota burn for max depth — matches the
+# Claude Code xhigh default. Drop per-task if conserving quota.
+model_reasoning_effort = "xhigh"
 approval_policy = "never"
 sandbox_mode = "danger-full-access"
 web_search = "live"
