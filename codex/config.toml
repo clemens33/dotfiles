@@ -1,9 +1,9 @@
 model = "gpt-5.5"
 personality = "pragmatic"
-# xhigh: deepest GPT-5.5 reasoning by default. Above OpenAI's medium default
-# (and our prior "high"). Trades ~2x quota burn for max depth — matches the
-# Claude Code xhigh default. Drop per-task if conserving quota.
-model_reasoning_effort = "xhigh"
+# high: one notch above OpenAI's medium default. Solid for coding/agentic
+# work without the ~2x quota burn of xhigh. Flip to xhigh per-task via
+# /effort when a hard problem warrants the extra depth.
+model_reasoning_effort = "high"
 approval_policy = "never"
 sandbox_mode = "danger-full-access"
 web_search = "live"
@@ -14,6 +14,7 @@ tool_output_token_limit = 25000
 # With tool_output_token_limit=25000 => 273000 - (25000 + 15000) = 233000
 model_auto_compact_token_limit = 233000
 project_doc_fallback_filenames = ["CLAUDE.md"]
+service_tier = "default"
 
 [features]
 unified_exec = true
