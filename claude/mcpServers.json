@@ -30,5 +30,11 @@
       "--browser-url=http://127.0.0.1:9222"
     ],
     "env": {}
+  },
+  "codebase-memory": {
+    "type": "stdio",
+    "command": "/home/ckriech/.local/bin/codebase-memory-mcp",
+    "args": [],
+    "env": {}
   }
 }
