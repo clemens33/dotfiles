@@ -1,8 +1,7 @@
 model = "gpt-5.5"
 personality = "pragmatic"
-# high: one notch above OpenAI's medium default. Solid for coding/agentic
-# work without the ~2x quota burn of xhigh. Flip to xhigh per-task via
-# /effort when a hard problem warrants the extra depth.
+# xhigh: deepest reasoning tier, matches Claude Code's xhigh default.
+# ~2x quota burn vs high; flip to high per-task via /effort to conserve.
 model_reasoning_effort = "xhigh"
 approval_policy = "never"
 sandbox_mode = "danger-full-access"
