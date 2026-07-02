@@ -3,7 +3,7 @@ personality = "pragmatic"
 # high: one notch above OpenAI's medium default. Solid for coding/agentic
 # work without the ~2x quota burn of xhigh. Flip to xhigh per-task via
 # /effort when a hard problem warrants the extra depth.
-model_reasoning_effort = "high"
+model_reasoning_effort = "xhigh"
 approval_policy = "never"
 sandbox_mode = "danger-full-access"
 web_search = "live"
@@ -112,6 +112,21 @@ trust_level = "trusted"
 trust_level = "trusted"
 
 [projects."/home/ckriech/projects/mic/analytics-products/customers"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/ai/global-trade-assistant-catalog"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/analytics"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/.ae/worktrees/mdktest"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/saas-argo-workflows-scripts"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/siede/siede-workflows"]
 trust_level = "trusted"
 
 [mcp_servers.serena]
