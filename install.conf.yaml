@@ -44,6 +44,9 @@
     ~/.claude/settings.json:
       path: claude/settings.json
       force: true
+    ~/.claude/statusline.sh:
+      path: claude/statusline.sh
+      force: true
     ~/.codex/config.toml:
       path: codex/config.toml
       force: true
