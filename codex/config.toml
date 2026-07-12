@@ -1,17 +1,21 @@
-model = "gpt-5.5"
+model = "gpt-5.6-sol"
 personality = "pragmatic"
-# xhigh: deepest reasoning tier, matches Claude Code's xhigh default.
-# ~2x quota burn vs high; flip to high per-task via /effort to conserve.
-model_reasoning_effort = "xhigh"
+# GPT-5.6 Sol efforts: low/medium/high/xhigh/max/ultra (ultra = auto subagent
+# delegation, Pro/Business-only). OpenAI's default is medium ("Sol is highly
+# capable at lower reasoning efforts"), but power setting = high: deep enough
+# for hard agentic work, leaves xhigh/max/ultra as per-task /effort escalation.
+model_reasoning_effort = "high"
+# Plan mode benefits from deeper reasoning than execution.
+plan_mode_reasoning_effort = "xhigh"
 approval_policy = "never"
 sandbox_mode = "danger-full-access"
 web_search = "live"
 suppress_unstable_features_warning = true
 tool_output_token_limit = 25000
-# Leave room for native compaction near the 272-273k context window.
-# Formula: 273000 - (tool_output_token_limit + 15000)
-# With tool_output_token_limit=25000 => 273000 - (25000 + 15000) = 233000
-model_auto_compact_token_limit = 233000
+# Leave room for native compaction near GPT-5.6's 372k context window.
+# Formula: 372000 - (tool_output_token_limit + 15000)
+# With tool_output_token_limit=25000 => 372000 - (25000 + 15000) = 332000
+model_auto_compact_token_limit = 332000
 project_doc_fallback_filenames = ["CLAUDE.md"]
 service_tier = "default"
 
@@ -126,6 +130,9 @@ trust_level = "trusted"
 trust_level = "trusted"
 
 [projects."/home/ckriech/projects/mic/siede/siede-workflows"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/mdk/launchpad"]
 trust_level = "trusted"
 
 [mcp_servers.serena]
