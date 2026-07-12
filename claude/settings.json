@@ -12,21 +12,21 @@
     ],
     "defaultMode": "bypassPermissions"
   },
+  "model": "claude-fable-5[1m]",
   "enableAllProjectMcpServers": true,
+  "statusLine": {
+    "type": "command",
+    "command": "~/.claude/statusline.sh"
+  },
   "enabledPlugins": {
     "context-mode@context-mode": true
   },
   "feedbackSurveyRate": 0,
   "alwaysThinkingEnabled": true,
   "effortLevel": "xhigh",
-  "fastMode": true,
   "autoUpdatesChannel": "latest",
   "autoMemoryEnabled": true,
   "skipDangerousModePermissionPrompt": true,
-  "statusLine": {
-    "type": "command",
-    "command": "~/.claude/statusline.sh"
-  },
-  "//model": "Model is NOT configured here. Claude Code reads ANTHROPIC_MODEL env var. fish: set -Ux ANTHROPIC_MODEL claude-opus-4-8 | bash: add 'export ANTHROPIC_MODEL=claude-opus-4-8' to ~/.profile | Check: echo $ANTHROPIC_MODEL",
+  "//model": "model key below was saved by /model (Fable 5, 1M context, saved 2026-07-12). CAUTION: Fable 5 left subscription plans after 2026-07-12 — bills usage credits at $10/$50 per M tokens; switch back via /model (Opus 4.8) if credits not enabled. ANTHROPIC_MODEL env var (claude-opus-4-8) still set as fallback.",
   "//effort": "fast + deep by default: fastMode true (~2.5x faster output, higher per-token cost / faster quota burn) + effortLevel xhigh (deep reasoning). The two are independent — fastMode is speed/cost only, effortLevel is depth only. This trades quota burn for both speed and quality; flip /fast off per-task if you need to conserve quota."
 }

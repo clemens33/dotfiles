@@ -2,9 +2,10 @@ model = "gpt-5.6-sol"
 personality = "pragmatic"
 # GPT-5.6 Sol efforts: low/medium/high/xhigh/max/ultra (ultra = auto subagent
 # delegation, Pro/Business-only). OpenAI's default is medium ("Sol is highly
-# capable at lower reasoning efforts"), but power setting = high: deep enough
-# for hard agentic work, leaves xhigh/max/ultra as per-task /effort escalation.
-model_reasoning_effort = "high"
+# capable at lower reasoning efforts"); xhigh = deep-by-default, mirrors the
+# Claude Code effortLevel. Drop to high/medium via /effort to conserve quota;
+# max/ultra stay as per-task escalation.
+model_reasoning_effort = "xhigh"
 # Plan mode benefits from deeper reasoning than execution.
 plan_mode_reasoning_effort = "xhigh"
 approval_policy = "never"
@@ -167,3 +168,4 @@ startup_timeout_sec = 60
 [tui.model_availability_nux]
 "gpt-5.3-codex-spark" = 4
 "gpt-5.5" = 4
+"gpt-5.6-sol" = 1
