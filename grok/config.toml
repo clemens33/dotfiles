@@ -1,0 +1,47 @@
+# Grok Build (xAI CLI) — symlinked to ~/.grok/config.toml via dotbot.
+# Grok also WRITES sticky state here (ui prefs, marketplace flags) — expect churn.
+# Skills need no config: Grok natively reads ~/.claude/skills/ (user scope).
+
+[cli]
+installer = "internal"
+auto_update = true
+
+[models]
+# grok-build = the Grok 4.5-powered agent model (512k context). Without this,
+# the unauthenticated default is grok-composer-2.5-fast (Cursor's model, 200k).
+default = "grok-build"
+
+[features]
+# Match codex/claude: no telemetry, no permission prompts (trusted local use).
+support_permission = false
+telemetry = false
+feedback = false
+
+[marketplace]
+official_marketplace_auto_installed = true
+
+[[marketplace.sources]]
+name = "xAI Official"
+git = "https://github.com/xai-org/plugin-marketplace.git"
+
+# MCP servers — same set as codex/config.toml, identical TOML shape.
+[mcp_servers.serena]
+command = "uvx"
+args = ["--from", "git+https://github.com/oraios/serena", "serena", "start-mcp-server", "--context", "ide-assistant"]
+startup_timeout_sec = 30
+
+[mcp_servers.context7]
+command = "npx"
+args = ["-y", "@upstash/context7-mcp@latest"]
+startup_timeout_sec = 30
+
+[mcp_servers.chrome-devtools]
+command = "npx"
+args = ["-y", "chrome-devtools-mcp@latest", "--browser-url=http://127.0.0.1:9222"]
+startup_timeout_sec = 30
+
+# Persistent codebase knowledge-graph (read-only). See codex/config.toml.
+[mcp_servers.codebase-memory]
+command = "/home/ckriech/.local/bin/codebase-memory-mcp"
+args = []
+startup_timeout_sec = 60

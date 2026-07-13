@@ -56,6 +56,12 @@
     ~/.gemini/settings.json:
       path: gemini/settings.json
       force: true
+    ~/.grok/config.toml:
+      path: grok/config.toml
+      force: true
+    ~/.grok/AGENTS.md:
+      path: grok/AGENTS.md
+      force: true
 
 # Claude Code skills — per-skill symlinks (not a directory symlink, so the private
 # overlay can contribute its own skills into the same target directory).
