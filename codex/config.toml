@@ -146,10 +146,12 @@ command = "npx"
 args = ["-y", "@upstash/context7-mcp@latest"]
 startup_timeout_sec = 30
 
+# 90s: npx -y fetches @latest (cold registry) AND connects to the browser at
+# :9222 — 30s intermittently times out on cold start.
 [mcp_servers.chrome-devtools]
 command = "npx"
 args = ["-y", "chrome-devtools-mcp@latest", "--browser-url=http://127.0.0.1:9222"]
-startup_timeout_sec = 30
+startup_timeout_sec = 90
 
 # Persistent codebase knowledge-graph (read-only). Single static binary in
 # ~/.local/bin; no API key (embeddings compiled in), 100% local. On trial
