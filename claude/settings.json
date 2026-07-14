@@ -13,12 +13,25 @@
     "defaultMode": "bypassPermissions"
   },
   "model": "claude-fable-5[1m]",
-  "switchModelsOnFlag": false,
   "enableAllProjectMcpServers": true,
   "statusLine": {
     "type": "command",
     "command": "~/.claude/statusline.sh"
   },
+  "hooks": {
+    "MessageDisplay": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/timestamp-display.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  },
+  "//hooks": "MessageDisplay prepends [HH:MM] to each assistant message — display-only (screen), zero tokens, transcript untouched.",
   "enabledPlugins": {
     "context-mode@context-mode": true
   },
@@ -28,6 +41,7 @@
   "autoUpdatesChannel": "latest",
   "autoMemoryEnabled": true,
   "skipDangerousModePermissionPrompt": true,
+  "switchModelsOnFlag": false,
   "//switchModelsOnFlag": "false = do NOT auto-switch Fable 5 -> Opus when a safety classifier flags a message (default true). Flagged request pauses the session with a choice (switch to Opus, or edit+retry on Fable) instead of silently switching. Same as /config -> Model & output -> 'Switch models when a message is flagged' off.",
   "//model": "model key below was saved by /model (Fable 5, 1M context, saved 2026-07-12). CAUTION: Fable 5 left subscription plans after 2026-07-12 — bills usage credits at $10/$50 per M tokens; switch back via /model (Opus 4.8) if credits not enabled. ANTHROPIC_MODEL env var (claude-opus-4-8) still set as fallback.",
   "//effort": "fast + deep by default: fastMode true (~2.5x faster output, higher per-token cost / faster quota burn) + effortLevel xhigh (deep reasoning). The two are independent — fastMode is speed/cost only, effortLevel is depth only. This trades quota burn for both speed and quality; flip /fast off per-task if you need to conserve quota."

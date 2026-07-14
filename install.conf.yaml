@@ -47,6 +47,9 @@
     ~/.claude/statusline.sh:
       path: claude/statusline.sh
       force: true
+    ~/.claude/hooks/timestamp-display.sh:
+      path: claude/hooks/timestamp-display.sh
+      force: true
     ~/.codex/config.toml:
       path: codex/config.toml
       force: true
