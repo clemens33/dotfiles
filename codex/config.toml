@@ -139,6 +139,329 @@ trust_level = "trusted"
 [projects."/home/ckriech/projects/clemens33/portfolio"]
 trust_level = "trusted"
 
+# --- Pre-seeded trust (2026-07-15): every git repo under ~/projects, so codex
+# stops asking "do you trust this folder". CAVEAT: includes third-party clones;
+# trusted repos get their .codex/ project config (hooks/MCP) loaded. Accepted
+# as part of the deliberate yolo posture (approval_policy=never, full-access
+# sandbox). Revoke a repo by deleting its block.
+[projects."/home/ckriech/projects/Kuberwastaken/claude-code"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/cc/claude-code"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/cc/claude-code-source-code"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/cc/collection-claude-code-source-code"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/cc2/claude-code"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/claude-code"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/claw-code"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/clemens33/assistant"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/clemens33/mlflow"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/clemens33/winwhisper"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/github-mcp-server"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/headroom"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/instructkr/claw-code"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/Operations/lhaplmic017-sie-gateway-prod"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/Operations/lhaplmic018-sie-gateway-test"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/SAAS/NGIP-ARCHITECTURE"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/SAAS/NGIP-GoldenGate"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/SAAS/NGIP-Migration"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/SAAS/NGIP-TEST"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/SAAS/NGIP-TOOLS"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/ai-prompts"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/ai/_mcp-dtrack"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/ai/ai-assistant-catalog"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/ai/ai-mcp"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/ai/ai-prompts"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/ai/ai-tariff"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/ai/assistant-frontend-rewrite"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/ai/assistant-iop-catalog"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/ai/extract2md"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/ai/mcp-clickhouse"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/ai/mcp-dtrack"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/ai/mcp-email"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/ai/mcp-sonarqube"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/ai/ml-guidelines"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/all/all-db"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/analytics-pipelines/analytics-burberry"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/analytics-pipelines/analytics-dtna"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/analytics-pipelines/analytics-ford"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/analytics-pipelines/analytics-husqvarna"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/analytics-pipelines/analytics-internal"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/analytics-pipelines/analytics-ivoclar"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/analytics-pipelines/analytics-loreal"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/analytics-pipelines/analytics-pre-release"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/analytics-pipelines/analytics-products"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/analytics-pipelines/analytics-vcc"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/analytics-pipelines/analytics-zalando"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/analytics/da-datahub"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/analytics/da-extract-load"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/analytics/da-guidelines"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/analytics/da-oracle-rest"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/app-platform/app-core"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/apps/ai-classification"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/apps/ccs-classifier"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/apps/launchpad"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/argo-pipeline"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/clickhouse"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/core/git-documentation"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/da-k8s-internal"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/demos/deich"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/documentation/tech-strategy"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/dps-migration/app-dps"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/dps-migration/docflow"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/dps-migration/ecm-db"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/dps-migration/ecm-ecp"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/dps-migration/ecm-edis"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/k8s/da-ops-tenants"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/k8s/ds-k8s-tenants"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/k8s/mic-applications"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/k8s/ml-k8s"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/k8s/ml-ops-tenants"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/machine-learning-customers/ml-burberry"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/machine-learning-customers/ml-deich"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/machine-learning-customers/ml-internal"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/machine-learning-customers/ml-ops-brb"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/machine-learning-customers/ml-ops-husqv"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/machine-learning-customers/ml-ops-internal"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/machine-learning-customers/ml-ops-tenants"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/machine-learning-customers/ml-ops-zal"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/machine-learning-customers/ml-zalando"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/machine-learning/ml-guidelines"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/machine-learning/ml-k8s"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/mdk/ai-assistant"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/mdk/assistant"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/mdk/gum-mdk"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/mdk/mdk"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/mdk/nova"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/mic.ai/mic.ai.serve"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/nctseucdm-filing-de/nctseucdm-filing-de-backend"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/nctseucdm-filing-de/nctseucdm-filing-de-ecp"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/nctseucdm-filing-de/nctseucdm-filing-de-edis"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/nctseucdm/nctseucdm-backend"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/nctseucdm/nctseucdm-edis"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/py-template"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/sales/puma"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/siede/siede-db"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/tcc-ops"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/tech-strategy"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/tech-strategy/tech-radar"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/trade-content-creation/tariff-updates-scraper"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/tsep"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/mic/whatsnew/filing-de-atlas-whatsnew"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/oh-my-codex"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/openclaw"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/pi-mono"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/rlm_repl"]
+trust_level = "trusted"
+
+[projects."/home/ckriech/projects/smolagents"]
+trust_level = "trusted"
+
 [mcp_servers.serena]
 command = "uvx"
 args = ["--from", "git+https://github.com/oraios/serena", "serena", "start-mcp-server", "--context", "ide-assistant"]
