@@ -35,7 +35,7 @@
     ~/.config/opencode/AGENTS.md:
       path: shared/AGENTS.md
       force: true
-    ~/.gemini/GEMINI.md:
+    ~/.gemini/antigravity-cli/AGENTS.md:
       path: shared/AGENTS.md
       force: true
 
@@ -56,8 +56,8 @@
     ~/.config/opencode/config.json:
       path: opencode/config.json
       force: true
-    ~/.gemini/settings.json:
-      path: gemini/settings.json
+    ~/.gemini/antigravity-cli/settings.json:
+      path: antigravity/settings.json
       force: true
     ~/.grok/config.toml:
       path: grok/config.toml

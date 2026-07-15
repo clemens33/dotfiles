@@ -23,8 +23,8 @@ Personal dotfiles for Ubuntu WSL with fish shell on Windows host. Uses Dotbot fo
 **Dotbot** manages symlinks via `install.conf.yaml`:
 - Shell/editor/git/WSL utility links (`~/.config/fish/`, `~/.gitconfig`, `~/.vimrc`, …)
 - Fish functions directory is symlinked entirely (`fish/functions/` → `~/.config/fish/functions/`)
-- AI tool instructions: `shared/AGENTS.md` → `~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, `~/.config/opencode/AGENTS.md`, `~/.gemini/GEMINI.md`; Grok gets a condensed `grok/AGENTS.md` → `~/.grok/AGENTS.md` (10k-char rules cap) but also loads the full contract via its Claude-compat reading of `~/.claude/CLAUDE.md`
-- AI tool settings: `claude/`, `codex/`, `opencode/`, `gemini/`, `grok/` configs (Grok reads `~/.claude/skills/`, `~/.claude/agents/`, and `~/.claude/settings.json` permissions natively — no per-skill symlinks needed)
+- AI tool instructions: `shared/AGENTS.md` → `~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, `~/.config/opencode/AGENTS.md`, `~/.gemini/antigravity-cli/AGENTS.md`; Grok gets a condensed `grok/AGENTS.md` → `~/.grok/AGENTS.md` (10k-char rules cap) but also loads the full contract via its Claude-compat reading of `~/.claude/CLAUDE.md`
+- AI tool settings: `claude/`, `codex/`, `opencode/`, `antigravity/`, `grok/` configs (Grok reads `~/.claude/skills/`, `~/.claude/agents/`, and `~/.claude/settings.json` permissions natively — no per-skill symlinks needed). Gemini CLI was retired by Google 2026-06-18; Antigravity CLI (`agy`) replaces it, config under `~/.gemini/antigravity-cli/`
 - Per-skill symlinks into `~/.claude/skills/` and `~/.codex/skills/` (NOT a directory symlink, so an optional private overlay can contribute its own skills into the same target)
 
 **AI skill layers:** the 24 generic skills in `skills/` are the public layer. A private overlay (`dotfiles-mic/`, optional git submodule) can add domain-specific skills + agents on machines with access to it. The wrapper `./install` script handles both layers — public always, private only if submodule is populated. See the **manage-skills** skill for the two-layer model.

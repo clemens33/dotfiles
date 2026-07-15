@@ -1,0 +1,50 @@
+{
+  "//": "Antigravity CLI (agy) \u2014 symlinked to ~/.gemini/antigravity-cli/settings.json via dotbot. agy also WRITES here (trust additions, UI prefs) \u2014 expect churn. Replaces the retired Gemini CLI (dead since 2026-06-18).",
+  "model": "Gemini 3.5 Flash (High)",
+  "//toolPermission": "always-proceed = yolo (no permission prompts), matches codex approval_policy=never / claude bypassPermissions. Other values: request-review (default), proceed-in-sandbox, strict. Verified via cli.log 'CLI settings initialized: toolPermission=...'.",
+  "toolPermission": "always-proceed",
+  "trustedWorkspaces": [
+    "/home/ckriech",
+    "/home/ckriech/projects",
+    "/home/ckriech/projects/clemens33/portfolio"
+  ],
+  "mcpServers": {
+    "serena": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/oraios/serena",
+        "serena",
+        "start-mcp-server",
+        "--context",
+        "ide-assistant"
+      ]
+    },
+    "context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp@latest"
+      ]
+    },
+    "chrome-devtools": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "chrome-devtools-mcp@latest",
+        "--browser-url=http://127.0.0.1:9222"
+      ]
+    },
+    "codebase-memory": {
+      "command": "/home/ckriech/.local/bin/codebase-memory-mcp",
+      "args": []
+    }
+  },
+  "permissions": {
+    "allow": [
+      "command(*)",
+      "read_file(*)",
+      "write_file(*)"
+    ]
+  }
+}

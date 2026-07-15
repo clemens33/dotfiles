@@ -109,7 +109,7 @@ Pragmatic rules that prevent real bugs. Follow these while writing code.
 
 A single model has predictable blind spots. Use a different AI architecture for a second perspective — not just for code review, but for any significant intellectual work: planning, research, design decisions, debugging hard problems.
 
-**The principle:** If you are Claude, call Codex. If you are Codex, call Claude. If you are Gemini, call either. The value is in model diversity, not the specific tool.
+**The principle:** If you are Claude, call Codex. If you are Codex, call Claude. If you are Gemini/Antigravity or Grok, call either. The value is in model diversity, not the specific tool.
 
 ### When to use a second model
 
@@ -140,7 +140,7 @@ A single model has predictable blind spots. Use a different AI architecture for 
 
 Run in the **same repository directory** for full codebase access. Adapt the output filename and prompt to the task.
 
-**From Claude Code, OpenCode, Gemini, or any non-OpenAI tool → call Codex:**
+**From Claude Code, OpenCode, Antigravity, Grok, or any non-OpenAI tool → call Codex:**
 
 ```bash
 codex exec --full-auto -o .local/<output>.md "<PROMPT>"
@@ -241,10 +241,10 @@ Field knowledge (May 2026 SOTA, source-tiered references): `/home/ckriech/projec
 
 | File | Role | Visibility |
 |---|---|---|
-| `shared/AGENTS.md` (this file) | Contract — rules to never break | Auto-loaded in every configured tool (symlinked into Claude Code, Codex, OpenCode, Gemini) |
+| `shared/AGENTS.md` (this file) | Contract — rules to never break | Auto-loaded in every configured tool (symlinked into Claude Code, Codex, OpenCode, Antigravity; condensed variant for Grok) |
 | `WORKFLOW.md` | Doctrine — how to approach a task | Read on demand by any tool via absolute path above |
 | `KNOWLEDGE.md` | Field knowledge — what's true in May 2026 | Read on demand by any tool via absolute path above |
-| `skills/large-feature/SKILL.md` | Full-rigor L playbook | Claude Code / OpenCode via `~/.claude/skills/`; Codex via curated `~/.codex/skills/` symlink; Gemini has no equivalent skill routing |
+| `skills/large-feature/SKILL.md` | Full-rigor L playbook | Claude Code / OpenCode via `~/.claude/skills/`; Codex via curated `~/.codex/skills/` symlink; Grok reads ~/.claude/skills/ natively; Antigravity has no equivalent skill routing |
 | `skills/diagnose/SKILL.md` | Bug-shaped task loop | Same visibility as above |
 | `skills/*/SKILL.md` (many skills) | Operational recipes + doctrine-shaped playbooks | Claude Code / OpenCode auto-discover via the directory symlink; Codex sees only the curated subset in `install.conf.yaml`; other tools must be configured per-skill |
-| `agents/*.md` | Claude Code-specific subagent definitions (domain-specific, typically supplied by a private overlay) | Claude Code only via `~/.claude/agents/` symlink; not available to Codex / OpenCode / Gemini without explicit per-tool support |
+| `agents/*.md` | Claude Code-specific subagent definitions (domain-specific, typically supplied by a private overlay) | Claude Code only via `~/.claude/agents/` symlink; not available to Codex / OpenCode / Antigravity without explicit per-tool support (Grok reads ~/.claude/agents/ natively) |
