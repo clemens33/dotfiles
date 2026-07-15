@@ -138,13 +138,27 @@ A single model has predictable blind spots. Use a different AI architecture for 
 
 ### How to invoke the other model
 
+**If you are running inside an ae session (STRONG RULE):** route cross-model review through ae, not around it. Use an existing ae agent of a different model family (`.../ask <agent> "<review request>"` or `.../review <agent> ...`), or spawn one (`.../spawn <alias>:reviewer "<briefing>"`). Do NOT shell out to another CLI (`codex exec`, `claude -p`, `grok -p`) and do NOT use your harness's internal subagents for cross-model review — ae agents are visible to the human (own pane), steward-monitored, and messageable; CLI/internal runs are invisible to everyone but you. The CLI commands below are for NON-ae contexts.
+
 Run in the **same repository directory** for full codebase access. Adapt the output filename and prompt to the task.
 
 **From Claude Code, OpenCode, Antigravity, Grok, or any non-OpenAI tool → call Codex:**
 
 ```bash
+# Review / read-only analysis (the default — reviews need NO write access;
+# the CLI writes the -o file outside the sandbox):
+codex exec -o .local/<output>.md "<PROMPT>"
+
+# ONLY when codex must apply changes itself — never concurrently with another
+# agent editing the same checkout (one writer per file); prefer an isolated
+# git worktree for this:
 codex exec --full-auto -o .local/<output>.md "<PROMPT>"
 ```
+
+⚠️ `--full-auto` grants write+git access to the checkout it runs in. A reviewer
+invoked with it can mutate uncommitted work (observed 2026-07-15: a review run
+reverted an in-flight fix and deleted an untracked test to probe pre-fix
+behavior). Review invocations use the read-only default, always.
 
 For code review specifically, `codex review --uncommitted` is a useful shortcut when available.
 

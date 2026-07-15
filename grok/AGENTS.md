@@ -38,7 +38,14 @@ Ubuntu WSL2, fish shell, Windows host.
 
 You are Grok — get a second perspective from a different model family before
 committing significant work (new features, architecture, security-relevant,
-multi-file core changes). From Grok, call Claude or Codex in the same repo dir:
+multi-file core changes).
+
+**In an ae session (STRONG):** route the review through ae — ask an existing
+agent of another model family or spawn one (`.../ask`, `.../review`,
+`.../spawn <alias>:reviewer`). Never shell out to another CLI or use internal
+subagents for this; ae agents are human-visible and monitored, CLI runs are not.
+
+Outside ae, call Claude or Codex in the same repo dir:
 
 ```bash
 codex exec --full-auto -o .local/<output>.md "<PROMPT>"
