@@ -1,6 +1,8 @@
 # Agentic Coding Engineering — Research Base
 
 > Cross-validated across Claude (Opus 4.8) and Codex (GPT-5.5), June 2026.
+> July 2026 refresh: three-source sweep — Claude (web), Antigravity/agy
+> (Google-grounded), Grok (X search) — plus locally-verified tool facts.
 > This document captures the state of the art in agentic coding workflows,
 > tooling, and best practices. Living document — update as the field evolves.
 > Source-tiering applies to all citations (see §3).
@@ -29,13 +31,29 @@ Use Claude Code or Codex well before you build a "system." Don't over-engineer.
 > Dated section. Rotates as the field moves. Older facts archive to the changelog,
 > not this section.
 
+### Mid-July 2026 — tier shuffle + CLI landscape reshuffle [A]
+
+**Fable 5 restored, then credit-gated [A]** — supersedes the June suspension note below: access was restored and included on Pro/Max/Team/premium-Enterprise (≤50% of weekly limit) through **2026-07-12** (extended from 07-07 after backlash). After that, Fable 5 moved to **prepaid usage credits at $10/$50 per Mtok** (top of Anthropic's list; $2k/day redemption cap; no grace period if credits aren't enabled). Anthropic states it returns to subscriptions "when capacity allows." **Opus 4.8 remains the included frontier**; Fable 5 is usable but metered. Claude Code's `switchModelsOnFlag` (settings.json boolean, default `true`) silently falls back Fable→Opus on safety-classifier flags — set `false` for an explicit pause-and-choose instead.
+
+**GPT-5.6 shipped 2026-07-09 [A]** — no longer rumor. Three tiers: **Sol** (flagship, 372k ctx), **Terra** (½ Sol's credit cost), **Luna** (⅕). Effort ladder `low/medium/high/xhigh/max/ultra` — `ultra` auto-delegates to subagents, Pro/Business-only. Vendor default is `medium` ("Sol is highly capable at lower reasoning efforts"). Benchmarks split by job: Sol leads Terminal-Bench 2.1 (88.8%) and AA Coding Agent Index (80), but trails on **SWE-bench Pro (64.6% vs Opus 4.8's 69.2%, Fable 5's ~80%)** [A/B]. **METR flagged Sol's detected reward-hacking rate as the highest of any public model it has assessed** — discount Sol's benchmark wins accordingly [B]. Rough parity heuristic (no calibrated cross-vendor effort mapping exists): Sol@high ≈ Opus 4.8@xhigh for agentic work; Sol@xhigh/max ≈ Fable-5 class, benchmark-dependent [B/D].
+
+**Gemini CLI retired 2026-06-18 [A]** — confirmed sunset (free/Pro/Ultra tiers stopped serving; live calls fail with eligibility errors). Replacement: **Antigravity CLI (`agy`)** — Go binary, **closed-source so far** (a regression from Gemini CLI), multi-model in one terminal (Gemini 3.5 Flash / 3.1 Pro, Claude Sonnet/Opus 4.6, GPT-OSS 120B), Google-grounded search built in. Config in §12.
+
+**xAI Grok Build CLI [A/C]** — `grok-build` model (Grok 4.5-powered, 512k ctx). **Native X search tools** (`x_keyword_search`, `x_semantic_search`, trend research) — the only mainstream coding CLI that can query X content. Deep Claude-compat: reads `~/.claude/skills/`, `~/.claude/agents/`, `CLAUDE.md`, and `settings.json` permissions natively — zero re-wiring. Reported open-sourced ~2026-07-15 [D]. Config in §12.
+
+**Loop engineering goes mainstream [B/C/D]** — "loop engineering" is being named the successor discipline to prompt engineering (ADTmag 2026-07-01 [D]; "Stop Hand-Holding Your Coding Agent" arXiv:2607.00038 [B]; "Harness Engineering for Agentic AI Coding Tools" exploratory study, AIware '26 [B]). The season's mental model is a 4-layer onion — *prompt → context → harness → loop* — with leverage moving outward. Corollary now widely reproduced: **harness choice swings benchmark scores as much as model choice** (Terminal-Bench harness bakeoffs; same-model cross-harness gaps of tens of points) [C/D]. Every major CLI now ships a native loop primitive: Claude Code `/goal` (v2.1.139, 2026-05-12) + `/loop`, Codex `/goal`, Grok `--check`. X-practitioner orthodoxy converged on §17's existing discipline: separate verifier ("never self-grade"), persist state to disk, isolate worktrees, external stop conditions — the wave validates it, no doctrine change needed.
+
+**Framework maturation wave [A/D]** — Pydantic AI v2.0 (capability bundles), LlamaIndex Workflows 1.0 (event-driven agent pipelines), Mastra Goals/Gates/Verdicts, Microsoft Agent Framework BUILD-2026 additions (Agent Harness, CodeAct, Hosted Agents). LangChain's "State of Agent Engineering" reports 57% of surveyed orgs with agents in production [D].
+
+**Watch [C/D]** — Moonshot **Kimi K3**: open-weights long-horizon coding model (~2026-07-27), "drop into any harness" claims, being plugged into Codex/OpenCode/Grok harnesses within days of preview. First credible open-weights candidate for the harnesses in this repo if claims replicate; verify locally before routing work.
+
 ### June 2026 — the frontier moved twice [A]
 
 **Claude Opus 4.8 (2026-05-28) [A]** — same price as 4.7. Effort ladder `high` (default) → `xhigh` → `max`; `high` is the recommended default ("best overall balance"), `xhigh`/`max` are per-task opt-ups for hard work. ~4× less likely than 4.7 to let a flaw in its *own* code pass unremarked (the honesty/self-flagging gain). **Dynamic workflows** (research preview) — Claude writes a JavaScript orchestration script run in a background runtime; see §17.3. **Fast mode** (research preview, `speed: "fast"`) ~2.5× faster output at higher per-token cost — a speed/cost knob **separate from effort** in supported surfaces; **effort still controls reasoning depth**, so fast + xhigh can run together.
 
-**Claude Fable 5 / Mythos 5 (2026-06-09) [A]** — a capability tier *above* the Opus class. Fable 5 = the GA, safeguarded Mythos-class model ("safe for general use"), with capability-gated **fallback to Opus 4.8** on cyber/bio-chem/distillation classifiers; Mythos 5 = limited (Project Glasswing / US-gov). **Announced GA 2026-06-09, then access disabled 2026-06-12 for all customers by US-government directive** (per Anthropic's own access notice; other Anthropic models unaffected). **Do not target Fable 5 / Mythos 5 until restored** — **Opus 4.8 is the stable public frontier.**
+**Claude Fable 5 / Mythos 5 (2026-06-09) [A]** — a capability tier *above* the Opus class. Fable 5 = the GA, safeguarded Mythos-class model ("safe for general use"), with capability-gated **fallback to Opus 4.8** on cyber/bio-chem/distillation classifiers; Mythos 5 = limited (Project Glasswing / US-gov). **Announced GA 2026-06-09, then access disabled 2026-06-12 for all customers by US-government directive** (per Anthropic's own access notice; other Anthropic models unaffected). ~~Do not target Fable 5 / Mythos 5 until restored~~ **SUPERSEDED — see Mid-July 2026 above: restored, subscription-included through 07-12, usage-credits after.**
 
-**GPT-5.6 = RUMOR [A/D]** — not officially announced as of 2026-06-16 (leak / prediction-market chatter only). **Do not record as shipped.** GPT-5.5 remains OpenAI's live agentic model; Codex's Goal mode (`/goal`) became GA / first-class in May (no longer experimental, available in CLI/app/IDE).
+**GPT-5.6 = RUMOR [A/D]** — ~~not officially announced as of 2026-06-16~~ **SUPERSEDED — shipped 2026-07-09, see Mid-July 2026 above.** Codex's Goal mode (`/goal`) became GA / first-class in May (no longer experimental, available in CLI/app/IDE).
 
 **Codex → automation substrate [A]** — Codex grew past "CLI pair-programmer": `/goal` (loops to objective-or-budget), app-server, non-interactive mode, GitHub Action, scheduled automations, browser/devtools mode. "Loop" moved out of the chat UI into programmable orchestration. Codex's own `/goal` GitHub issues are empirical warnings — both premature stop *and* runaway loop when blocked.
 
@@ -340,14 +358,24 @@ GPT-5.5 in Codex requires ChatGPT auth, not API-key auth, at launch. API-key use
 
 ---
 
-## 12. Gemini CLI Configuration
+## 12. Antigravity CLI (agy) + Grok CLI Configuration
 
-- Global: `~/.gemini/GEMINI.md`
-- Project: `GEMINI.md` at workspace root
-- Subdirectory files discovered dynamically
-- Subagents supported — `.gemini/agents/*.md` (project) or `~/.gemini/agents/` (user)
-- Tool wildcards: `*`, `mcp_*`, `mcp_<server>_*`
-- Extensions: `gemini extensions install <repo-url>`
+> Gemini CLI died 2026-06-18 (see §2 Mid-July). Facts below verified locally
+> (agy 1.1.x, grok 0.2.x, July 2026) — both tools evolve fast; re-verify keys.
+
+### Antigravity CLI (`agy`) — Gemini CLI's replacement
+
+- Settings: `~/.gemini/antigravity-cli/settings.json` — keys: `model` (display-name string, e.g. `"Gemini 3.5 Flash (High)"` — effort is baked into the model label), `trustedWorkspaces` (path list), `mcpServers` (Claude-style JSON: `command`/`args`/`env`), `permissions.allow/deny` (grant strings like `command(git)`, `read_file(...)`)
+- Rules: hierarchical `GEMINI.md` / `AGENTS.md` / `.agents/rules/*.md`; global rules live in `~/.gemini/antigravity-cli/`
+- Permission modes (via `/config`): `request-review` (default) / `proceed-in-sandbox` / `always-proceed` / `strict`; per-session yolo via `--dangerously-skip-permissions`. The persistent-mode settings key is undocumented — set it once via `/config` and diff the config files to capture it.
+- Print mode (`-p`) executes tools without prompting; MCP servers spin up in interactive sessions only. Google-grounded `search_web` is built in (server-side grounding with citations).
+
+### Grok CLI (Grok Build)
+
+- Config: `~/.grok/config.toml` — `[models] default = "grok-build"`; `[mcp_servers.*]` in Codex-style TOML (`command`/`args`/`startup_timeout_sec`); `[features]` for `support_permission` / `telemetry` / `feedback`
+- **Claude-compat is the headline**: natively reads `~/.claude/skills/`, `~/.claude/agents/`, `~/.claude/CLAUDE.md`, and `~/.claude/settings.json` permissions — a full Claude harness setup carries over with zero re-wiring. `grok inspect` shows everything discovered.
+- Rules files: `Agents.md`/`Claude.md`/`AGENT.md`/`AGENTS.md`, global in `~/.grok/`; **10k-char cap per rules file** (condense, and let the Claude-compat path load the full contract)
+- Native X search tools (`x_keyword_search`, `x_semantic_search`, trend research); `--check` appends a self-verification loop in headless mode; `--best-of-n` runs N parallel attempts and picks the best
 
 ---
 
@@ -573,6 +601,11 @@ Recorded here so they're not lost; each is a separate, confirmable change:
 - Sourcegraph blog — "Why Sourcegraph and Amp are becoming independent companies" — https://sourcegraph.com/blog/why-sourcegraph-and-amp-are-becoming-independent-companies [A]
 - Sourcegraph blog — "A new era for Sourcegraph: the intelligence layer for AI coding agents and developers" — https://sourcegraph.com/blog/a-new-era-for-sourcegraph-the-intelligence-layer-for-ai-coding-agents-and-developers [A]
 - Pi documentation — https://pi.dev/docs/latest [A]
+- OpenAI Codex model catalog (GPT-5.6 Sol/Terra/Luna, efforts) — https://developers.openai.com/codex/models [A]
+- Google Antigravity CLI docs — https://antigravity.google/docs/cli-overview [A]
+- xAI Grok Build overview — https://docs.x.ai/build/overview [A]
+- xAI Grok Build announcement — https://x.ai/news/grok-build-cli [A]
+- Microsoft Agent Framework BUILD 2026 (Agent Harness, CodeAct, Hosted Agents) — https://devblogs.microsoft.com/agent-framework/microsoft-agent-framework-at-build-2026-announce/ [A]
 
 ### Tier B — Academic / research
 
@@ -590,6 +623,10 @@ Recorded here so they're not lost; each is a separate, confirmable change:
 - SWE-EVO (multi-file software evolution remains weak) — arXiv:2512.18470 [B]
 - METR time-horizon + uplift-study redesign (horizons >16h unreliable; "~20% slowdown" qualified on selection-bias grounds) — https://metr.org [B]
 - Anthropic infra-noise / benchmark config sensitivity (sub-3pp deltas are noise; Terminal-Bench swings ~6pp on hardware config) — Anthropic engineering [A]
+- "Stop Hand-Holding Your Coding Agent: Engineering the Loops that Replace Step-by-Step Prompting" — arXiv:2607.00038 [B]
+- "Harness Engineering for Agentic AI Coding Tools: An Exploratory Study" — AIware '26 (arXiv ID unverified — locate before citing formally) [B]
+- "Proof-or-Stop: Loop Engineering for Verifiable Evidence-Gated Lifecycle Control" — arXiv, July 2026 (ID unverified) [B]
+- METR predeployment evaluation of GPT-5.6 Sol (highest detected reward-hacking rate of any public model assessed) — https://metr.org [B]
 
 ### Tier C — Practitioner essays / repos
 
@@ -626,6 +663,9 @@ Cite as signals only. Audit periodically.
 - Ars Technica — "Overrun with AI slop, curl scraps bug bounties" (Stenberg / maintainer-side reality) — https://arstechnica.com/security/2026/01/overrun-with-ai-slop-curl-scraps-bug-bounties-to-ensure-intact-mental-health/ [D]
 - Tom's Hardware — Greg Kroah-Hartman using Framework Desktop + local AI to hunt kernel bugs — https://www.tomshardware.com/software/linux/linux-kernels-second-in-command-uses-framework-desktop-to-hunt-bugs-with-local-ai [D]
 - TechCrunch — OpenClaw creator (Peter Steinberger) joins OpenAI — https://techcrunch.com/2026/02/15/openclaw-creator-joins-openai/ [D]
+- ADTmag — "Loop Engineering Emerges as Developers Put AI Coding Agents on Repeat" (2026-07-01) — https://adtmag.com/articles/2026/07/01/loop-engineering-emerges-as-developers-put-ai-coding-agents-on-repeat.aspx [D]
+- LangChain "State of Agent Engineering" report (57% of orgs with agents in production) — June 2026 [D]
+- Fable5.app / DigitalApplied — Fable 5 usage-credit switch trackers (pricing/timeline signals; prefer Anthropic notices for normative claims) [D]
 
 ### Practitioner references
 
@@ -697,4 +737,4 @@ Watch but caveat (useful framing, less foundational):
 
 ---
 
-*Last updated: 2026-06-16. Update this file as the field evolves.*
+*Last updated: 2026-07-17 (three-source sweep: Claude/web + agy/Google + Grok/X, plus locally-verified tool facts). Update this file as the field evolves.*

@@ -233,7 +233,7 @@ BLOCKERs are mandatory. Disagree with sound reasoning, not to save effort.
 
 This file is the contract — rules to never break. The *full operating doctrine* (triage, S/M/L bucket mandates, anti-patterns, skill cross-reference, mermaid overview) lives in `WORKFLOW.md` at `/home/ckriech/projects/clemens33/dotfiles/WORKFLOW.md`. Read it when starting a non-trivial task, when choosing a workflow shape, or when in doubt.
 
-Field knowledge (May 2026 SOTA, source-tiered references): `/home/ckriech/projects/clemens33/dotfiles/KNOWLEDGE.md`.
+Field knowledge (July 2026 SOTA, source-tiered references): `/home/ckriech/projects/clemens33/dotfiles/KNOWLEDGE.md`.
 
 ### Quick rules (full detail in WORKFLOW.md)
 
@@ -257,7 +257,7 @@ Field knowledge (May 2026 SOTA, source-tiered references): `/home/ckriech/projec
 |---|---|---|
 | `shared/AGENTS.md` (this file) | Contract — rules to never break | Auto-loaded in every configured tool (symlinked into Claude Code, Codex, OpenCode, Antigravity; condensed variant for Grok) |
 | `WORKFLOW.md` | Doctrine — how to approach a task | Read on demand by any tool via absolute path above |
-| `KNOWLEDGE.md` | Field knowledge — what's true in May 2026 | Read on demand by any tool via absolute path above |
+| `KNOWLEDGE.md` | Field knowledge — what's true in July 2026 | Read on demand by any tool via absolute path above |
 | `skills/large-feature/SKILL.md` | Full-rigor L playbook | Claude Code / OpenCode via `~/.claude/skills/`; Codex via curated `~/.codex/skills/` symlink; Grok reads ~/.claude/skills/ natively; Antigravity has no equivalent skill routing |
 | `skills/diagnose/SKILL.md` | Bug-shaped task loop | Same visibility as above |
 | `skills/*/SKILL.md` (many skills) | Operational recipes + doctrine-shaped playbooks | Claude Code / OpenCode auto-discover via the directory symlink; Codex sees only the curated subset in `install.conf.yaml`; other tools must be configured per-skill |
