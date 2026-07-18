@@ -89,6 +89,7 @@
     ~/.claude/skills/setup-matt-pocock-skills: skills/setup-matt-pocock-skills
     ~/.claude/skills/skill-reducer: skills/skill-reducer
     ~/.claude/skills/tdd: skills/tdd
+    ~/.claude/skills/test-audit: skills/test-audit
     ~/.claude/skills/to-issues: skills/to-issues
     ~/.claude/skills/to-prd: skills/to-prd
     ~/.claude/skills/triage: skills/triage
@@ -117,6 +118,7 @@
     ~/.codex/skills/setup-matt-pocock-skills: skills/setup-matt-pocock-skills
     ~/.codex/skills/skill-reducer: skills/skill-reducer
     ~/.codex/skills/tdd: skills/tdd
+    ~/.codex/skills/test-audit: skills/test-audit
     ~/.codex/skills/to-issues: skills/to-issues
     ~/.codex/skills/to-prd: skills/to-prd
     ~/.codex/skills/triage: skills/triage
