@@ -82,6 +82,7 @@
     ~/.claude/skills/improve-codebase-architecture: skills/improve-codebase-architecture
     ~/.claude/skills/large-feature: skills/large-feature
     ~/.claude/skills/manage-skills: skills/manage-skills
+    ~/.claude/skills/quiz-diff: skills/quiz-diff
     ~/.claude/skills/refactor-audit: skills/refactor-audit
     ~/.claude/skills/scope: skills/scope
     ~/.claude/skills/security-review: skills/security-review
@@ -109,6 +110,7 @@
     ~/.codex/skills/improve-codebase-architecture: skills/improve-codebase-architecture
     ~/.codex/skills/large-feature: skills/large-feature
     ~/.codex/skills/manage-skills: skills/manage-skills
+    ~/.codex/skills/quiz-diff: skills/quiz-diff
     ~/.codex/skills/refactor-audit: skills/refactor-audit
     ~/.codex/skills/scope: skills/scope
     ~/.codex/skills/security-review: skills/security-review
