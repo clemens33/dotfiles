@@ -31,9 +31,13 @@ Use Claude Code or Codex well before you build a "system." Don't over-engineer.
 > Dated section. Rotates as the field moves. Older facts archive to the changelog,
 > not this section.
 
+### Late July 2026 — Opus 5 lands [A]
+
+**Claude Opus 5 shipped 2026-07-24 [A]** — new Opus flagship, ID `claude-opus-5`, $5/$25 per Mtok (unchanged from 4.8), 1M ctx native (no `[1m]` suffix needed; Max auto-upgrades), 128k output, **knowledge cutoff May 2026** — newest of any Claude, ahead of Fable 5's Jan 2026. Positioning: **~Fable 5 intelligence at half price** — within 0.5% of Fable 5 on CursorBench 3.2 at max effort, doubles Opus 4.8's Frontier-Bench v0.1 score at lower cost per task, beats Fable 5 on some coding/knowledge-work evals; clearly behind only on bio/cyber (Mythos 5 domain). **Default model on Claude Max, strongest on Pro — included in subscription**, while Fable 5 stays credit-gated at $10/$50. Effort ladder `low→xhigh→max`, **default `high`** on API and Claude Code (only 4.7 ever defaulted `xhigh`; an explicitly set level carries over on Opus 5). Fast mode: 2.5× speed at 2× base price. New betas: mid-conversation tool changes, automatic fallback routing. **No data-retention requirement** (vs Fable 5's 30-day rule); cyber classifiers intervene ~85% less than on Fable 5. Claude Code category-based fallback (requires v2.1.219+): Opus 5 cyber-flag → re-runs on Opus 4.8; biology-flag → refusal (no fallback). Opus 4.8 moves to the legacy table; Opus 4.1 retirement (2026-08-05) now migrates to Opus 5. Leaked ~07-09 as "Honeycomb EAP" in Cursor's model picker [C/D]. Routing implication: Opus 5 is the new default for frontier work on subscription; reach for Fable 5 (credits) only when the last 0.5–x% matters.
+
 ### Mid-July 2026 — tier shuffle + CLI landscape reshuffle [A]
 
-**Fable 5 restored, then credit-gated [A]** — supersedes the June suspension note below: access was restored and included on Pro/Max/Team/premium-Enterprise (≤50% of weekly limit) through **2026-07-12** (extended from 07-07 after backlash). After that, Fable 5 moved to **prepaid usage credits at $10/$50 per Mtok** (top of Anthropic's list; $2k/day redemption cap; no grace period if credits aren't enabled). Anthropic states it returns to subscriptions "when capacity allows." **Opus 4.8 remains the included frontier**; Fable 5 is usable but metered. Claude Code's `switchModelsOnFlag` (settings.json boolean, default `true`) silently falls back Fable→Opus on safety-classifier flags — set `false` for an explicit pause-and-choose instead.
+**Fable 5 restored, then credit-gated [A]** — supersedes the June suspension note below: access was restored and included on Pro/Max/Team/premium-Enterprise (≤50% of weekly limit) through **2026-07-12** (extended from 07-07 after backlash). After that, Fable 5 moved to **prepaid usage credits at $10/$50 per Mtok** (top of Anthropic's list; $2k/day redemption cap; no grace period if credits aren't enabled). Anthropic states it returns to subscriptions "when capacity allows." ~~Opus 4.8 remains the included frontier~~ **SUPERSEDED — Opus 5 (07-24) is the included flagship, see Late July above**; Fable 5 is usable but metered. Claude Code's `switchModelsOnFlag` (settings.json boolean, default `true`) silently falls back Fable→Opus on safety-classifier flags — set `false` for an explicit pause-and-choose instead.
 
 **GPT-5.6 shipped 2026-07-09 [A]** — no longer rumor. Three tiers: **Sol** (flagship, 372k ctx), **Terra** (½ Sol's credit cost), **Luna** (⅕). Effort ladder `low/medium/high/xhigh/max/ultra` — `ultra` auto-delegates to subagents, Pro/Business-only. Vendor default is `medium` ("Sol is highly capable at lower reasoning efforts"). Benchmarks split by job: Sol leads Terminal-Bench 2.1 (88.8%) and AA Coding Agent Index (80), but trails on **SWE-bench Pro (64.6% vs Opus 4.8's 69.2%, Fable 5's ~80%)** [A/B]. **METR flagged Sol's detected reward-hacking rate as the highest of any public model it has assessed** — discount Sol's benchmark wins accordingly [B]. Rough parity heuristic (no calibrated cross-vendor effort mapping exists): Sol@high ≈ Opus 4.8@xhigh for agentic work; Sol@xhigh/max ≈ Fable-5 class, benchmark-dependent [B/D].
 
@@ -152,7 +156,7 @@ Higher effort is not free. Calibrate per task class.
 | `low` / no thinking | Shallow questions, recon (`grep`, `find`), formatting, tiny edits |
 | `medium` | Normal questions, single-file edits, cost-sensitive workflows |
 | `high` | Default for nontrivial work — bugs, refactors, design questions |
-| `xhigh` (Opus 4.7) | Planning, hard bugs, architecture, security review, ambiguous migrations |
+| `xhigh` (Opus 4.7+, Sonnet 5) | Planning, hard bugs, architecture, security review, ambiguous migrations |
 | `max` | Exceptional only. Session-scoped via Claude Code; persistent only via `CLAUDE_CODE_EFFORT_LEVEL` env var |
 
 **Anti-pattern:** running `high` or `xhigh` for every interaction. Latency rises, token spend rises, quality plateaus or regresses (see brevity-constraint research [B]).
@@ -584,6 +588,9 @@ Recorded here so they're not lost; each is a separate, confirmable change:
 - Linux Foundation AAIF — https://www.linuxfoundation.org/press/linux-foundation-announces-the-formation-of-the-agentic-ai-foundation [A]
 - Anthropic Opus 4.8 launch — https://www.anthropic.com/news/claude-opus-4-8 [A]
 - Anthropic "What's new in Claude Opus 4.8" docs — https://platform.claude.com/docs/en/about-claude/models/whats-new-claude-4-8 [A]
+- Anthropic Opus 5 launch — https://www.anthropic.com/news/claude-opus-5 [A]
+- Anthropic models overview (Opus 5 row, IDs, pricing) — https://platform.claude.com/docs/en/about-claude/models/overview [A]
+- Claude Code model config (Opus 5 default, effort defaults, category fallback) — https://code.claude.com/docs/en/model-config [A]
 - Anthropic Fable 5 / Mythos 5 launch — https://www.anthropic.com/news/claude-fable-5-mythos-5 [A]
 - Anthropic Fable/Mythos access notice (2026-06-12 suspension) — https://www.anthropic.com/news/fable-mythos-access [A]
 - Claude Code Dynamic Workflows docs — https://code.claude.com/docs/en/workflows [A]
@@ -701,7 +708,7 @@ Watch but caveat (useful framing, less foundational):
 - `--dangerously-skip-permissions` or alias `claude-yolo`
 - Better: `/permissions` with wildcards: `Bash(npm run *)`, `Edit(/src/**)`
 - `effortLevel` in `settings.json`: see §5 routing
-- `xhigh` is the default on Opus 4.7; explicitly setting `high` *reduces* default thinking
+- Default effort is `high` on every model that supports it — **except Opus 4.7, which defaults `xhigh`**. On Opus 5 an explicitly set level carries over across model switches; set `xhigh` deliberately to opt up
 - `/effort` mid-session, `--effort` on launch, `CLAUDE_CODE_EFFORT_LEVEL` env var for persistence (only way `max` persists)
 - `/model` to switch mid-session
 - `/clear` between unrelated tasks (rarely need `/compact` with 1M context)
