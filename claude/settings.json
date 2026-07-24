@@ -12,7 +12,7 @@
     ],
     "defaultMode": "bypassPermissions"
   },
-  "model": "claude-fable-5[1m]",
+  "model": "claude-opus-5",
   "enableAllProjectMcpServers": true,
   "hooks": {
     "MessageDisplay": [
@@ -42,7 +42,7 @@
   "skipDangerousModePermissionPrompt": true,
   "switchModelsOnFlag": false,
   "//hooks": "MessageDisplay prepends [HH:MM] to each assistant message — display-only (screen), zero tokens, transcript untouched.",
-  "//switchModelsOnFlag": "false = do NOT auto-switch Fable 5 -> Opus when a safety classifier flags a message (default true). Flagged request pauses the session with a choice (switch to Opus, or edit+retry on Fable) instead of silently switching. Same as /config -> Model & output -> 'Switch models when a message is flagged' off.",
-  "//model": "model key below was saved by /model (Fable 5, 1M context, saved 2026-07-12). CAUTION: Fable 5 left subscription plans after 2026-07-12 — bills usage credits at $10/$50 per M tokens; switch back via /model (Opus 4.8) if credits not enabled. ANTHROPIC_MODEL env var (claude-opus-4-8) still set as fallback.",
-  "//effort": "fast + deep by default: fastMode true (~2.5x faster output, higher per-token cost / faster quota burn) + effortLevel xhigh (deep reasoning). The two are independent — fastMode is speed/cost only, effortLevel is depth only. This trades quota burn for both speed and quality; flip /fast off per-task if you need to conserve quota."
+  "//switchModelsOnFlag": "false = do NOT auto-switch Fable 5 -> Opus when a safety classifier flags a message (default true). Flagged request pauses the session with a choice (switch to Opus, or edit+retry on Fable) instead of silently switching. Same as /config -> Model & output -> 'Switch models when a message is flagged' off. Since 2.1.219 fallback is category-based: Opus 5 cyber-flag -> Opus 4.8, biology-flag -> refusal (no fallback).",
+  "//model": "claude-opus-5 (set 2026-07-24, launch day): new Opus flagship, ~Fable 5 intelligence at half price, included in Max subscription (its default there). 1M context is native — no [1m] suffix needed. Fable 5 remains credit-gated ($10/$50 per MTok); opt in per-session via /model when the last few % matter. Requires Claude Code >= 2.1.219.",
+  "//effort": "fast + deep by default: fastMode true (~2.5x faster output, higher per-token cost / faster quota burn) + effortLevel xhigh (deep reasoning). The two are independent — fastMode is speed/cost only, effortLevel is depth only. This trades quota burn for both speed and quality; flip /fast off per-task if you need to conserve quota. Note: Opus 5 defaults to high, so the explicit xhigh here is a deliberate opt-up (it carries over on Opus 5 — no model-default hold)."
 }
