@@ -1,0 +1,125 @@
+# Brewfile — MacBook Pro (M5) toolchain
+#
+# Rebuilds the CLI toolchain migrated from the WSL Ubuntu box.
+#   brew bundle --file=macos/Brewfile
+#   brew bundle check --file=macos/Brewfile   # dry-run: what's missing
+#
+# Deliberately NOT here (see migration checklist):
+#   docker-ce         -> OrbStack cask provides the docker CLI + daemon
+#   redis-server      -> ran inactive on WSL; real state lives in containers
+#   cargo, snap, ubuntu-wsl, wsl-pro, win32yank -> Linux/WSL-only
+#   python            -> uv owns Python. Do not brew-install it.
+#
+# Names verified against the Homebrew API on 2026-07-28 (see header notes on
+# the entries that needed renaming).
+
+# ---------------------------------------------------------------------------
+# 1) Core CLI — the apt-manual keepers worth carrying over
+# ---------------------------------------------------------------------------
+brew "fish"
+brew "gh"
+brew "just"
+brew "jq"
+brew "bat"
+brew "stow"
+brew "imagemagick"
+brew "tmux"
+brew "git"
+
+# apt `postgresql-client` -> `libpq` on Homebrew (psql + client libs, no server).
+# KEG-ONLY: not symlinked into the prefix. config.fish already adds
+# /opt/homebrew/opt/libpq/bin under its brew guard — nothing to do here.
+brew "libpq"
+
+# macOS ships its own curl/wget-less base. Both are safe to brew, but note:
+# KEG-ONLY — brew's curl does not shadow /usr/bin/curl unless you add it to PATH.
+brew "curl"
+brew "wget"
+
+# Tailscale on macOS is the GUI app, not the headless server daemon that the
+# `tailscale` FORMULA installs. Cask was renamed `tailscale` -> `tailscale-app`.
+cask "tailscale-app"
+
+# ---------------------------------------------------------------------------
+# 2) Nix-profile replacements — Nix is dropped on the Mac (lead ruling).
+#    These 9 came from ~/.nix-profile/bin on WSL.
+# ---------------------------------------------------------------------------
+brew "git-delta" # binary is `delta`; the formula is NOT named `delta`
+brew "fd"
+brew "fzf"
+brew "lazygit"
+brew "ripgrep" # binary is `rg`
+brew "tig"
+brew "yazi"
+brew "zoxide"
+
+# ---------------------------------------------------------------------------
+# 3) Hand-installed ~/.local/bin replacements that Homebrew can own
+# ---------------------------------------------------------------------------
+brew "shellcheck"
+brew "neovim"  # binary is `nvim`
+brew "git-cliff"
+brew "uv"      # also provides uvx; owns Python + `uv tool` installs
+brew "age"     # encrypts the migration secrets bundle (see MAC-MIGRATION.md 0.5)
+
+# ---------------------------------------------------------------------------
+# 4) Languages / runtime tooling
+#
+# NOTE: mise replaces BOTH fnm and sdkman from the WSL setup — one runtime
+# manager for node, java, and anything else. Migrate the pinned versions
+# (node 18.17.0 / 24.15.0 / 25.1.0, sdkman java) into a mise config rather
+# than reinstalling fnm/sdkman.
+#
+# NOTE: uv owns Python. Do NOT add `brew "python"` — it will shadow uv's
+# interpreters and break `uv tool` installs.
+#
+# NOTE: no `brew "node"` — mise is the single owner of node versions (as it
+# is for java, replacing fnm + sdkman). `mise use -g node@lts` first, then the
+# npm -g installs below.
+# ---------------------------------------------------------------------------
+brew "go"
+brew "mise"
+
+# ---------------------------------------------------------------------------
+# 5) Casks — GUI apps
+# ---------------------------------------------------------------------------
+cask "ghostty"            # terminal; replaces Windows Terminal
+cask "raycast"
+cask "orbstack"           # docker runtime + CLI; replaces docker-ce
+cask "1password"
+cask "karabiner-elements"
+cask "alt-tab"            # app token is `alt-tab`, not `alttab`
+cask "maccy"
+cask "stats"
+cask "font-jetbrains-mono-nerd-font"
+cask "google-chrome"      # chrome-devtools MCP attaches to it at :9222
+cask "visual-studio-code" # replaces the WSL vscode-server setup, native on mac
+
+# ---------------------------------------------------------------------------
+# 6) Optional — uncomment if wanted
+# ---------------------------------------------------------------------------
+# cask "ollama-app"       # cask renamed `ollama` -> `ollama-app`.
+#                         # Use `brew "ollama"` instead for the headless
+#                         # server/CLI with no menu-bar app.
+# cask "lm-studio"
+# cask "wezterm"          # alternative to ghostty
+
+# ---------------------------------------------------------------------------
+# 7) Kubernetes / Oracle tooling — hand-installed in /usr/local/bin on WSL,
+#    in active daily use (14 kube contexts, ~/.config/helm, ~/.config/argocd).
+# ---------------------------------------------------------------------------
+brew "kubernetes-cli"     # provides `kubectl` — formula is NOT named `kubectl`
+brew "helm"
+brew "argocd"
+cask "sqlcl"              # replaces the manual ~/opt/sqlcl install
+
+# Go dev tools: install on demand with `go install` (dlv, gopls, goimports,
+# mcp-grafana) — brew equivalents exist (delve, gopls, shfmt, golangci-lint)
+# if version-managing them centrally becomes preferable.
+#
+# Not available in Homebrew at all — install another way:
+#   pinniped (/usr/local/bin/pinniped)  -> vendor release or a custom tap
+#   the 9 npm -g packages (codex, copilot, gemini-cli, pi-coding-agent,
+#     ccusage, context-mode, pi-web-access, taskplane) -> npm after mise node
+#   ae, agent, agy, claude, dev-session, graph-token, grok -> their own
+#     installers (codebase-memory-mcp dropped 2026-07-29, do not reinstall)

@@ -15,7 +15,7 @@
     - ~/.config/opencode
     - ~/.gemini
 
-# Shell / editor / git / WSL utility links
+# Shell / editor / git / terminal links (portable: WSL + macOS)
 - link:
     ~/.tmux.conf: tmux.conf
     ~/.vimrc: vimrc
@@ -23,6 +23,9 @@
     ~/.bash_aliases: bash_aliases
     ~/.config/fish/config.fish: config.fish
     ~/.config/fish/functions: fish/functions
+    ~/.config/fish/conf.d/uv.env.fish: fish/conf.d/uv.env.fish
+    # Ghostty reads this path on macOS AND Linux — harmless where unused.
+    ~/.config/ghostty/config: terminal/ghostty.config
 
 # AI tool instructions — all four tools share one doctrine file (shared/AGENTS.md)
 - link:

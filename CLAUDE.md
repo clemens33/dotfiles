@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-Personal dotfiles for Ubuntu WSL with fish shell on Windows host. Uses Dotbot for symlink management. Also bundles AI coding tool configuration (Claude Code, Codex, OpenCode, Gemini) and a shared skill set.
+Personal dotfiles for Ubuntu WSL (Windows host) and macOS (Apple Silicon), fish shell on both. Uses Dotbot for symlink management. Also bundles AI coding tool configuration (Claude Code, Codex, OpenCode, Gemini) and a shared skill set. macOS package manifest lives in `macos/Brewfile`; migration playbook in `~/MAC-MIGRATION.md`.
 
 ## Commands
 
@@ -16,6 +16,9 @@ Personal dotfiles for Ubuntu WSL with fish shell on Windows host. Uses Dotbot fo
 
 # Test dotbot config without applying
 ./dotbot/bin/dotbot -d . -c install.conf.yaml --dry-run
+
+# macOS only: install/update the host toolchain
+brew bundle --file macos/Brewfile
 ```
 
 ## Architecture
