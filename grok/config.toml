@@ -19,6 +19,7 @@ feedback = false
 
 [marketplace]
 official_marketplace_auto_installed = true
+default_skills_installs_purged = true
 
 [[marketplace.sources]]
 name = "xAI Official"
@@ -45,8 +46,11 @@ command = "npx"
 args = ["-y", "chrome-devtools-mcp@latest", "--browser-url=http://127.0.0.1:9222"]
 startup_timeout_sec = 20
 
-# Persistent codebase knowledge-graph (read-only). See codex/config.toml.
-[mcp_servers.codebase-memory]
-command = "/home/ckriech/.local/bin/codebase-memory-mcp"
-args = []
-startup_timeout_sec = 60
+# codebase-memory dropped 2026-07-29 (trial ended; serena covers it).
+
+# Sticky UI state grok wrote back (kept so a dotbot relink doesn't reset it).
+[ui]
+max_thoughts_width = 120
+fork_secondary_model = "grok-build"
+yolo = false
+compact_mode = false

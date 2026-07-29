@@ -482,13 +482,9 @@ command = "npx"
 args = ["-y", "chrome-devtools-mcp@latest", "--browser-url=http://127.0.0.1:9222"]
 startup_timeout_sec = 20
 
-# Persistent codebase knowledge-graph (read-only). Single static binary in
-# ~/.local/bin; no API key (embeddings compiled in), 100% local. On trial
-# alongside serena — see whether it earns its place.
-[mcp_servers.codebase-memory]
-command = "/home/ckriech/.local/bin/codebase-memory-mcp"
-args = []
-startup_timeout_sec = 60
+# codebase-memory dropped 2026-07-29: trial ended with the mac migration —
+# serena covers the need. Binary may linger in ~/.local/bin on WSL; not
+# installed on macOS.
 
 [mcp_servers.openaiDeveloperDocs]
 url = "https://developers.openai.com/mcp"

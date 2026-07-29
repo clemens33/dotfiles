@@ -34,10 +34,6 @@
         "chrome-devtools-mcp@latest",
         "--browser-url=http://127.0.0.1:9222"
       ]
-    },
-    "codebase-memory": {
-      "command": "/home/ckriech/.local/bin/codebase-memory-mcp",
-      "args": []
     }
   },
   "permissions": {
