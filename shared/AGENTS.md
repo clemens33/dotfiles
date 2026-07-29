@@ -55,7 +55,7 @@ Clemens is human. Building software is hard, and sometimes things get heated.
 
 ## Environment
 
-Ubuntu WSL2, fish shell, Windows host.
+Ubuntu WSL2 (Windows host) or macOS (Apple Silicon) — check `uname` when it matters. Fish shell on both. On macOS: Homebrew in `/opt/homebrew`, BSD userland (`sed -i`, `date -d`, `stat -c`, `readlink -f`, `xargs -r` differ from GNU — write portable or use g-prefixed tools).
 
 ## Skills
 
@@ -231,9 +231,9 @@ BLOCKERs are mandatory. Disagree with sound reasoning, not to save effort.
 
 ## Operating Doctrine
 
-This file is the contract — rules to never break. The *full operating doctrine* (triage, S/M/L bucket mandates, anti-patterns, skill cross-reference, mermaid overview) lives in `WORKFLOW.md` at `/home/ckriech/projects/clemens33/dotfiles/WORKFLOW.md`. Read it when starting a non-trivial task, when choosing a workflow shape, or when in doubt.
+This file is the contract — rules to never break. The *full operating doctrine* (triage, S/M/L bucket mandates, anti-patterns, skill cross-reference, mermaid overview) lives in `WORKFLOW.md` at `~/projects/clemens33/dotfiles/WORKFLOW.md`. Read it when starting a non-trivial task, when choosing a workflow shape, or when in doubt.
 
-Field knowledge (July 2026 SOTA, source-tiered references): `/home/ckriech/projects/clemens33/dotfiles/KNOWLEDGE.md`.
+Field knowledge (July 2026 SOTA, source-tiered references): `~/projects/clemens33/dotfiles/KNOWLEDGE.md`.
 
 ### Quick rules (full detail in WORKFLOW.md)
 

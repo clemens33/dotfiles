@@ -10,14 +10,14 @@
 	helper = cache --timeout=86400
 [init]
 	defaultBranch = main
-[includeIf "gitdir:/home/ckriech/projects/mic/"]
+[includeIf "gitdir:~/projects/mic/"]
     path = ~/.gitconfig-mic
 [credential "https://github.com"]
-	helper = 
-	helper = !/usr/bin/gh auth git-credential
+	helper =
+	helper = !gh auth git-credential
 [credential "https://gist.github.com"]
-	helper = 
-	helper = !/usr/bin/gh auth git-credential
+	helper =
+	helper = !gh auth git-credential
 [interactive]
 	diffFilter = delta --color-only
 [delta]

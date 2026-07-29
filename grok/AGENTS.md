@@ -1,9 +1,9 @@
 # AGENTS.md (Grok global rules — condensed)
 
 Grok caps rules files at 10,000 chars, so this is a condensed contract.
-**Read the full version first: `/home/ckriech/projects/clemens33/dotfiles/shared/AGENTS.md`** —
-it is authoritative. Full operating doctrine: `/home/ckriech/projects/clemens33/dotfiles/WORKFLOW.md`.
-Field knowledge: `/home/ckriech/projects/clemens33/dotfiles/KNOWLEDGE.md`.
+**Read the full version first: `~/projects/clemens33/dotfiles/shared/AGENTS.md`** —
+it is authoritative. Full operating doctrine: `~/projects/clemens33/dotfiles/WORKFLOW.md`.
+Field knowledge: `~/projects/clemens33/dotfiles/KNOWLEDGE.md`.
 
 ## Environment
 
