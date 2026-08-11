@@ -17,6 +17,8 @@
 # 1) Core CLI — the apt-manual keepers worth carrying over
 # ---------------------------------------------------------------------------
 brew "fish"
+brew "bash"    # macOS ships 3.2; ae requires bash >= 4
+brew "flock"   # util-linux flock is absent on macOS; ae lifecycle locking needs it
 brew "gh"
 brew "just"
 brew "jq"
@@ -84,15 +86,45 @@ brew "mise"
 # 5) Casks — GUI apps
 # ---------------------------------------------------------------------------
 cask "ghostty"            # terminal; replaces Windows Terminal
-cask "raycast"
-cask "orbstack"           # docker runtime + CLI; replaces docker-ce
-cask "1password"
+# cask "raycast"          # dropped 2026-07-30 (Clemens: start native/minimal; Maccy covers clipboard)
+# Docker: colima (MIT, CLI-only Linux VM) + the OSS docker CLI replaced the
+# OrbStack cask 2026-08-07 — OrbStack's free tier is personal-use only and this
+# is a work machine. Start it with:
+#   colima start --vm-type vz --vz-rosetta --mount-type virtiofs \
+#                --cpu 8 --memory 16 --disk 100
+# `brew services start colima` makes it come up at login (RunAtLoad).
+brew "colima"
+brew "docker"             # CLI only; the daemon lives in the colima VM
+brew "docker-compose"     # plugin — needs cliPluginsExtraDirs in ~/.docker/config.json
+brew "docker-buildx"      # ditto
+brew "docker-credential-helper" # provides docker-credential-osxkeychain, which
+                          # OrbStack used to supply. REQUIRED: helm's registry
+                          # config (~/Library/Preferences/helm/registry/config.json)
+                          # sets "credsStore": "osxkeychain", so `helm registry
+                          # login harbor.shared.miccust.dev` dies without it.
+cask "bitwarden"          # MIC uses Bitwarden (desktop app has SSH agent + secure notes); replaced 1password 2026-07-30
 cask "karabiner-elements"
-cask "alt-tab"            # app token is `alt-tab`, not `alttab`
+# cask "alt-tab"          # dropped 2026-07-31 (Clemens: learning native Cmd-Tab / Cmd-< instead)
 cask "maccy"
+tap "didriksg/tap"        # Crisp; fresh machines must `brew trust didriksg/tap` first
+cask "crisp", args: { appdir: "~/Applications" } # custom HiDPI + smooth scaling for foreign
+                          # monitors (Acer X34P 125% case). Free/MIT replacement for
+                          # betterdisplay 2026-08-06 — scaling ladder is a BD Pro feature.
+                          # ~/Applications: the cask's /Applications copy demands sudo.
 cask "stats"
 cask "font-jetbrains-mono-nerd-font"
-cask "google-chrome"      # chrome-devtools MCP attaches to it at :9222
+cask "google-chrome"      # daily browsing AND (as separate instance via `chrome-debug`
+                          # fish fn, own data dir) the :9222 automation browser for the
+                          # chrome-devtools MCP. Unsigned Chromium failed MIC Conditional
+                          # Access (tested 2026-07-31) — signed Chrome for both roles.
+cask "dbeaver-community", args: { appdir: "~/Applications" } # multi-engine DB GUI
+                          # (Oracle + Postgres + ClickHouse + Redis + MSSQL in one tool, which
+                          # rules out the native Mac clients). Carried over from the WSL setup
+                          # 2026-08-10. Bundles its own JRE — does not use mise's java.
+cask "firefox", args: { appdir: "~/Applications" } # second engine (Gecko) for cross-browser
+                          # checks + non-work browsing; added 2026-08-07. NOT an automation
+                          # browser — chrome-devtools MCP needs CDP, which Firefox is dropping
+                          # for WebDriver BiDi.
 cask "visual-studio-code" # replaces the WSL vscode-server setup, native on mac
 
 # ---------------------------------------------------------------------------
