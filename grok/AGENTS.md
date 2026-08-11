@@ -45,10 +45,12 @@ agent of another model family or spawn one (`.../ask`, `.../review`,
 `.../spawn <alias>:reviewer`). Never shell out to another CLI or use internal
 subagents for this; ae agents are human-visible and monitored, CLI runs are not.
 
-Outside ae, call Claude or Codex in the same repo dir:
+Outside ae, call Claude or Codex in the same repo dir — READ-ONLY for reviews
+(`--full-auto` grants write+git access and a reviewer has mutated uncommitted
+work with it). Full mechanics + prompt templates: `cross-model-review` skill.
 
 ```bash
-codex exec --full-auto -o .local/<output>.md "<PROMPT>"
+codex exec -o .local/<output>.md "<PROMPT>"
 # or
 CLAUDECODE= CLAUDE_CODE_SESSION= claude -p --permission-mode bypassPermissions --allowedTools Read Glob Grep Bash -- "<PROMPT>" > .local/<output>.md
 ```
