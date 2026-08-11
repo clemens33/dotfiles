@@ -109,6 +109,7 @@
     ~/.claude/skills/caveman: skills/caveman
     ~/.claude/skills/code-review: skills/code-review
     ~/.claude/skills/collab: skills/collab
+    ~/.claude/skills/cross-model-review: skills/cross-model-review
     ~/.claude/skills/diagnose: skills/diagnose
     ~/.claude/skills/drawio-diagrams-enhanced: skills/drawio-diagrams-enhanced
     ~/.claude/skills/gha-security-review: skills/gha-security-review
@@ -138,6 +139,7 @@
     ~/.codex/skills/caveman: skills/caveman
     ~/.codex/skills/code-review: skills/code-review
     ~/.codex/skills/collab: skills/collab
+    ~/.codex/skills/cross-model-review: skills/cross-model-review
     ~/.codex/skills/diagnose: skills/diagnose
     ~/.codex/skills/drawio-diagrams-enhanced: skills/drawio-diagrams-enhanced
     ~/.codex/skills/gha-security-review: skills/gha-security-review
