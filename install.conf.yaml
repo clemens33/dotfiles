@@ -24,8 +24,17 @@
     ~/.config/fish/config.fish: config.fish
     ~/.config/fish/functions: fish/functions
     ~/.config/fish/conf.d/uv.env.fish: fish/conf.d/uv.env.fish
+    ~/.config/fish/conf.d/codex-ca.fish: fish/conf.d/codex-ca.fish
+    # Public CA root that macOS does not ship yet — see codex-ca.fish for why.
+    ~/.config/ca/isrg-root-yr.pem: certs/isrg-root-yr.pem
     # Ghostty reads this path on macOS AND Linux — harmless where unused.
     ~/.config/ghostty/config: terminal/ghostty.config
+    # Karabiner (macOS only; the dir simply stays unused elsewhere). NOTE: this
+    # links the importable RULE SET, not karabiner.json — Karabiner rewrites
+    # karabiner.json itself on device connect, so symlinking it would fight the
+    # app. Activate after a rebuild: Karabiner-Elements → Complex Modifications
+    # → Add rule → "Windows-style layout". See karabiner/README.md.
+    ~/.config/karabiner/assets/complex_modifications/windows-layout.json: karabiner/assets/complex_modifications/windows-layout.json
 
 # AI tool instructions — all four tools share one doctrine file (shared/AGENTS.md)
 - link:
@@ -67,6 +76,29 @@
       force: true
     ~/.grok/AGENTS.md:
       path: grok/AGENTS.md
+      force: true
+
+# Additional Claude Code identity (`claude2` fish function runs
+# `CLAUDE_CONFIG_DIR=~/.claude2 claude`) — isolated login per config dir
+# (macOS: own Keychain entry keyed off the dir path; Linux:
+# ~/.claude2/.credentials.json) while sharing all config with ~/.claude.
+# skills/agents dir symlinks + MCP merge happen in the shell block below
+# (targets live in $HOME, not the repo). NOT linked (rewritten per identity):
+# .claude.json, settings.local.json, projects/, history.
+- create:
+    - ~/.claude2
+- link:
+    ~/.claude2/CLAUDE.md:
+      path: shared/AGENTS.md
+      force: true
+    ~/.claude2/settings.json:
+      path: claude/settings.json
+      force: true
+    ~/.claude2/statusline.sh:
+      path: claude/statusline.sh
+      force: true
+    ~/.claude2/hooks/timestamp-display.sh:
+      path: claude/hooks/timestamp-display.sh
       force: true
 
 # Claude Code skills — per-skill symlinks (not a directory symlink, so the private
@@ -131,18 +163,35 @@
 - shell:
     - command: mkdir -p ~/.config/fish
       description: Ensure fish config dir
-    # Merge MCP servers into ~/.claude.json (file holds runtime state, can't symlink)
+    # Migration (2026-08-11): codex features.shell_snapshot dumped the inherited
+    # environment — secrets included — into world-readable snapshot scripts.
+    # The feature is now off in codex/config.toml; purge any legacy snapshots.
     - command: |
-        if command -v jq >/dev/null 2>&1; then
-          CLAUDE_JSON="$HOME/.claude.json"
-          MCP_JSON="claude/mcpServers.json"
-          if [ -f "$CLAUDE_JSON" ]; then
-            jq --slurpfile mcp "$MCP_JSON" '.mcpServers = $mcp[0]' "$CLAUDE_JSON" > /tmp/claude.json.tmp && mv /tmp/claude.json.tmp "$CLAUDE_JSON"
-          else
-            jq -n --slurpfile mcp "$MCP_JSON" '{mcpServers: $mcp[0]}' > "$CLAUDE_JSON"
+        dir="$HOME/.codex/shell_snapshots"
+        if [ -L "$dir" ]; then
+          # -d follows symlinks; deleting through one would hit an unrelated
+          # target. Only ever purge the real cache dir codex owns.
+          echo "WARN: $dir is a symlink — refusing to purge, resolve manually"
+        elif [ -d "$dir" ]; then
+          n=$(ls "$dir" 2>/dev/null | wc -l | tr -d ' ')
+          if [ "$n" -gt 0 ]; then
+            rm -f "$dir"/* && echo "purged $n legacy codex shell snapshot(s) (may contain secrets)"
           fi
-          echo "Merged MCP servers into $CLAUDE_JSON"
-        else
-          echo "WARNING: jq not found, skipping Claude Code MCP merge"
         fi
+      description: Purge legacy codex shell snapshots
+    - command: scripts/mcp-merge.sh "$HOME/.claude.json" claude/mcpServers.json
       description: Merging Claude Code MCP servers
+    # claude2 identity: skills → the merged ~/.claude/skills real directory.
+    # agents is NOT linked here — ~/.claude/agents is created by the private
+    # overlay, which runs after this pass and owns the claude2 link too. A
+    # public-only machine correctly ends up with no agents for any identity.
+    - command: |
+        dst="$HOME/.claude2/skills"
+        if [ -d "$dst" ] && [ ! -L "$dst" ]; then
+          echo "WARN: $dst is a real directory — resolve manually"
+        else
+          ln -sfn "$HOME/.claude/skills" "$dst"
+        fi
+      description: claude2 skills link
+    - command: scripts/mcp-merge.sh "$HOME/.claude2/.claude.json" claude/mcpServers.json
+      description: Merging MCP servers into claude2

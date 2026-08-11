@@ -23,7 +23,13 @@ service_tier = "default"
 [features]
 unified_exec = true
 apply_patch_freeform = true
-shell_snapshot = true
+# OFF on purpose (2026-08-11, found during cross-model review remediation):
+# shell_snapshot dumps codex's inherited environment — secrets included — as
+# literal `export` lines into world-readable ~/.codex/shell_snapshots/*.sh,
+# and every spawned shell re-sources them, defeating shell_environment_policy
+# below. 24 of 25 snapshots on this machine contained the MIC gateway keys.
+# Re-enable only if codex learns to filter snapshots through the env policy.
+shell_snapshot = false
 
 [analytics]
 # Disable anonymous telemetry to OpenAI
@@ -33,6 +39,16 @@ enabled = false
 # Cap ~/.codex/history.jsonl growth (rollout files under ~/.codex/sessions/
 # are NOT cleaned up by Codex itself — see external cron tier 3).
 max_bytes = 104857600
+
+# Spawned shell commands inherit codex's FULL environment by default
+# (inherit=all + ignore_default_excludes=true, verified in codex source) — and
+# sandbox_mode above is full-access. Keep the MIC assistant gateway keys out of
+# every command codex runs: they need to exist only in codex's own process env
+# for env_http_headers expansion (see [mcp_servers.assistant-all-tools*]).
+# Skills that legitimately need a key source ~/.config/<service>/credentials.env
+# themselves. Legacy array form on purpose — parsed by all codex versions.
+[shell_environment_policy]
+exclude = ["MIC_ASSISTANT_*"]
 
 [projects."/home/ckriech"]
 trust_level = "trusted"
@@ -462,9 +478,43 @@ trust_level = "trusted"
 [projects."/home/ckriech/projects/smolagents"]
 trust_level = "trusted"
 
+[projects."/Users/ckriech/projects/clemens33/ae"]
+trust_level = "trusted"
+
+[projects."/Users/ckriech/projects/mic/ai/assistant"]
+trust_level = "trusted"
+
+[projects."/Users/ckriech/projects/mic/ai"]
+trust_level = "trusted"
+
+[projects."/Users/ckriech/projects/clemens33"]
+trust_level = "trusted"
+
+[projects."/Users/ckriech/projects/clemens33/portfolio"]
+trust_level = "trusted"
+
+[projects."/Users/ckriech"]
+trust_level = "trusted"
+
+[projects."/Users/ckriech/projects/mic/ai/assistant-catalog"]
+trust_level = "trusted"
+
+[projects."/Users/ckriech/projects/clemens33/dotfiles"]
+trust_level = "trusted"
+
+[projects."/Users/ckriech/projects/mic/k8s/ds-k8s-shared"]
+trust_level = "trusted"
+
+[projects."/Users/ckriech/projects/mic/ai/mcp-dtrack"]
+trust_level = "trusted"
+
+# NO trust for /private/tmp (removed 2026-08-11, cross-model review): it is
+# root-owned mode 1777 — any local process can plant project-local .codex
+# config/hooks under a trusted root. Trust only user-owned project paths.
+
 [mcp_servers.serena]
 command = "uvx"
-args = ["--from", "git+https://github.com/oraios/serena", "serena", "start-mcp-server", "--context", "ide-assistant"]
+args = ["--from", "git+https://github.com/oraios/serena", "serena", "start-mcp-server", "--context", "ide-assistant", "--enable-web-dashboard", "false"]
 startup_timeout_sec = 30
 
 [mcp_servers.context7]
@@ -488,6 +538,30 @@ startup_timeout_sec = 20
 
 [mcp_servers.openaiDeveloperDocs]
 url = "https://developers.openai.com/mcp"
+
+# MIC AI Assistant gateway (org knowledge/tools). The x-api-key VALUE comes from
+# the environment — the private overlay's ~/.local/shims/codex PATH shim injects
+# it from ~/.config/mic-assistant/credentials.env into this one process (no
+# global export; see dotfiles-mic bin/codex). [shell_environment_policy] above
+# keeps it out of spawned shells. No key ever lives in this repo.
+#
+# ACCEPTED TRADE-OFF on machines WITHOUT the private overlay: codex has no
+# config includes, so these defs cannot move to the overlay. With the env vars
+# unset, both servers stay `enabled` with a missing header env var, `codex
+# doctor` reports an overall warning, and startup logs an auth failure — it does
+# NOT break codex or block a session. The alternative (an overlay-owned profile
+# + `codex-mic` wrapper via `codex -p`) was judged not worth a second wrapper
+# for a cosmetic warning on a machine class that is currently hypothetical.
+# Revisit if a real overlay-less machine appears.
+[mcp_servers.assistant-all-tools]
+url = "https://assistant.ai.miccust.dev/api/gateway/mcp/"
+env_http_headers = { "x-api-key" = "MIC_ASSISTANT_API_KEY" }
+
+# Same gateway on the TEST stage — separate key, separate server name so prod
+# and test tools never collide in one session.
+[mcp_servers.assistant-all-tools-test]
+url = "https://assistant-test.ai.miccust.dev/api/gateway/mcp/"
+env_http_headers = { "x-api-key" = "MIC_ASSISTANT_TEST_API_KEY" }
 
 [notice]
 "hide_gpt-5.1-codex-max_migration_prompt" = true

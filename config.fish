@@ -71,3 +71,30 @@ fish_add_path -g ~/.opencode/bin
 # >>> grok installer >>>
 fish_add_path -g $HOME/.grok/bin
 # <<< grok installer <<<
+
+# Command shims — a dir a private overlay may populate with wrappers that
+# inject per-launch env and exec the real binary. Must resolve BEFORE
+# ~/.local/bin (where the real binaries live), so it goes last here and wins.
+# No-op when the dir doesn't exist.
+#
+# Explicit filter-and-prepend, NOT fish_add_path: fish_add_path -g manages
+# fish_user_paths and treats a dir already present in an inherited PATH as
+# done — neither -p nor --move reorders it (measured on fish 4.8.1). This form
+# guarantees first position and leaves exactly one entry.
+#
+# Bash login shells (`bash -lc`, how ae launches agents) never read this file,
+# but they inherit this PATH and that is enough — measured, not assumed:
+# Ubuntu /etc/profile never assigns PATH (noble base-files), and macOS
+# path_helper reorders system paths ahead but PRESERVES the relative order of
+# inherited entries, so the shim dir still resolves before ~/.local/bin where
+# the real binaries live. No bash-side profile hook is needed. If the shim is
+# ever bypassed the failure is fail-CLOSED: the real binary runs without the
+# gateway keys, so the MCP simply does not authenticate — nothing leaks.
+set -l _shims $HOME/.local/shims
+if test -d $_shims
+    set -gx PATH $_shims (string match -v -- $_shims $PATH)
+end
+
+# Docker: colima (VM) + brew docker CLI replaced OrbStack 2026-08-07.
+# Nothing to source — the brew formulas are already on PATH and colima
+# owns the docker context. `colima start` if the VM is ever down.
