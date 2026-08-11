@@ -40,6 +40,7 @@
   "autoUpdatesChannel": "latest",
   "autoMemoryEnabled": true,
   "skipDangerousModePermissionPrompt": true,
+  "theme": "dark",
   "switchModelsOnFlag": false,
   "//hooks": "MessageDisplay prepends [HH:MM] to each assistant message — display-only (screen), zero tokens, transcript untouched.",
   "//switchModelsOnFlag": "false = do NOT auto-switch Fable 5 -> Opus when a safety classifier flags a message (default true). Flagged request pauses the session with a choice (switch to Opus, or edit+retry on Fable) instead of silently switching. Same as /config -> Model & output -> 'Switch models when a message is flagged' off. Since 2.1.219 fallback is category-based: Opus 5 cyber-flag -> Opus 4.8, biology-flag -> refusal (no fallback).",

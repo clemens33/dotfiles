@@ -28,7 +28,7 @@ git = "https://github.com/xai-org/plugin-marketplace.git"
 # MCP servers — same set as codex/config.toml, identical TOML shape.
 [mcp_servers.serena]
 command = "uvx"
-args = ["--from", "git+https://github.com/oraios/serena", "serena", "start-mcp-server", "--context", "ide-assistant"]
+args = ["--from", "git+https://github.com/oraios/serena", "serena", "start-mcp-server", "--context", "ide-assistant", "--enable-web-dashboard", "false"]
 startup_timeout_sec = 30
 
 [mcp_servers.context7]

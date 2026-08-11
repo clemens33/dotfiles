@@ -8,7 +8,9 @@
       "serena",
       "start-mcp-server",
       "--context",
-      "ide-assistant"
+      "ide-assistant",
+      "--enable-web-dashboard",
+      "false"
     ],
     "env": {}
   },
