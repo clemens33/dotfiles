@@ -2,7 +2,7 @@
 name: security-review
 description: Security code review for vulnerabilities. Use when asked to "security review", "find vulnerabilities", "check for security issues", "audit security", "OWASP review", or review code for injection, XSS, authentication, authorization, cryptography issues. Provides systematic review with confidence-based reporting.
 allowed-tools: Read, Grep, Glob, Bash, Task
-license: LICENSE
+license: OWASP-derived (see THIRD-PARTY-NOTICES.md)
 source: https://github.com/getsentry/skills/tree/main/skills/security-review
 metadata:
   category: preference

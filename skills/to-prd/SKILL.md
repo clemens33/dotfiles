@@ -1,7 +1,7 @@
 ---
 name: to-prd
 description: Turn the current conversation context into a PRD and publish it to the project issue tracker. Use when user wants to create a PRD from the current context.
-license: LICENSE
+license: MIT
 source: https://github.com/mattpocock/skills/tree/main/skills/engineering/to-prd
 metadata:
   category: preference
