@@ -5,8 +5,9 @@ description: >
   Split essential rules from supplementary reference material so the main
   SKILL.md loads cheaply while exhaustive examples and tables stay accessible
   on demand. Use when reviewing existing skills, when subagent spawn cost
-  feels expensive, or before adding new heavy skills. Based on SkillReducer
-  (arXiv:2603.29919).
+  feels expensive, or before adding new heavy skills. Not for creating,
+  updating, or relocating skills — use manage-skills for lifecycle work.
+  Based on SkillReducer (arXiv:2603.29919).
 source: based on https://arxiv.org/abs/2603.29919
 metadata:
   category: capability

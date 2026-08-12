@@ -25,29 +25,22 @@ jobs:
       - name: Request Copilot review
         env:
           GH_TOKEN: ${{ github.token }}
-          PR_ID: ${{ github.event.pull_request.node_id }}
         run: |
           set -euo pipefail
-          bot_id=$(gh api graphql \
-            -f owner='${{ github.repository_owner }}' \
-            -f name='${{ github.event.repository.name }}' \
-            -f query='query($owner:String!,$name:String!){
-              repository(owner:$owner,name:$name){
-                suggestedActors(capabilities:[CAN_BE_REQUESTED],first:100){
-                  nodes{ login __typename ... on Bot { id } }
-                }
-              }
-            }' --jq '.data.repository.suggestedActors.nodes[] | select(.login=="copilot-pull-request-reviewer") | .id')
-          if [ -z "$bot_id" ]; then
-            echo "Copilot reviewer bot not available for this repo — skipping (no failure)."
+          # REST request; the bot registers only when the repo owner has a
+          # Copilot seat. No seat -> the API answers 2xx with an empty
+          # requested_reviewers list (verified live 2026-08-12), so treat
+          # "not registered" as a clean skip, never a failure.
+          resp=$(gh api -X POST \
+            "repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/requested_reviewers" \
+            -f "reviewers[]=copilot-pull-request-reviewer[bot]" \
+            --jq '[.requested_reviewers[].login]' 2>&1) || {
+            echo "Request failed: $resp"
+            echo "Skipping — Copilot review not available here."
             exit 0
+          }
+          if echo "$resp" | grep -qi copilot; then
+            echo "Copilot review requested."
+          else
+            echo "Copilot reviewer did not register (no seat on this repo's owner) — skipped."
           fi
-          gh api graphql \
-            -f prId="$PR_ID" \
-            -f botId="$bot_id" \
-            -f query='mutation($prId:ID!,$botId:ID!){
-              requestReviews(input:{pullRequestId:$prId,botIds:[$botId],union:true}){
-                clientMutationId
-              }
-            }'
-          echo "Copilot review requested."
