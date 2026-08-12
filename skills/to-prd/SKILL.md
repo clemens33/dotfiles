@@ -3,6 +3,9 @@ name: to-prd
 description: Turn the current conversation context into a PRD and publish it to the project issue tracker. Use when user wants to create a PRD from the current context.
 license: LICENSE
 source: https://github.com/mattpocock/skills/tree/main/skills/engineering/to-prd
+metadata:
+  category: preference
+
 ---
 
 This skill takes the current conversation context and codebase understanding and produces a PRD. Do NOT interview the user — just synthesize what you already know.

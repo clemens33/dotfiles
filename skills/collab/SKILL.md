@@ -1,6 +1,9 @@
 ---
 name: collab
-description: Structured research and collaboration protocol for one or more agents. Use for design sessions, research tasks, or multi-agent collaboration with auditable decisions and a shared plan. Works solo with a second agent joining later.
+description: Structured research and collaboration protocol for one or more agents. Use when running design sessions, research tasks, or multi-agent collaboration with auditable decisions and a shared plan. Works solo with a second agent joining later.
+metadata:
+  category: preference
+
 ---
 
 # Structured Research & Collaboration Protocol (V3)

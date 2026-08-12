@@ -1,12 +1,15 @@
 ---
 name: test-audit
-description: |
+description: >
   Audit test-suite QUALITY (not coverage) after heavy AI-agent work. Use when
   the user says "audit the tests", after a large feature lands, before
   release-hardening, or when refactor-audit routes here. Four evidence lanes:
   scoped mutation testing (Python/JS-TS/Rust), high-confidence bypass facts,
   gamed-test forensics, and a detached judge pass. Produces a triaged findings
   report with guardrail candidates. Advisory — never gates, never installs.
+metadata:
+  category: preference
+
 ---
 
 # Test Audit

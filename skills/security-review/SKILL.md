@@ -4,6 +4,9 @@ description: Security code review for vulnerabilities. Use when asked to "securi
 allowed-tools: Read, Grep, Glob, Bash, Task
 license: LICENSE
 source: https://github.com/getsentry/skills/tree/main/skills/security-review
+metadata:
+  category: preference
+
 ---
 
 <!--
@@ -243,7 +246,7 @@ random.random() for token            # FLAG: Security tokens need secrets module
 
 ## Output Format
 
-```markdown
+````markdown
 ## Security Review: [File/Component Name]
 
 ### Summary
@@ -269,7 +272,7 @@ random.random() for token            # FLAG: Security tokens need secrets module
 #### [VERIFY-001] [Potential Issue]
 - **Location**: `file.py:456`
 - **Question**: [What needs to be verified]
-```
+````
 
 If no vulnerabilities found, state: "No high-confidence vulnerabilities identified."
 

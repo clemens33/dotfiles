@@ -1,19 +1,17 @@
 ---
 name: large-feature
 description: >
-  Full-rigor 7-stage playbook for high-rigor large features in this repo —
-  multi-slice features where blast radius is real, the design isn't trivial,
-  or the deliverable needs to be defensible long after the work ships. Use
-  when invoked explicitly ("use the large-feature playbook" / "/large-feature"),
-  when starting multi-day or multi-slice feature work that warrants planning
-  + cross-model review + per-phase test gates, or when WORKFLOW.md's lean L
-  bucket (plan + phased execution) isn't enough rigor. Stages: grill the
-  idea, plan + cross-model critique, vertical tracer-bullet slice
-  decomposition, per-slice red-green-refactor with phase isolation,
-  trigger-based drift checks, integrated review + ADR if needed, separate
-  architecture refactor cadence. Skip for S/M work, routine L work that
-  doesn't need the full ceremony, and bug-shaped tasks (use diagnose
-  instead).
+  7-stage playbook for large features — multi-slice work where blast radius
+  is real, design isn't trivial, or the deliverable must stay defensible
+  post-ship. Use when invoked explicitly ("/large-feature"), starting
+  multi-day work needing cross-model review + per-phase test gates, or when
+  WORKFLOW.md's lean L bucket isn't enough. Stages:
+  grill, plan + critique, tracer-bullet slices, red-green-refactor, drift
+  checks, integrated review, refactor cadence. Skip for S/M work and bugs
+  (use diagnose).
+metadata:
+  category: preference
+
 ---
 
 # Large Feature Full-Rigor Playbook

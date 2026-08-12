@@ -8,6 +8,9 @@ description: >
   feels expensive, or before adding new heavy skills. Based on SkillReducer
   (arXiv:2603.29919).
 source: based on https://arxiv.org/abs/2603.29919
+metadata:
+  category: capability
+
 ---
 
 # Skill Reducer

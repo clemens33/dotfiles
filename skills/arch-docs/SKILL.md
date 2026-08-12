@@ -1,6 +1,6 @@
 ---
 name: arch-docs
-description: |
+description: >
   Living architecture documentation in the repo. arc42-lite + C4 model,
   Mermaid-first. Captures the current system: what exists, how it's
   composed, how it runs, what invariants it must preserve. Distinct from
@@ -8,6 +8,9 @@ description: |
   (CLAUDE.md/AGENTS.md, which describes how to *work in* the repo). Use
   when the user says "document the architecture", "create arch docs",
   "update architecture docs", or "ARCHITECTURE.md".
+metadata:
+  category: preference
+
 ---
 
 # Arch Docs
@@ -227,7 +230,7 @@ Do **not** auto-commit. The user reviews and commits.
 Target ~200 lines, hard cap 350. If you exceed, split into subsystem
 files.
 
-```markdown
+````markdown
 # <System name>
 
 > **Status:** Current — last verified <YYYY-MM-DD>
@@ -417,13 +420,13 @@ This is the architecture-debt section. Be honest:
 - dev.config.yaml
 - mcp.json
 -->
-```
+````
 
 ## Subsystem template (`subsystems/<name>.md`)
 
 Target ~150 lines, hard cap 250.
 
-```markdown
+````markdown
 # Subsystem: <Name>
 
 > **Status:** Current — last verified <YYYY-MM-DD>
@@ -482,7 +485,7 @@ What must not break. e.g. "uploads are idempotent on `client_id`",
 <!-- arch:watch
 - src/<your-package>/<subsystem>/**
 -->
-```
+````
 
 ## Invariants template (`invariants.md`)
 

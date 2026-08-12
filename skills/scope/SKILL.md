@@ -1,10 +1,13 @@
 ---
 name: scope
-description: |
+description: >
   Decompose a task into a phased implementation plan with test gates.
-  Use before starting non-trivial work to align on approach, identify
+  Use when starting non-trivial work to align on approach, identify
   risks, and break work into verifiable steps. Produces a structured
   plan document.
+metadata:
+  category: preference
+
 ---
 
 # Scope
@@ -158,7 +161,7 @@ What would a manual smoke test look like?
 ## Boundary with other skills
 
 - **`code-review`**: reviews implementation after the fact. This skill plans before implementation.
-- **`inter-agent-collab`**: use when multiple agents need formal convergence artifacts (positions, reviews, signoffs). Use `scope` for single-task planning by one agent.
+- **`collab`**: use when multiple agents need formal convergence artifacts (positions, reviews, signoffs). Use `scope` for single-task planning by one agent.
 
 ## Integration with cross-model workflow
 

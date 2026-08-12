@@ -1,12 +1,15 @@
 ---
 name: adr
-description: |
+description: >
   Write an Architecture Decision Record capturing the why behind a decision —
   the constraints, alternatives ruled out, and trade-offs accepted. Use when
   the user says "create an ADR", "document this decision", "write this up as
   an ADR", or after a design discussion that resolved with a clear choice.
   Code captures what; an ADR captures why future-you and future-teammates
   would have made the same call.
+metadata:
+  category: preference
+
 ---
 
 # ADR
@@ -204,7 +207,7 @@ in service of staying lean:
 If you want strict MADR fidelity, add the stakeholder fields, reshape
 Consequences, and re-add the Pros and Cons section.
 
-```markdown
+````markdown
 ---
 status: Proposed
 date: YYYY-MM-DD
@@ -270,7 +273,7 @@ flowchart LR
 - Related ADRs: ADR-XXXX
 - Related tickets: <KEY-123>
 - External references: <links>
-```
+````
 
 ## Rules
 

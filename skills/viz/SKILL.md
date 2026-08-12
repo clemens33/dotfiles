@@ -1,13 +1,16 @@
 ---
 name: viz
-description: |
+description: >
   Add Mermaid diagrams to markdown — for ADRs, architecture overviews, READMEs,
   runbooks, design notes. Mermaid renders inline on GitHub/GitLab, lives in
   the markdown, diffs cleanly, and covers ~80% of architecture diagram needs
   without a toolchain. Use when you need to visualize structure, flow, state,
-  data, or sequence — and pretty layout matters less than being version-
-  controlled and AI-editable. Defer to drawio-diagrams-enhanced only when
-  precise layout or polished slide-ready output is needed.
+  data, or sequence, and layout precision matters less than being version-
+  controlled and AI-editable. Defer to drawio-diagrams-enhanced when precise
+  layout or slide-ready output is needed.
+metadata:
+  category: capability
+
 ---
 
 # Viz

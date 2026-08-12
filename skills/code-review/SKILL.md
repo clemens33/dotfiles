@@ -1,9 +1,12 @@
 ---
 name: code-review
-description: |
-  Adversarial code review with structured findings. Use after implementing
-  changes, before committing. Works with uncommitted diffs, staged changes,
+description: >
+  Adversarial code review with structured findings. Use when you've just
+  implemented changes, before committing. Works with uncommitted diffs, staged changes,
   or branch comparisons. Produces BLOCKER/IMPORTANT/NIT findings.
+metadata:
+  category: preference
+
 ---
 
 # Code Review
@@ -156,7 +159,7 @@ This skill structures a code review within a single tool session. It does **not*
 
 ## Boundary with other skills
 
-- **`inter-agent-collab`**: use for multi-agent design convergence. This skill reviews diffs/changesets, not architectural positions.
+- **`collab`**: use for multi-agent design convergence. This skill reviews diffs/changesets, not architectural positions.
 - **`scope`**: use before implementation to plan. This skill runs after implementation to verify.
 
 ## Rules

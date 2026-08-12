@@ -4,6 +4,9 @@ description: Tell the agent to zoom out and give broader context or a higher-lev
 disable-model-invocation: true
 license: LICENSE
 source: https://github.com/mattpocock/skills/tree/main/skills/engineering/zoom-out
+metadata:
+  category: capability
+
 ---
 
 I don't know this area of code well. Go up a layer of abstraction. Give me a map of all the relevant modules and callers, using the project's domain glossary vocabulary.

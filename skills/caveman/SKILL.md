@@ -7,6 +7,9 @@ description: >
   Use when user says "caveman mode", "talk like caveman", "use caveman", "less tokens",
   "be brief", or invokes /caveman. Also auto-triggers when token efficiency is requested.
 source: https://github.com/JuliusBrussee/caveman/blob/main/skills/caveman/SKILL.md
+metadata:
+  category: preference
+
 ---
 
 Respond terse like smart caveman. All technical substance stay. Only fluff die.

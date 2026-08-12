@@ -4,6 +4,9 @@ description: 'GitHub Actions security review for workflow exploitation vulnerabi
 allowed-tools: Read, Grep, Glob, Bash, Task
 license: LICENSE
 source: https://github.com/getsentry/skills/tree/main/skills/gha-security-review
+metadata:
+  category: preference
+
 ---
 
 <!--

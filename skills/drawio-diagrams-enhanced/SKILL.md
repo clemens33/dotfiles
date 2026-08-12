@@ -1,7 +1,10 @@
 ---
 name: drawio-diagrams-enhanced
-description: Create professional draw.io (diagrams.net) diagrams in XML format (.drawio files) with integrated PMP/PMBOK methodologies, extensive visual asset libraries, and industry-standard professional templates. Use this skill when users ask to create flowcharts, swimlane diagrams, cross-functional flowcharts, org charts, network diagrams, UML diagrams, BPMN, project management diagrams (WBS, Gantt, PERT, RACI), risk matrices, stakeholder maps, or any other visual diagram in draw.io format. This skill includes access to custom shape libraries for icons, clipart, and professional symbols.
+description: Create professional draw.io (diagrams.net) diagrams in XML format (.drawio files), with PMP/PMBOK methodologies, visual asset libraries, and industry-standard templates. Use when asked to create flowcharts, swimlane diagrams, org charts, network diagrams, UML, BPMN, project management diagrams (WBS, Gantt, PERT, RACI), risk matrices, stakeholder maps, or any other draw.io diagram. Includes custom shape libraries for icons, clipart, and professional symbols.
 source: https://github.com/jgtolentino/insightpulse-odoo/tree/main/docs/claude-code-skills/community/drawio-diagrams-enhanced
+metadata:
+  category: capability
+
 ---
 
 # Enhanced Draw.io Diagram Creation Skill

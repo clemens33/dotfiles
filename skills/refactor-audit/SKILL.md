@@ -3,18 +3,15 @@ name: refactor-audit
 description: >
   Audit a codebase for architecture drift and produce a `refactor-audit.md`
   with evidence, recommendation, and guardrail candidates. Use when asked
-  "is this codebase getting messy?", "are we drifting?", "should we
-  refactor?", "run a refactor audit", "architecture health check", or
-  before a release-hardening pass. Discovers the repo's existing tooling
-  first, then collects hard / soft / tooling-gap signals, compares
-  against the previous audit, and applies a two-stage decision rule
-  (evidence-gated trigger, then workflow routing). Recommends the next
-  workflow: improve-codebase-architecture (with or without scope first)
-  or large-feature playbook for multi-slice / high-blast-radius work.
-  Does NOT execute the refactor itself — produces evidence and a routing
-  decision. Promotes repeated soft signals into CI/lint/check candidates
-  per Hashimoto harness engineering.
+  "is this codebase getting messy?", "should we refactor?", "run a refactor
+  audit", or before a release-hardening pass. Collects hard / soft /
+  tooling-gap signals, compares against the previous audit, and applies a
+  two-stage decision rule to recommend improve-codebase-architecture or the
+  large-feature playbook. Does NOT execute the refactor itself.
 source: local-dotfiles
+metadata:
+  category: preference
+
 ---
 
 # Refactor Audit

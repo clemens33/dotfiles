@@ -1,12 +1,15 @@
 ---
 name: quiz-diff
-description: |
+description: >
   Quiz the human on a diff to fight comprehension debt, then teach only the
   gaps. Use when the user says "quiz me on the diff/changes", before a PR of
   a large AI-built feature, or after a large-feature phase. Tests the human's
   understanding with free-response questions (program model, rationale,
   failure modes), grades honestly, teaches what was missed, and persists a
   fingerprinted gap record. Advisory — never blocks.
+metadata:
+  category: preference
+
 ---
 
 # Quiz Diff

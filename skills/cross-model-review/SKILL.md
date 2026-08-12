@@ -6,6 +6,9 @@ description: >
   requesting a cross-model review or second opinion, or when a commit is gated on one. Covers
   HOW to invoke — the policy on WHEN it is mandatory stays in AGENTS.md. Not a reviewer itself:
   use `code-review` or `security-review` to review code yourself.
+metadata:
+  category: preference
+
 ---
 
 # Cross-model review — invocation mechanics
