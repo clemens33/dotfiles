@@ -1,0 +1,53 @@
+# Auto-request a GitHub Copilot code review on every PR.
+#
+# Pattern proven in the ai-data-pipelines repo (2026-08): GraphQL requestReviews
+# with the Copilot reviewer bot id, plain GITHUB_TOKEN, no PAT, no secret.
+# Deliberately NOT triggered on `synchronize` — re-reviewing every push is where
+# the Copilot-credit bill appears. Instruction files steer the review:
+#   .github/copilot-instructions.md            (repo-wide invariants)
+#   .github/instructions/*.instructions.md     (path-scoped, e.g. skills/**)
+name: copilot-review
+
+on:
+  pull_request:
+    types: [opened, ready_for_review]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  request:
+    runs-on: ubuntu-latest
+    # Draft PRs get their review on ready_for_review, not on open.
+    if: ${{ !github.event.pull_request.draft }}
+    steps:
+      - name: Request Copilot review
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_ID: ${{ github.event.pull_request.node_id }}
+        run: |
+          set -euo pipefail
+          bot_id=$(gh api graphql \
+            -f owner='${{ github.repository_owner }}' \
+            -f name='${{ github.event.repository.name }}' \
+            -f query='query($owner:String!,$name:String!){
+              repository(owner:$owner,name:$name){
+                suggestedActors(capabilities:[CAN_BE_REQUESTED],first:100){
+                  nodes{ login __typename ... on Bot { id } }
+                }
+              }
+            }' --jq '.data.repository.suggestedActors.nodes[] | select(.login=="copilot-pull-request-reviewer") | .id')
+          if [ -z "$bot_id" ]; then
+            echo "Copilot reviewer bot not available for this repo — skipping (no failure)."
+            exit 0
+          fi
+          gh api graphql \
+            -f prId="$PR_ID" \
+            -f botId="$bot_id" \
+            -f query='mutation($prId:ID!,$botId:ID!){
+              requestReviews(input:{pullRequestId:$prId,botIds:[$botId],union:true}){
+                clientMutationId
+              }
+            }'
+          echo "Copilot review requested."

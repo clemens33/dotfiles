@@ -168,3 +168,20 @@ rg -ni 'mic|miccust|jira\.|grafana\.|kcml|MICPD|MICAZ|internal.*url|company.*nam
 ```
 
 Sanitize references → generic examples. Then `git mv` the directory from private overlay to public layer, update symlink entries in both `install.conf.yaml` files (add public, remove private), re-run install.
+
+## Reviewing a skill (two tiers)
+
+**Deterministic** (structure — always, CI enforces the same): `./scripts/lint-skills.sh skills/ dotfiles-mic/skills/`
+
+**Semantic** (judgment — routing quality, collisions, filler, drift): the canonical checklist
+lives in `.github/instructions/skills.instructions.md`. GitHub Copilot applies it automatically
+on PRs touching `skills/**` (via `copilot-review.yml`). Run the same review locally with a
+different model family:
+
+```bash
+codex exec -o .local/skill-review.md "$(cat .github/instructions/skills.instructions.md)
+
+Review these changed skills: <names or git diff scope>"
+```
+
+One instruction file, every consumer — edit it there, never fork the checklist.
