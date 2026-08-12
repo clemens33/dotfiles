@@ -1,6 +1,6 @@
 ---
 name: manage-skills
-description: Create, update, and manage Claude Code skills across the public dotfiles repo and the optional private overlay. Use when the user wants to save a workflow as a skill or update existing skills.
+description: Create, update, and manage Claude Code skills across the public dotfiles repo and the optional private overlay. Use when the user wants to save a workflow as a skill, update existing skills, or promote a private skill to public. Not for shrinking an oversized skill body — use skill-reducer for compression.
 metadata:
   category: preference
 
