@@ -1,0 +1,19 @@
+# Global cargo config — linked to ~/.cargo/config.toml by dotbot.
+# Machine-wide conveniences only; per-project policy (rust-toolchain.toml,
+# [lints], deny.toml, justfile) lives in each repo so clones stay reproducible.
+#
+# Rust itself is rustup-managed (NOT brew — see macos/Brewfile §4). Tools come
+# via `cargo binstall` (prebuilt, seconds) rather than `cargo install` (source).
+
+[alias]
+c = "check"
+t = "nextest run"
+lint = "clippy --all-targets --all-features -- -D warnings"
+
+# No linker override on macOS: zld is archived (its README says use lld),
+# sold is paid/marginal, and rust-lld-by-default (1.90) is Linux-x86_64-only.
+# Apple's linker has been fast since Xcode 15 — leave it alone. Build-time
+# wins come from `cargo check`, nextest, and (optionally) sccache below.
+
+[build]
+# rustc-wrapper = "sccache"   # uncomment after `brew install sccache`

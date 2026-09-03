@@ -29,6 +29,10 @@
     ~/.config/ca/isrg-root-yr.pem: certs/isrg-root-yr.pem
     # Ghostty reads this path on macOS AND Linux — harmless where unused.
     ~/.config/ghostty/config: terminal/ghostty.config
+    # Cargo global config (aliases; sccache toggle). ~/.cargo itself is
+    # rustup-owned — only this one file is managed here. Safe to link: cargo
+    # never rewrites it. No-op harm on machines without rust.
+    ~/.cargo/config.toml: rust/cargo-config.toml
     # Karabiner (macOS only; the dir simply stays unused elsewhere). NOTE: this
     # links the importable RULE SET, not karabiner.json — Karabiner rewrites
     # karabiner.json itself on device connect, so symlinking it would fight the

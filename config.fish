@@ -68,6 +68,11 @@ fish_add_path -g /usr/local/go/bin ~/go/bin
 # opencode
 fish_add_path -g ~/.opencode/bin
 
+# Rust — rustup-managed (installed with --no-modify-path; this line replaces
+# the env.fish sourcing). Do NOT brew-install rust: it pins a standalone
+# compiler that ignores rust-toolchain.toml. See macos/Brewfile §4.
+fish_add_path -g ~/.cargo/bin
+
 # >>> grok installer >>>
 fish_add_path -g $HOME/.grok/bin
 # <<< grok installer <<<
