@@ -7,15 +7,31 @@ installer = "internal"
 auto_update = true
 
 [models]
-# grok-build = the Grok 4.5-powered agent model (512k context). Without this,
-# the unauthenticated default is grok-composer-2.5-fast (Cursor's model, 200k).
-default = "grok-build"
+# grok-4.6 = current Grok Build default (500k context; grok CLI 1.0.3, 4.5 also
+# listed). "grok-build" is a rolling alias (currently resolves to 4.6); we pin
+# the versioned id for deterministic behavior (switched off the alias
+# 2026-08-14), and so a fallback can't drop to grok-composer-2.5-fast (Cursor's
+# model, 200k). Effort: high is the server default; [models].default_reasoning_effort
+# is deliberately left unset so we track the vendor default — override per
+# session with --effort medium/xhigh, or set that key to persist a choice.
+default = "grok-4.6"
 
 [features]
 # Match codex/claude: no telemetry, no permission prompts (trusted local use).
+# NOTE: these flags only silence CLI telemetry/feedback. Training/code-retention
+# opt-out is ACCOUNT state, not config: auth.json coding_data_retention_opt_out
+# (set via /privacy). Verified 2026-08-14: uploads_enabled=false,
+# upload_reason=zdr_team, data_collection_disabled=true.
 support_permission = false
 telemetry = false
 feedback = false
+
+[tools]
+# Official setting: under ZDR, disable tools whose output xAI would have to host.
+disable_zdr_incompatible_tools = true
+# Official default is FALSE: built-in search/read would ingest gitignored files
+# (.env, credentials) into model context. Keep true.
+respect_gitignore = true
 
 [marketplace]
 official_marketplace_auto_installed = true
@@ -51,6 +67,6 @@ startup_timeout_sec = 20
 # Sticky UI state grok wrote back (kept so a dotbot relink doesn't reset it).
 [ui]
 max_thoughts_width = 120
-fork_secondary_model = "grok-build"
+fork_secondary_model = "grok-4.6"
 yolo = false
 compact_mode = false
