@@ -9,6 +9,7 @@
 #   redis-server      -> ran inactive on WSL; real state lives in containers
 #   cargo, snap, ubuntu-wsl, wsl-pro, win32yank -> Linux/WSL-only
 #   python            -> uv owns Python. Do not brew-install it.
+#   gcloud-cli (cask) -> depends on python@3.14 (shadows python3). scripts/gcloud-install.sh installs Google's tarball instead.
 #
 # Names verified against the Homebrew API on 2026-07-28 (see header notes on
 # the entries that needed renaming).
@@ -78,9 +79,30 @@ brew "age"     # encrypts the migration secrets bundle (see MAC-MIGRATION.md 0.5
 # NOTE: no `brew "node"` — mise is the single owner of node versions (as it
 # is for java, replacing fnm + sdkman). `mise use -g node@lts` first, then the
 # npm -g installs below.
+#
+# DO NOT `brew install opencode`, tempting as homebrew-core now is: the formula
+# drags in `brew "node"` as a dependency, and /opt/homebrew/bin/node then
+# shadows mise's pinned version for every shell and every npm -g agent.
+# The formula just repackages the npm tarball anyway (urls.stable points at
+# registry.npmjs.org/opencode-ai) and lagged 1.18.15 vs npm's 1.18.18 on
+# 2026-08-17 — so `npm i -g opencode-ai` is the same artifact, current, and
+# node-conflict-free.
 # ---------------------------------------------------------------------------
 brew "go"
 brew "mise"
+
+# Rust: rustup owns the toolchain (installed 2026-08-20 via sh.rustup.rs with
+# --no-modify-path; config.fish adds ~/.cargo/bin). DO NOT `brew install rust`
+# — standalone pinned compiler that fights rustup, ignores rust-toolchain.toml,
+# can't switch channels/targets. Check: `which rustc` must be ~/.cargo/bin.
+# Components: rustfmt clippy rust-analyzer rust-src llvm-tools-preview.
+# Dev tools via `cargo binstall` (prebuilt binaries, not source builds):
+#   cargo-nextest cargo-deny cargo-audit cargo-llvm-cov taplo-cli bacon
+#   cargo-edit cargo-outdated cargo-expand
+# No linker override on macOS (zld archived; Apple's ld fast since Xcode 15).
+brew "cargo-binstall"
+# brew "sccache"          # optional compile cache; uncomment [build]
+#                         # rustc-wrapper in rust/cargo-config.toml with it
 
 # ---------------------------------------------------------------------------
 # 5) Casks — GUI apps
@@ -111,12 +133,22 @@ cask "crisp", args: { appdir: "~/Applications" } # custom HiDPI + smooth scaling
                           # monitors (Acer X34P 125% case). Free/MIT replacement for
                           # betterdisplay 2026-08-06 — scaling ladder is a BD Pro feature.
                           # ~/Applications: the cask's /Applications copy demands sudo.
+                          # 1.5.0 (2026-08-19) added self-updating, so it now keeps
+                          # itself current — `brew upgrade --cask crisp` stays the way
+                          # to move a pinned/rebuilt machine forward.
 cask "stats"
 cask "font-jetbrains-mono-nerd-font"
 cask "google-chrome"      # daily browsing AND (as separate instance via `chrome-debug`
                           # fish fn, own data dir) the :9222 automation browser for the
                           # chrome-devtools MCP. Unsigned Chromium failed MIC Conditional
                           # Access (tested 2026-07-31) — signed Chrome for both roles.
+# cask "logitech-g-hub"  # REMOVED 2026-08-19. Installed only to write a fixed
+                          # lighting profile into the G515's ONBOARD MEMORY; once
+                          # written, the keyboard keeps it with G HUB uninstalled,
+                          # over Bluetooth, on any machine. Reinstall only to change
+                          # lighting or flash firmware — and note it needs a CABLE
+                          # (G HUB does not enumerate G devices over Bluetooth).
+                          # Key REMAPPING stays in Karabiner regardless.
 cask "dbeaver-community", args: { appdir: "~/Applications" } # multi-engine DB GUI
                           # (Oracle + Postgres + ClickHouse + Redis + MSSQL in one tool, which
                           # rules out the native Mac clients). Carried over from the WSL setup
@@ -151,7 +183,27 @@ cask "sqlcl"              # replaces the manual ~/opt/sqlcl install
 #
 # Not available in Homebrew at all — install another way:
 #   pinniped (/usr/local/bin/pinniped)  -> vendor release or a custom tap
-#   the 9 npm -g packages (codex, copilot, gemini-cli, pi-coding-agent,
-#     ccusage, context-mode, pi-web-access, taskplane) -> npm after mise node
+#   the npm -g packages (codex, copilot, gemini-cli, pi-coding-agent,
+#     ccusage, context-mode, pi-web-access, taskplane, opencode-ai,
+#     @bitwarden/cli)
+#     -> npm after mise node. `npm i -g opencode-ai` (NOT brew — see §4);
+#     update the same way — the built-in `opencode upgrade` self-replaces the
+#     binary behind npm's back. Config: opencode/config.json -> ~/.config/opencode/
+#     `npm i -g @bitwarden/cli` gives `bw` (vault CLI; the cask below is the
+#     GUI). Also NOT brew: the bitwarden-cli formula depends on node and would
+#     shadow mise, same trap as opencode. NOTE npm resolves to 2026.6.0, not
+#     the 2026.7.0 dist-tag — 2026.7.0 pins `engines.node ~22` and mise runs
+#     node 24. Do not --force past it; revisit when upstream widens engines.
+#     Server URL is per-machine state (`bw config server <url>`), deliberately
+#     NOT stored here — MIC runs a self-hosted instance; see the private overlay.
+#     npm hardening: `npm config set strict-allow-scripts true` on every rebuild
+#     (2026-08-20) — blocks dependency lifecycle hooks (Shai-Hulud-class worms);
+#     verified cold npx MCP handshakes (context7, chrome-devtools) still pass.
+#     If an install legitimately needs hooks: for npx/`npm exec`/`npm i -g`,
+#     per-package `--allow-scripts=pkg`; project-scoped install/ci/update/
+#     rebuild REJECTS that flag — allowlist via `allowScripts` in package.json
+#     (`npm approve-scripts`). Never flip the global off.
+#     ~/.npmrc stays machine-local, NOT symlinked —
+#     npm login/registry tokens land in it, and a repo link would git-track them.
 #   ae, agent, agy, claude, dev-session, graph-token, grok -> their own
 #     installers (codebase-memory-mcp dropped 2026-07-29, do not reinstall)
