@@ -9,7 +9,6 @@
 #   redis-server      -> ran inactive on WSL; real state lives in containers
 #   cargo, snap, ubuntu-wsl, wsl-pro, win32yank -> Linux/WSL-only
 #   python            -> uv owns Python. Do not brew-install it.
-#   gcloud-cli (cask) -> depends on python@3.14 (shadows python3). scripts/gcloud-install.sh installs Google's tarball instead.
 #
 # Names verified against the Homebrew API on 2026-07-28 (see header notes on
 # the entries that needed renaming).

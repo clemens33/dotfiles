@@ -56,7 +56,6 @@ The wrapper install script detects the overlay submodule and runs its Dotbot pas
 | Gemini CLI | `gemini/settings.json` | `~/.gemini/settings.json` |
 | Shared AI doctrine | `shared/AGENTS.md` | `~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, `~/.config/opencode/AGENTS.md`, `~/.gemini/GEMINI.md` |
 | AI skills | `skills/<name>/` (24 skills) | `~/.claude/skills/<name>/`, `~/.codex/skills/<name>/` |
-| Google Cloud CLI | `scripts/gcloud-install.sh`, `fish/conf.d/gcloud.fish` | `~/.local/share/google-cloud-sdk/`, `~/.local/bin/{gcloud,bq,gsutil}` (tarball + uv Python, not the brew cask) |
 
 ## AI operating doctrine
 
