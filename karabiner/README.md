@@ -6,8 +6,8 @@ survive side by side.
 
 ## What is versioned here
 
-`assets/complex_modifications/windows-layout.json` — the rule set (4 rules,
-50 manipulators), in Karabiner's importable asset format.
+`assets/complex_modifications/windows-layout.json` — the rule set (5 rules,
+51 manipulators), in Karabiner's importable asset format.
 
 **Not** `karabiner.json`. Karabiner rewrites that file itself (device entries
 change as keyboards connect), so symlinking it into a repo fights the app and
@@ -36,8 +36,23 @@ The rules only fire on these devices (`device_if`):
 |---|---|
 | HP USB Keyboard | 1121:20110 |
 | Logitech G515 LS TKL (Bluetooth) | 1133:45961 |
+| Logitech G515 LS TKL (USB cable) | 1133:50005 |
 
-Find a new keyboard's IDs in Karabiner-EventViewer → *Devices*.
+Find a new keyboard's IDs in Karabiner-EventViewer → *Devices*, or list what is
+attached with `ioreg -c IOHIDDevice -r -d1 | grep -E '"(Product|VendorID|ProductID)"'`
+— that also prints the product *name*, which EventViewer's ID columns do not.
+
+**A wireless keyboard has different USB ids.** The G515 reports `1133:45961`
+over Bluetooth but `1133:50005` on the cable, so plugging it in silently drops
+it out of `device_if` scope and the whole Windows layout stops firing — Ctrl+C
+goes back to being Ctrl+C. Both ids are listed above for that reason. Any new
+keyboard needs *every* transport it will be used on.
+
+**Check the product name before adding an id.** `1133:49271` was scoped in here
+as a second G515 cable id until 2026-08-20; it is actually the Logitech *USB
+Optical Mouse*. Harmless (a mouse emits no key events) but it made the scope
+claim something untrue. Vendor 1133 is every Logitech device on the desk.
+
 
 ## What it maps
 
@@ -50,6 +65,15 @@ Find a new keyboard's IDs in Karabiner-EventViewer → *Devices*.
 | `Ctrl+←/→` | `Option+←/→` (word jump) |
 | `Ctrl+Backspace` / `Ctrl+Delete` | `Option+…` (delete word) |
 | AltGr (right Option) + `q 7 8 9 0 ß < +` | `@ { [ ] } \ | ~` — German positions |
+| `Ctrl+Shift+S` | `⌘⌃⇧4` — select area, **to clipboard** (Windows `Win+Shift+S`) |
+
+The screenshot rule must stay **first** in the rule list: Karabiner takes the
+first matching manipulator, and the `Ctrl+key → Cmd+key` rule below it would
+otherwise swallow `Ctrl+Shift+S` and emit `⌘⇧S` (Save As). It is also the one
+rule with no terminal exclusion — screenshotting a terminal is a normal thing
+to want, and `Ctrl+Shift+S` has no shell meaning. To save a *file* instead of
+copying to the clipboard, drop `control` from that rule's `to` modifiers
+(`⌘⇧4`).
 
 **Deliberately not mapped:** `Ctrl+H`, `Ctrl+M`, `Ctrl+Q`. On macOS those
 become hide / minimise / quit — a Windows user hits them by reflex and the

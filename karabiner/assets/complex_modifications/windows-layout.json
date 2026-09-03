@@ -2,6 +2,55 @@
   "title": "Windows-style layout (external keyboards only)",
   "rules": [
     {
+      "description": "External kbd: Ctrl+Shift+S -> area screenshot to clipboard (Win+Shift+S)",
+      "manipulators": [
+        {
+          "type": "basic",
+          "conditions": [
+            {
+              "type": "device_if",
+              "identifiers": [
+                {
+                  "vendor_id": 1121,
+                  "product_id": 20110
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 45961
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
+                }
+              ]
+            }
+          ],
+          "from": {
+            "key_code": "s",
+            "modifiers": {
+              "mandatory": [
+                "control",
+                "shift"
+              ],
+              "optional": [
+                "caps_lock"
+              ]
+            }
+          },
+          "to": [
+            {
+              "key_code": "4",
+              "modifiers": [
+                "command",
+                "control",
+                "shift"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
       "description": "External kbd: Ctrl+key -> Cmd+key (PC clipboard/app shortcuts)",
       "manipulators": [
         {
@@ -15,6 +64,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -66,6 +119,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -117,6 +174,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -168,6 +229,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -219,6 +284,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -270,6 +339,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -321,6 +394,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -372,6 +449,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -423,6 +504,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -474,6 +559,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -525,6 +614,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -576,6 +669,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -627,6 +724,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -678,6 +779,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -729,6 +834,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -780,6 +889,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -831,6 +944,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -882,6 +999,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -933,6 +1054,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -984,6 +1109,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -1035,6 +1164,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -1086,6 +1219,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -1137,6 +1274,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -1188,6 +1329,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -1239,6 +1384,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -1290,6 +1439,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -1341,6 +1494,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -1392,6 +1549,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -1443,6 +1604,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -1494,6 +1659,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -1545,6 +1714,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -1596,6 +1769,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -1652,6 +1829,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -1690,6 +1871,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -1732,6 +1917,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -1783,6 +1972,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -1834,6 +2027,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -1883,6 +2080,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -1932,6 +2133,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -1983,6 +2188,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -2034,6 +2243,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -2085,6 +2298,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -2141,6 +2358,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -2178,6 +2399,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -2215,6 +2440,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -2252,6 +2481,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -2289,6 +2522,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -2326,6 +2563,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -2364,6 +2605,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
@@ -2401,6 +2646,10 @@
                 {
                   "product_id": 45961,
                   "vendor_id": 1133
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
                 }
               ],
               "type": "device_if"
