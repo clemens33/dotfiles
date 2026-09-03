@@ -1,12 +1,25 @@
 {
-  "//": "Antigravity CLI (agy) \u2014 symlinked to ~/.gemini/antigravity-cli/settings.json via dotbot. agy also WRITES here (trust additions, UI prefs) \u2014 expect churn. Replaces the retired Gemini CLI (dead since 2026-06-18).",
-  "model": "Gemini 3.5 Flash (High)",
+  "//": "Antigravity CLI (agy) \u2014 symlinked to ~/.gemini/antigravity-cli/settings.json via dotbot, BUT agy replaces that symlink with a plain normalized copy on every run (verified 2026-08-14). This repo file stays source of truth: after editing it, relink (./install); before relinking, merge any live-file additions (trust entries, UI prefs) back here. Replaces the retired Gemini CLI (dead since 2026-06-18).",
+  "model": "Gemini 3.7 Flash (High)",
+  "//telemetry": "Default is enableTelemetry=true and docs say interaction logs are shared to improve Antigravity/models — opt out explicitly. Keep these false before the NEXT authenticated run: CLI logs only show propagation is skipped while logged out, so the remote opt-out is unverified until re-auth. Opt-out is not retroactive — past Interactions need a deletion request to antigravity-support@google.com.",
+  "enableTelemetry": false,
+  "showFeedbackSurvey": false,
   "//toolPermission": "always-proceed = yolo (no permission prompts), matches codex approval_policy=never / claude bypassPermissions. Other values: request-review (default), proceed-in-sandbox, strict. Verified via cli.log 'CLI settings initialized: toolPermission=...'.",
   "toolPermission": "always-proceed",
+  "//trustedWorkspaces": "Suppresses the 'do you trust this folder' prompt. WSL paths (/home) and macOS paths (/Users) both listed on purpose — this file is shared across both machines and an unknown path re-prompts.",
   "trustedWorkspaces": [
     "/home/ckriech",
     "/home/ckriech/projects",
-    "/home/ckriech/projects/clemens33/portfolio"
+    "/home/ckriech/projects/clemens33/portfolio",
+    "/Users/ckriech",
+    "/Users/ckriech/projects",
+    "/Users/ckriech/projects/clemens33",
+    "/Users/ckriech/projects/clemens33/dotfiles",
+    "/Users/ckriech/projects/mic",
+    "/Users/ckriech/projects/mic/ai",
+    "/Users/ckriech/projects/mic/ai/assistant",
+    "/Users/ckriech/projects/mic/k8s",
+    "/Users/ckriech/projects/clemens33/ae-rust"
   ],
   "mcpServers": {
     "serena": {
