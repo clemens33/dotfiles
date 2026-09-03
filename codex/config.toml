@@ -529,7 +529,7 @@ startup_timeout_sec = 30
 # under 20s; if Chrome is running and this still trips, launch Chrome first.
 [mcp_servers.chrome-devtools]
 command = "npx"
-args = ["-y", "chrome-devtools-mcp@latest", "--browser-url=http://127.0.0.1:9222"]
+args = ["-y", "chrome-devtools-mcp@latest", "--browser-url=http://127.0.0.1:9222", "--no-usage-statistics", "--no-performance-crux"]
 startup_timeout_sec = 20
 
 # codebase-memory dropped 2026-07-29: trial ended with the mac migration —
