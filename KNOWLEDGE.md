@@ -31,9 +31,13 @@ Use Claude Code or Codex well before you build a "system." Don't over-engineer.
 > Dated section. Rotates as the field moves. Older facts archive to the changelog,
 > not this section.
 
+### Early September 2026 — Fable 5.1 lands [A]
+
+**Claude Fable 5.1 shipped 2026-09-01 [A]** — API ID `claude-fable-5-1`, same $10/$50 per Mtok credit tier as Fable 5 (cache read $0.25), 1M context / 128k output, **knowledge cutoff June 2026** — newest of any Claude. Adaptive thinking is always on and cannot be disabled. Effort ladder `low→medium→high→xhigh→max`; default `high` in the API and Claude Code, `medium` in claude.ai/Cowork. Anthropic says start at `high`; lower effort incl. `low` often exceeds the `xhigh`/`max` of previous models; launch page says similar-or-better than Fable 5 at lower cost, with `medium` roughly matching Fable 5; use `xhigh`/`max` only for the most capability-sensitive work, and higher effort can over-deliberate on routine work. Breaking API changes: forced `tool_choice` `any`/`tool` returns 400; preserved thinking binds thinking blocks to the producing model and conversation prefix, enforced for organisations created ≥ 2026-08-31. Claude Code `fable` alias resolves to 5.1 since v2.1.255; flagged biology falls back to Opus 5 and cyber to Opus 4.8; fast mode is unsupported and `/fast` switches the session to Opus 5. Fable 5.1 is credit-billed; `-p` bills without a consent prompt. Routing implication: Opus 5 stays the included default; use Fable 5.1 for long-horizon / hardest work or when Opus 5 at higher effort still falls short, matching Anthropic's positioning.
+
 ### Late July 2026 — Opus 5 lands [A]
 
-**Claude Opus 5 shipped 2026-07-24 [A]** — new Opus flagship, ID `claude-opus-5`, $5/$25 per Mtok (unchanged from 4.8), 1M ctx native (no `[1m]` suffix needed; Max auto-upgrades), 128k output, **knowledge cutoff May 2026** — newest of any Claude, ahead of Fable 5's Jan 2026. Positioning: **~Fable 5 intelligence at half price** — within 0.5% of Fable 5 on CursorBench 3.2 at max effort, doubles Opus 4.8's Frontier-Bench v0.1 score at lower cost per task, beats Fable 5 on some coding/knowledge-work evals; clearly behind only on bio/cyber (Mythos 5 domain). **Default model on Claude Max, strongest on Pro — included in subscription**, while Fable 5 stays credit-gated at $10/$50. Effort ladder `low→xhigh→max`, **default `high`** on API and Claude Code (only 4.7 ever defaulted `xhigh`; an explicitly set level carries over on Opus 5). Fast mode: 2.5× speed at 2× base price. New betas: mid-conversation tool changes, automatic fallback routing. **No data-retention requirement** (vs Fable 5's 30-day rule); cyber classifiers intervene ~85% less than on Fable 5. Claude Code category-based fallback (requires v2.1.219+): Opus 5 cyber-flag → re-runs on Opus 4.8; biology-flag → refusal (no fallback). Opus 4.8 moves to the legacy table; Opus 4.1 retirement (2026-08-05) now migrates to Opus 5. Leaked ~07-09 as "Honeycomb EAP" in Cursor's model picker [C/D]. Routing implication: Opus 5 is the new default for frontier work on subscription; reach for Fable 5 (credits) only when the last 0.5–x% matters.
+**Claude Opus 5 shipped 2026-07-24 [A]** — new Opus flagship, ID `claude-opus-5`, $5/$25 per Mtok (unchanged from 4.8), 1M ctx native (no `[1m]` suffix needed; Max auto-upgrades), 128k output, **knowledge cutoff May 2026** — newest of any Claude until Fable 5.1's Jun 2026 (see Early September above), ahead of Fable 5's Jan 2026. Positioning: **~Fable 5 intelligence at half price** — within 0.5% of Fable 5 on CursorBench 3.2 at max effort, doubles Opus 4.8's Frontier-Bench v0.1 score at lower cost per task, beats Fable 5 on some coding/knowledge-work evals; clearly behind only on bio/cyber (Mythos 5 domain). **Default model on Claude Max, strongest on Pro — included in subscription**, while Fable 5 stays credit-gated at $10/$50. Effort ladder `low→xhigh→max`, **default `high`** on API and Claude Code (only 4.7 ever defaulted `xhigh`; an explicitly set level carries over on Opus 5). Fast mode: 2.5× speed at 2× base price. New betas: mid-conversation tool changes, automatic fallback routing. **No data-retention requirement** (vs Fable 5's 30-day rule); cyber classifiers intervene ~85% less than on Fable 5. Claude Code category-based fallback (requires v2.1.219+): Opus 5 cyber-flag → re-runs on Opus 4.8; biology-flag → refusal (no fallback). Opus 4.8 moves to the legacy table; Opus 4.1 retirement (2026-08-05) now migrates to Opus 5. Leaked ~07-09 as "Honeycomb EAP" in Cursor's model picker [C/D]. Routing implication: Opus 5 is the new default for frontier work on subscription; reach for Fable 5 (credits) only when the last 0.5–x% matters.
 
 ### Mid-July 2026 — tier shuffle + CLI landscape reshuffle [A]
 
@@ -41,9 +45,9 @@ Use Claude Code or Codex well before you build a "system." Don't over-engineer.
 
 **GPT-5.6 shipped 2026-07-09 [A]** — no longer rumor. Three tiers: **Sol** (flagship, 372k ctx), **Terra** (½ Sol's credit cost), **Luna** (⅕). Effort ladder `low/medium/high/xhigh/max/ultra` — `ultra` auto-delegates to subagents, Pro/Business-only. Vendor default is `medium` ("Sol is highly capable at lower reasoning efforts"). Benchmarks split by job: Sol leads Terminal-Bench 2.1 (88.8%) and AA Coding Agent Index (80), but trails on **SWE-bench Pro (64.6% vs Opus 4.8's 69.2%, Fable 5's ~80%)** [A/B]. **METR flagged Sol's detected reward-hacking rate as the highest of any public model it has assessed** — discount Sol's benchmark wins accordingly [B]. Rough parity heuristic (no calibrated cross-vendor effort mapping exists): Sol@high ≈ Opus 4.8@xhigh for agentic work; Sol@xhigh/max ≈ Fable-5 class, benchmark-dependent [B/D].
 
-**Gemini CLI retired 2026-06-18 [A]** — confirmed sunset (free/Pro/Ultra tiers stopped serving; live calls fail with eligibility errors). Replacement: **Antigravity CLI (`agy`)** — Go binary, **closed-source so far** (a regression from Gemini CLI), multi-model in one terminal (Gemini 3.5 Flash / 3.1 Pro, Claude Sonnet/Opus 4.6, GPT-OSS 120B), Google-grounded search built in. Config in §12.
+**Gemini CLI retired 2026-06-18 [A]** — confirmed sunset (free/Pro/Ultra tiers stopped serving; live calls fail with eligibility errors). Replacement: **Antigravity CLI (`agy`)** — Go binary, **closed-source so far** (a regression from Gemini CLI), multi-model in one terminal (Gemini 3.7/3.6 Flash / 3.1 Pro, Claude Sonnet/Opus 4.6, GPT-OSS 120B), Google-grounded search built in. Config in §12.
 
-**xAI Grok Build CLI [A/C]** — `grok-build` model (Grok 4.5-powered, 512k ctx). **Native X search tools** (`x_keyword_search`, `x_semantic_search`, trend research) — the only mainstream coding CLI that can query X content. Deep Claude-compat: reads `~/.claude/skills/`, `~/.claude/agents/`, `CLAUDE.md`, and `settings.json` permissions natively — zero re-wiring. Reported open-sourced ~2026-07-15 [D]. Config in §12.
+**xAI Grok Build CLI [A/C]** — `grok-4.6` model (500k ctx; `grok-build` is a rolling alias that tracks the current build — pin the versioned id for determinism). **Native X search tools** (`x_keyword_search`, `x_semantic_search`, trend research) — the only mainstream coding CLI that can query X content. Deep Claude-compat: reads `~/.claude/skills/`, `~/.claude/agents/`, `CLAUDE.md`, and `settings.json` permissions natively — zero re-wiring. Reported open-sourced ~2026-07-15 [D]. Config in §12.
 
 **Loop engineering goes mainstream [B/C/D]** — "loop engineering" is being named the successor discipline to prompt engineering (ADTmag 2026-07-01 [D]; "Stop Hand-Holding Your Coding Agent" arXiv:2607.00038 [B]; "Harness Engineering for Agentic AI Coding Tools" exploratory study, AIware '26 [B]). The season's mental model is a 4-layer onion — *prompt → context → harness → loop* — with leverage moving outward. Corollary now widely reproduced: **harness choice swings benchmark scores as much as model choice** (Terminal-Bench harness bakeoffs; same-model cross-harness gaps of tens of points) [C/D]. Every major CLI now ships a native loop primitive: Claude Code `/goal` (v2.1.139, 2026-05-12) + `/loop`, Codex `/goal`, Grok `--check`. X-practitioner orthodoxy converged on §17's existing discipline: separate verifier ("never self-grade"), persist state to disk, isolate worktrees, external stop conditions — the wave validates it, no doctrine change needed.
 
@@ -55,13 +59,13 @@ Use Claude Code or Codex well before you build a "system." Don't over-engineer.
 
 **Claude Opus 4.8 (2026-05-28) [A]** — same price as 4.7. Effort ladder `high` (default) → `xhigh` → `max`; `high` is the recommended default ("best overall balance"), `xhigh`/`max` are per-task opt-ups for hard work. ~4× less likely than 4.7 to let a flaw in its *own* code pass unremarked (the honesty/self-flagging gain). **Dynamic workflows** (research preview) — Claude writes a JavaScript orchestration script run in a background runtime; see §17.3. **Fast mode** (research preview, `speed: "fast"`) ~2.5× faster output at higher per-token cost — a speed/cost knob **separate from effort** in supported surfaces; **effort still controls reasoning depth**, so fast + xhigh can run together.
 
-**Claude Fable 5 / Mythos 5 (2026-06-09) [A]** — a capability tier *above* the Opus class. Fable 5 = the GA, safeguarded Mythos-class model ("safe for general use"), with capability-gated **fallback to Opus 4.8** on cyber/bio-chem/distillation classifiers; Mythos 5 = limited (Project Glasswing / US-gov). **Announced GA 2026-06-09, then access disabled 2026-06-12 for all customers by US-government directive** (per Anthropic's own access notice; other Anthropic models unaffected). ~~Do not target Fable 5 / Mythos 5 until restored~~ **SUPERSEDED — see Mid-July 2026 above: restored, subscription-included through 07-12, usage-credits after.**
+**Claude Fable 5 / Mythos 5 (2026-06-09) [A]** — a capability tier *above* the Opus class. Fable 5 = the GA, safeguarded Mythos-class model ("safe for general use"), with capability-gated **fallback to Opus 4.8** on cyber/bio-chem/distillation classifiers; Mythos 5 = limited (Project Glasswing / US-gov). **Announced GA 2026-06-09, then access disabled 2026-06-12 for all customers by US-government directive** (per Anthropic's own access notice; other Anthropic models unaffected). ~~Do not target Fable 5 / Mythos 5 until restored~~ **SUPERSEDED — see Mid-July 2026 above: restored, subscription-included through 07-12, usage-credits after.** **Superseded by Fable 5.1 (2026-09-01), see Early September above** — Fable 5 remains served (legacy table).
 
 **GPT-5.6 = RUMOR [A/D]** — ~~not officially announced as of 2026-06-16~~ **SUPERSEDED — shipped 2026-07-09, see Mid-July 2026 above.** Codex's Goal mode (`/goal`) became GA / first-class in May (no longer experimental, available in CLI/app/IDE).
 
 **Codex → automation substrate [A]** — Codex grew past "CLI pair-programmer": `/goal` (loops to objective-or-budget), app-server, non-interactive mode, GitHub Action, scheduled automations, browser/devtools mode. "Loop" moved out of the chat UI into programmable orchestration. Codex's own `/goal` GitHub issues are empirical warnings — both premature stop *and* runaway loop when blocked.
 
-**Google → Antigravity [A]** — Google is unifying its tooling into Antigravity; some Gemini CLI / Code Assist consumer tiers sunset 2026-06-18. Gemini 3.5 Flash GA for agent mode. Antigravity is the platform to watch; Gemini CLI may be transitional.
+**Google → Antigravity [A]** — Google is unifying its tooling into Antigravity; some Gemini CLI / Code Assist consumer tiers sunset 2026-06-18. Gemini 3.6 Flash GA 2026-07-21 for agent mode; 3.7 Flash serving in agy and GitHub Copilot by 2026-08 (agy default since 2026-08-24). Antigravity is the platform to watch; Gemini CLI may be transitional.
 
 **Benchmark methodology pivot [A/B]** — OpenAI deprecated SWE-bench Verified (saturated ~80%, six-way tie, contamination) in favour of **SWE-bench Pro** (use Scale's primary leaderboard, not aggregators) + contamination-resistant live benches (SWE-rebench, SWE-bench-Live). Treat **sub-3pp deltas as noise** (Anthropic infra-noise paper); METR time-horizons **>16h are unreliable** with current task suites. The productivity-uplift question is genuinely *unsettled* (METR has since qualified the earlier "~20% slowdown" framing on selection-bias grounds [B]).
 
@@ -156,7 +160,7 @@ Higher effort is not free. Calibrate per task class.
 | `low` / no thinking | Shallow questions, recon (`grep`, `find`), formatting, tiny edits |
 | `medium` | Normal questions, single-file edits, cost-sensitive workflows |
 | `high` | Default for nontrivial work — bugs, refactors, design questions |
-| `xhigh` (Opus 4.7+, Sonnet 5) | Planning, hard bugs, architecture, security review, ambiguous migrations |
+| `xhigh` (Opus 4.7+, Sonnet 5, Fable 5/5.1) | Planning, hard bugs, architecture, security review, ambiguous migrations; on Fable 5.1 the vendor default/start point is `high` — opt up per task, not globally |
 | `max` | Exceptional only. Session-scoped via Claude Code; persistent only via `CLAUDE_CODE_EFFORT_LEVEL` env var |
 
 **Anti-pattern:** running `high` or `xhigh` for every interaction. Latency rises, token spend rises, quality plateaus or regresses (see brevity-constraint research [B]).
@@ -318,7 +322,7 @@ Multi-pass review command. Surfaces logic errors and state-management bugs that 
 
 ### Settings (`settings.json`)
 
-Permissions (allow/deny with wildcards), hooks, model config, env. Global `~/.claude/settings.json`, project `.claude/settings.json`, personal `.claude/settings.local.json` (gitignored). Notable fields: `effortLevel`, `permissions.deny`, `permissions.defaultMode`, `enableAllProjectMcpServers`. Model config typically via `ANTHROPIC_MODEL` env var.
+Permissions (allow/deny with wildcards), hooks, model config, env. Global `~/.claude/settings.json`, project `.claude/settings.json`, personal `.claude/settings.local.json` (gitignored). Notable fields: `effortLevel`, `modelSettings`, `permissions.deny`, `permissions.defaultMode`, `enableAllProjectMcpServers`. Model config typically via `ANTHROPIC_MODEL` env var.
 
 ### Reference layout
 
@@ -365,21 +369,24 @@ GPT-5.5 in Codex requires ChatGPT auth, not API-key auth, at launch. API-key use
 ## 12. Antigravity CLI (agy) + Grok CLI Configuration
 
 > Gemini CLI died 2026-06-18 (see §2 Mid-July). Facts below verified locally
-> (agy 1.1.x, grok 0.2.x, July 2026) — both tools evolve fast; re-verify keys.
+> (agy 1.1.x, grok 1.0.x, August 2026) — both tools evolve fast; re-verify keys.
 
 ### Antigravity CLI (`agy`) — Gemini CLI's replacement
 
-- Settings: `~/.gemini/antigravity-cli/settings.json` — keys: `model` (display-name string, e.g. `"Gemini 3.5 Flash (High)"` — effort is baked into the model label), `trustedWorkspaces` (path list), `mcpServers` (Claude-style JSON: `command`/`args`/`env`), `permissions.allow/deny` (grant strings like `command(git)`, `read_file(...)`)
+- Settings: `~/.gemini/antigravity-cli/settings.json` — keys: `model` (display-name string, e.g. `"Gemini 3.7 Flash (High)"` — effort is baked into the model label), `trustedWorkspaces` (path list), `mcpServers` (Claude-style JSON: `command`/`args`/`env`), `permissions.allow/deny` (grant strings like `command(git)`, `read_file(...)`)
 - Rules: hierarchical `GEMINI.md` / `AGENTS.md` / `.agents/rules/*.md`; global rules live in `~/.gemini/antigravity-cli/`
 - Permission modes (via `/config`): `request-review` (default) / `proceed-in-sandbox` / `always-proceed` / `strict`; per-session yolo via `--dangerously-skip-permissions`. The persistent-mode settings key is undocumented — set it once via `/config` and diff the config files to capture it.
 - Print mode (`-p`) executes tools without prompting; MCP servers spin up in interactive sessions only. Google-grounded `search_web` is built in (server-side grounding with citations).
+- **Privacy: NOT private by default** — `enableTelemetry` defaults true and docs state interaction logs are shared to improve Antigravity/models. Set `enableTelemetry:false` + `showFeedbackSurvey:false` before the *next authenticated run*: CLI logs only prove propagation is skipped while logged out, so remote opt-out stays unverified until re-auth. Opt-out is not retroactive (Google Terms) — past Interactions require a deletion request to antigravity-support@google.com.
 
 ### Grok CLI (Grok Build)
 
-- Config: `~/.grok/config.toml` — `[models] default = "grok-build"`; `[mcp_servers.*]` in Codex-style TOML (`command`/`args`/`startup_timeout_sec`); `[features]` for `support_permission` / `telemetry` / `feedback`
+- Config: `~/.grok/config.toml` — `[models] default = "grok-4.6"` (plus `default_reasoning_effort` to persist effort; unset = track server default, currently high); `[mcp_servers.*]` in Codex-style TOML (`command`/`args`/`startup_timeout_sec`); `[features]` for `support_permission` / `telemetry` / `feedback`
 - **Claude-compat is the headline**: natively reads `~/.claude/skills/`, `~/.claude/agents/`, `~/.claude/CLAUDE.md`, and `~/.claude/settings.json` permissions — a full Claude harness setup carries over with zero re-wiring. `grok inspect` shows everything discovered.
 - Rules files: `Agents.md`/`Claude.md`/`AGENT.md`/`AGENTS.md`, global in `~/.grok/`; **10k-char cap per rules file** (condense, and let the Claude-compat path load the full contract)
 - Native X search tools (`x_keyword_search`, `x_semantic_search`, trend research); `--check` appends a self-verification loop in headless mode; `--best-of-n` runs N parallel attempts and picks the best
+- **Privacy**: `[features] telemetry/feedback=false` only silences the CLI — training/code-retention opt-out is *account* state (`/privacy` → `auth.json coding_data_retention_opt_out`; ZDR = no trace/code retained). `[tools] disable_zdr_incompatible_tools=true` (drops xAI-hosted-output tools) and `respect_gitignore=true` (default FALSE — otherwise built-in search/read ingests `.env` into context).
+- **Chrome DevTools MCP (any tool embedding it)**: usage statistics AND CrUX URL-upload from performance traces are ON by default — pass `--no-usage-statistics --no-performance-crux` (verified in `--help`, Aug 2026).
 
 ---
 
@@ -590,7 +597,9 @@ Recorded here so they're not lost; each is a separate, confirmable change:
 - Anthropic "What's new in Claude Opus 4.8" docs — https://platform.claude.com/docs/en/about-claude/models/whats-new-claude-4-8 [A]
 - Anthropic Opus 5 launch — https://www.anthropic.com/news/claude-opus-5 [A]
 - Anthropic models overview (Opus 5 row, IDs, pricing) — https://platform.claude.com/docs/en/about-claude/models/overview [A]
-- Claude Code model config (Opus 5 default, effort defaults, category fallback) — https://code.claude.com/docs/en/model-config [A]
+- Claude Code model config (aliases incl. fable -> 5.1, effort defaults, category fallback, fast mode) — https://code.claude.com/docs/en/model-config [A]
+- Anthropic Fable 5.1 model page — https://platform.claude.com/docs/en/models/fable-5-1/overview [A]
+- Anthropic effort guide (per-model recommendations) — https://platform.claude.com/docs/en/build-with-claude/effort [A]
 - Anthropic Fable 5 / Mythos 5 launch — https://www.anthropic.com/news/claude-fable-5-mythos-5 [A]
 - Anthropic Fable/Mythos access notice (2026-06-12 suspension) — https://www.anthropic.com/news/fable-mythos-access [A]
 - Claude Code Dynamic Workflows docs — https://code.claude.com/docs/en/workflows [A]
@@ -708,7 +717,7 @@ Watch but caveat (useful framing, less foundational):
 - `--dangerously-skip-permissions` or alias `claude-yolo`
 - Better: `/permissions` with wildcards: `Bash(npm run *)`, `Edit(/src/**)`
 - `effortLevel` in `settings.json`: see §5 routing
-- Default effort is `high` on every model that supports it — **except Opus 4.7, which defaults `xhigh`**. On Opus 5 an explicitly set level carries over across model switches; set `xhigh` deliberately to opt up
+- Default effort is `high` on every model that supports it — **except Opus 4.7, which defaults `xhigh`**. On Opus 5 an explicitly set level carries over across model switches; set `xhigh` deliberately to opt up. Fable 5.1 and Opus 5 have no model-default effort hold; Fable 5 / Opus 4.8 / Opus 4.7 hold their default across sessions until effort is changed once — so on Fable 5.1 a settings `effortLevel` applies directly. Per-model override: `modelSettings.<id>.effortLevel`.
 - `/effort` mid-session, `--effort` on launch, `CLAUDE_CODE_EFFORT_LEVEL` env var for persistence (only way `max` persists)
 - `/model` to switch mid-session
 - `/clear` between unrelated tasks (rarely need `/compact` with 1M context)
