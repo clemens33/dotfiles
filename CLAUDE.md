@@ -36,7 +36,7 @@ brew bundle --file macos/Brewfile
 - PATH includes: `~/.local/bin`, `~/bin`, nvm, go
 - fnm for node version management
 - `gh copilot` aliases: `g` (shell), `ghg` (gh), `gitg` (git)
-- Loads `~/.config/fish/functions/mic/` when present (provided by the private overlay)
+- Loads `~/.config/fish/functions-mic/` when present (provided by the private overlay)
 
 **Git config** uses conditional includes:
 - Default: personal (`clemens33`)

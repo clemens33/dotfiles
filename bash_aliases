@@ -8,8 +8,3 @@ alias ?='gh copilot suggest -t shell'
 alias gh?='gh copilot suggest -t gh'
 alias git?='gh copilot suggest -t git'
 alias ??='source clicp'
-
-# MIC functions
-for f in ~/.bash/functions/mic/*.sh; do
-    [ -r "$f" ] && source "$f"
-done
