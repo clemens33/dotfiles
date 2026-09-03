@@ -45,7 +45,7 @@ Use Claude Code or Codex well before you build a "system." Don't over-engineer.
 
 **GPT-5.6 shipped 2026-07-09 [A]** — no longer rumor. Three tiers: **Sol** (flagship, 372k ctx), **Terra** (½ Sol's credit cost), **Luna** (⅕). Effort ladder `low/medium/high/xhigh/max/ultra` — `ultra` auto-delegates to subagents, Pro/Business-only. Vendor default is `medium` ("Sol is highly capable at lower reasoning efforts"). Benchmarks split by job: Sol leads Terminal-Bench 2.1 (88.8%) and AA Coding Agent Index (80), but trails on **SWE-bench Pro (64.6% vs Opus 4.8's 69.2%, Fable 5's ~80%)** [A/B]. **METR flagged Sol's detected reward-hacking rate as the highest of any public model it has assessed** — discount Sol's benchmark wins accordingly [B]. Rough parity heuristic (no calibrated cross-vendor effort mapping exists): Sol@high ≈ Opus 4.8@xhigh for agentic work; Sol@xhigh/max ≈ Fable-5 class, benchmark-dependent [B/D].
 
-**Gemini CLI retired 2026-06-18 [A]** — confirmed sunset (free/Pro/Ultra tiers stopped serving; live calls fail with eligibility errors). Replacement: **Antigravity CLI (`agy`)** — Go binary, **closed-source so far** (a regression from Gemini CLI), multi-model in one terminal (Gemini 3.7/3.6 Flash / 3.1 Pro, Claude Sonnet/Opus 4.6, GPT-OSS 120B), Google-grounded search built in. Config in §12.
+**Gemini CLI retired 2026-06-18 [A]** — confirmed sunset (free/Pro/Ultra tiers stopped serving; live calls fail with eligibility errors). Replacement: **Antigravity CLI (`agy`)** — Go binary, **closed-source so far** (a regression from Gemini CLI), multi-model in one terminal (Gemini 3.8/3.7/3.6 Flash / 3.1 Pro, Claude Sonnet/Opus 4.6, GPT-OSS 120B), Google-grounded search built in. Config in §12.
 
 **xAI Grok Build CLI [A/C]** — `grok-4.6` model (500k ctx; `grok-build` is a rolling alias that tracks the current build — pin the versioned id for determinism). **Native X search tools** (`x_keyword_search`, `x_semantic_search`, trend research) — the only mainstream coding CLI that can query X content. Deep Claude-compat: reads `~/.claude/skills/`, `~/.claude/agents/`, `CLAUDE.md`, and `settings.json` permissions natively — zero re-wiring. Reported open-sourced ~2026-07-15 [D]. Config in §12.
 
@@ -65,7 +65,7 @@ Use Claude Code or Codex well before you build a "system." Don't over-engineer.
 
 **Codex → automation substrate [A]** — Codex grew past "CLI pair-programmer": `/goal` (loops to objective-or-budget), app-server, non-interactive mode, GitHub Action, scheduled automations, browser/devtools mode. "Loop" moved out of the chat UI into programmable orchestration. Codex's own `/goal` GitHub issues are empirical warnings — both premature stop *and* runaway loop when blocked.
 
-**Google → Antigravity [A]** — Google is unifying its tooling into Antigravity; some Gemini CLI / Code Assist consumer tiers sunset 2026-06-18. Gemini 3.6 Flash GA 2026-07-21 for agent mode; 3.7 Flash serving in agy and GitHub Copilot by 2026-08 (agy default since 2026-08-24). Antigravity is the platform to watch; Gemini CLI may be transitional.
+**Google → Antigravity [A]** — Google is unifying its tooling into Antigravity; some Gemini CLI / Code Assist consumer tiers sunset 2026-06-18. Gemini 3.6 Flash GA 2026-07-21 for agent mode; 3.7 Flash serving in agy and GitHub Copilot by 2026-08 (agy default 2026-08-24 to 2026-09-03); **Gemini 3.8 Flash GA 2026-09-02** with effort low/medium/high, Google default and recommendation **medium** (high for the hardest multi-step work, more tokens/latency) — agy default `Gemini 3.8 Flash (Medium)` since 2026-09-03. Antigravity is the platform to watch; Gemini CLI may be transitional.
 
 **Benchmark methodology pivot [A/B]** — OpenAI deprecated SWE-bench Verified (saturated ~80%, six-way tie, contamination) in favour of **SWE-bench Pro** (use Scale's primary leaderboard, not aggregators) + contamination-resistant live benches (SWE-rebench, SWE-bench-Live). Treat **sub-3pp deltas as noise** (Anthropic infra-noise paper); METR time-horizons **>16h are unreliable** with current task suites. The productivity-uplift question is genuinely *unsettled* (METR has since qualified the earlier "~20% slowdown" framing on selection-bias grounds [B]).
 
@@ -369,11 +369,11 @@ GPT-5.5 in Codex requires ChatGPT auth, not API-key auth, at launch. API-key use
 ## 12. Antigravity CLI (agy) + Grok CLI Configuration
 
 > Gemini CLI died 2026-06-18 (see §2 Mid-July). Facts below verified locally
-> (agy 1.1.x, grok 1.0.x, August 2026) — both tools evolve fast; re-verify keys.
+> (agy 1.1.25, grok 1.0.x, September 2026) — both tools evolve fast; re-verify keys.
 
 ### Antigravity CLI (`agy`) — Gemini CLI's replacement
 
-- Settings: `~/.gemini/antigravity-cli/settings.json` — keys: `model` (display-name string, e.g. `"Gemini 3.7 Flash (High)"` — effort is baked into the model label), `trustedWorkspaces` (path list), `mcpServers` (Claude-style JSON: `command`/`args`/`env`), `permissions.allow/deny` (grant strings like `command(git)`, `read_file(...)`)
+- Settings: `~/.gemini/antigravity-cli/settings.json` — keys: `model` (display-name string, e.g. `"Gemini 3.8 Flash (Medium)"` — effort is baked into the model label; medium is Google's default for 3.8), `trustedWorkspaces` (path list), `mcpServers` (Claude-style JSON: `command`/`args`/`env`), `permissions.allow/deny` (grant strings like `command(git)`, `read_file(...)`)
 - Rules: hierarchical `GEMINI.md` / `AGENTS.md` / `.agents/rules/*.md`; global rules live in `~/.gemini/antigravity-cli/`
 - Permission modes (via `/config`): `request-review` (default) / `proceed-in-sandbox` / `always-proceed` / `strict`; per-session yolo via `--dangerously-skip-permissions`. The persistent-mode settings key is undocumented — set it once via `/config` and diff the config files to capture it.
 - Print mode (`-p`) executes tools without prompting; MCP servers spin up in interactive sessions only. Google-grounded `search_web` is built in (server-side grounding with citations).
@@ -619,6 +619,7 @@ Recorded here so they're not lost; each is a separate, confirmable change:
 - Pi documentation — https://pi.dev/docs/latest [A]
 - OpenAI Codex model catalog (GPT-5.6 Sol/Terra/Luna, efforts) — https://developers.openai.com/codex/models [A]
 - Google Antigravity CLI docs — https://antigravity.google/docs/cli-overview [A]
+- Google Gemini 3.8 Flash migration guide (GA, default/recommended effort) — https://ai.google.dev/gemini-api/docs/generate-content/latest-model [A]
 - xAI Grok Build overview — https://docs.x.ai/build/overview [A]
 - xAI Grok Build announcement — https://x.ai/news/grok-build-cli [A]
 - Microsoft Agent Framework BUILD 2026 (Agent Harness, CodeAct, Hosted Agents) — https://devblogs.microsoft.com/agent-framework/microsoft-agent-framework-at-build-2026-announce/ [A]
