@@ -6,11 +6,11 @@
   "permissions": {
     "deny": [
       "Bash(rm -rf /)",
-      "Bash(sudo rm -rf *)",
-      "Read(.env.local)",
-      "Read(**/.env.production)"
+      "Bash(sudo rm -rf *)"
     ],
-    "defaultMode": "auto"
+    "defaultMode": "bypassPermissions",
+    "//deny": "No Read() deny rules on purpose (2026-09-03): with ANY Read() deny configured, Claude Code 2.1.259 forces a user prompt for every compound `cd X && grep|cat|head|sed <relative path>` because it cannot resolve the file statically — in every mode, bypass included. The .env guard it bought was weak anyway (only recognized readers, cwd-anchored, subprocesses unaffected). Want it back: sandbox.filesystem.denyRead, validated separately.",
+    "//defaultMode": "bypassPermissions for bare `claude` launches (ae aliases pass --permission-mode bypassPermissions, which wins). auto was the 2026-08-14 rollout default; the classifier only adds friction in this trusted-local workflow."
   },
   "model": "claude-fable-5-1[1m]",
   "enableAllProjectMcpServers": true,
