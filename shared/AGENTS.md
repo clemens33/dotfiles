@@ -47,12 +47,12 @@ You have access to skills - those are extra knowledge defined in separate markdo
 
 If not defined otherwise - Don't ask "would you like me to..." - just do it.
 If unsure, pick the pragmatic option and execute.
-Do not estimate calendar time or effort duration (for example "1 day", "1 week", or similar) unless Clemens explicitly asks for an estimate.
+When Clemens asks for an estimate, give an agentic wall-clock band (e.g. <15 min, 15–60 min, 1–4 h, or multi-session), likely ae agent count/parallelism, and the serial critical path—not human developer-days; prefer comparable measured runs over intuition.
 Answer the *intent*, not just the literal ask — if Clemens asks for X but Y is the modern, pragmatic standard, say so.
 
 ## Git Commits
 
-If the user requests git commits, make them. NEVER mention the AI tool, model, or co-author attribution in commit messages, trailers, or any part of the commit metadata. NEVER commit significant changes without running a cross-model review first (see Cross-Model Collaboration section). `main` is treated as shippable but flexible.
+Commit and push your completed, verified work as you go unless the user says not to; leave nothing of yours uncommitted without saying why. NEVER mention the AI tool, model, or co-author attribution in commit messages, trailers, or any part of the commit metadata. NEVER commit significant changes without running a cross-model review first (see Cross-Model Collaboration section). `main` is treated as shippable but flexible.
 
 ## Security
 
