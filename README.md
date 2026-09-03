@@ -56,6 +56,7 @@ The wrapper install script detects the overlay submodule and runs its Dotbot pas
 | Gemini CLI | `gemini/settings.json` | `~/.gemini/settings.json` |
 | Shared AI doctrine | `shared/AGENTS.md` | `~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, `~/.config/opencode/AGENTS.md`, `~/.gemini/GEMINI.md` |
 | AI skills | `skills/<name>/` (24 skills) | `~/.claude/skills/<name>/`, `~/.codex/skills/<name>/` |
+| Google Cloud CLI | `scripts/gcloud-install.sh`, `fish/conf.d/gcloud.fish` | `~/.local/share/google-cloud-sdk/`, `~/.local/bin/{gcloud,bq,gsutil}` (tarball + uv Python, not the brew cask) |
 
 ## AI operating doctrine
 
@@ -64,3 +65,47 @@ The wrapper install script detects the overlay submodule and runs its Dotbot pas
 - **`KNOWLEDGE.md`** — field knowledge, source-tiered references (May 2026 snapshot).
 
 See the `manage-skills` skill for the two-layer model — when to add a generic skill here vs. a domain-specific skill in the private overlay.
+
+## Automatic harness updates
+
+`scripts/harness-update.sh` updates installed Claude Code, Codex, Antigravity
+(`agy`), Grok, and OpenCode CLIs. Each tool is isolated: one failed update does
+not skip the rest. It runs daily at 06:30 local time and writes dated logs to
+`~/.local/state/harness-update/` (last 14 retained).
+
+```bash
+# Inspect current and latest versions without changing anything
+scripts/harness-update.sh --check
+
+# Update everything installed, or one tool
+scripts/harness-update.sh
+scripts/harness-update.sh --only codex
+```
+
+`ae` is excluded by default because session glue is version-pinned. Its
+checksum-verified upgrader remains opt-in and requires an explicit calver:
+
+```bash
+AE_VERSION=YYYY.M.D scripts/harness-update.sh --include-ae
+```
+
+On macOS, `./install` links and loads the launch agent. Reload or unload it with:
+
+```bash
+launchctl bootstrap gui/$(id -u) "$HOME/Library/LaunchAgents/at.clemens.harness-update.plist"
+launchctl bootout gui/$(id -u)/at.clemens.harness-update
+```
+
+On Linux with systemd, `./install` links and enables the user timer. WSL
+installations without systemd skip it.
+
+```bash
+systemctl --user daemon-reload
+systemctl --user enable --now harness-update.timer
+```
+
+Native installers replace versioned files atomically, so already-running CLI
+processes keep their old executable until restarted. On macOS, OpenCode is
+updated in the mise-managed Node LTS global; Linux also supports the default
+fnm/nvm Node alias. Switching Node versions leaves that global install behind
+and requires reinstalling it for the new version.

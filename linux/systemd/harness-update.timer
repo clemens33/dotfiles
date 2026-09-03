@@ -1,0 +1,10 @@
+[Unit]
+Description=Update installed AI coding harnesses daily
+
+[Timer]
+OnCalendar=*-*-* 06:30:00
+Persistent=true
+Unit=harness-update.service
+
+[Install]
+WantedBy=timers.target

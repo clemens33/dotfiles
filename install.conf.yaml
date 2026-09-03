@@ -201,3 +201,43 @@
       description: claude2 skills link
     - command: scripts/mcp-merge.sh "$HOME/.claude2/.claude.json" claude/mcpServers.json
       description: Merging MCP servers into claude2
+
+# Periodic harness updater. Platform checks keep launchd off Linux and skip
+# systemd user units on WSL installations without systemd.
+- create:
+    - ~/.local/state/harness-update
+- link:
+    ~/Library/LaunchAgents/at.clemens.harness-update.plist:
+      path: macos/LaunchAgents/at.clemens.harness-update.plist
+      if: '[ "$(uname -s)" = "Darwin" ]'
+    ~/.config/systemd/user/harness-update.service:
+      path: linux/systemd/harness-update.service
+      if: '[ "$(uname -s)" = "Linux" ] && [ -d /run/systemd/system ]'
+    ~/.config/systemd/user/harness-update.timer:
+      path: linux/systemd/harness-update.timer
+      if: '[ "$(uname -s)" = "Linux" ] && [ -d /run/systemd/system ]'
+
+# Activate or reload the scheduler after its platform-specific files are linked.
+- shell:
+    - command: |
+        if [ "$(uname -s)" = "Darwin" ]; then
+          launchctl bootout "gui/$(id -u)/at.clemens.harness-update" 2>/dev/null || true
+          launchctl bootstrap "gui/$(id -u)" "$HOME/Library/LaunchAgents/at.clemens.harness-update.plist"
+        fi
+      description: Loading harness updater (launchd)
+    - command: |
+        if [ "$(uname -s)" = "Linux" ] && [ -d /run/systemd/system ]; then
+          systemctl --user daemon-reload && systemctl --user enable --now harness-update.timer
+        fi
+      description: Loading harness updater (systemd)
+
+# Google Cloud CLI — Google's tarball + uv-owned Python, NOT the Homebrew cask
+# (it drags python@3.14 onto PATH; see scripts/gcloud-install.sh). Credential-
+# free and org-agnostic: account/project defaults are the private overlay's job.
+- link:
+    ~/.config/fish/conf.d/gcloud.fish: fish/conf.d/gcloud.fish
+- shell:
+    - command: scripts/gcloud-install.sh
+      description: Installing Google Cloud CLI (gcloud, bq, gsutil)
+      stdout: true
+      stderr: true

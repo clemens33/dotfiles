@@ -1,0 +1,6 @@
+[Unit]
+Description=Update installed AI coding harnesses
+
+[Service]
+Type=oneshot
+ExecStart=%h/projects/clemens33/dotfiles/scripts/harness-update.sh
