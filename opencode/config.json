@@ -1,10 +1,160 @@
+// opencode — symlinked to ~/.config/opencode/config.json via dotbot.
+// NOTE: this file is JSONC. opencode's schema sets allowComments +
+// allowTrailingCommas, so // comments are valid — but plain `jq` will NOT
+// parse it. Edit by hand and validate with `opencode debug config | jq`,
+// which prints the RESOLVED config — opencode silently ignores unknown keys,
+// and `opencode models` proves only local registration, never that a model
+// can actually execute. For that, run a real `opencode run -m <id> ...`.
+//
+// Install: `npm i -g opencode-ai` (NOT brew — the formula drags in brew node
+// and shadows mise). See macos/Brewfile §4.
 {
   "$schema": "https://opencode.ai/config.json",
+
+  // --- Model -------------------------------------------------------------
+  // Primary: OpenRouter GLM 5.3 Flash, pinned to Fireworks.
+  // Fireworks exposes reasoning_effort and 1,048,576-token context; a live
+  // probe with max effort succeeded on 2026-08-31. max is our deliberate
+  // highest-effort default. OpenRouter availability and billing can change.
+  //
+  // GitHub Copilot Gemini 3.7 remains declared below as a selectable fallback
+  // if the OpenRouter model is unavailable or misbehaves.
+  "model": "openrouter/z-ai/glm-5.3-flash",
+  // Titles/summaries/compaction: small_model remains the fast internal lane,
+  // but it is Copilot-quota-bound. It fires on nearly every turn. Verified
+  // working on this seat
+  // 2026-08-17 (`opencode run -m github-copilot/gpt-5.6-luna`).
+  "small_model": "github-copilot/gpt-5.6-luna",
+
+  // Provider model overrides: the primary GLM 5.3 Flash uses deliberate max
+  // reasoning effort; its Fireworks pinning is configured below.
+  "provider": {
+    // Registry back-fill for the selectable fallback, NOT a credential or
+    // endpoint change: auth still runs through `opencode auth login -p
+    // github-copilot`. Core metadata is copied from the models.dev entry for
+    // gemini-3.7-flash (2026-08-17); the options block is a local addition.
+    "github-copilot": {
+      "models": {
+        "gemini-3.7-flash": {
+          "id": "gemini-3.7-flash",
+          "name": "Gemini 3.7 Flash",
+          "release_date": "2026-08-13",
+          "attachment": true,
+          "reasoning": true,
+          "tool_call": true,
+          "limit": { "context": 1000000, "input": 936000, "output": 64000 },
+          "cost": { "input": 0.75, "output": 3.75, "cache_read": 0.075 },
+          // Thinking level. 3.7 Flash accepts low / medium / high, and
+          // rejects "minimal" with a validation error. Google DEFAULTS this
+          // model to medium; "high" here is our own deliberate
+          // deeper-reasoning choice, not a vendor recommendation: on a
+          // $0.75/$3.75 fallback, extra thinking tokens are cheap relative to
+          // a wrong answer, and small_model remains the fast internal lane.
+          // Drop to "medium" if latency or credit burn becomes binding.
+          "options": { "reasoningEffort": "high" }
+        }
+      }
+    },
+    // OpenRouter models are billed against the OpenRouter account, independent
+    // of the GitHub Copilot subscription above. Authenticate interactively via
+    // `/connect` -> OpenRouter; NEVER put the API key in this tracked file.
+    //
+    // Both models are hard-pinned to Fireworks. No provider fallback means a
+    // Fireworks outage fails visibly instead of routing prompts elsewhere.
+    // Fireworks currently exposes a 1,048,576-token endpoint for each model.
+    "openrouter": {
+      "models": {
+        "z-ai/glm-5.3": {
+          // GLM 5.3 accepts low / high / max; max is also its vendor default.
+          "options": {
+            "reasoningEffort": "max",
+            "provider": {
+              "order": ["fireworks"],
+              "allow_fallbacks": false
+            }
+          }
+        },
+        "z-ai/glm-5.3-flash": {
+          // Fireworks exposes reasoning_effort; max accepted by live probe
+          // on 2026-08-31. This is our deliberate highest-effort default.
+          "options": {
+            "reasoningEffort": "max",
+            "provider": {
+              "order": ["fireworks"],
+              "allow_fallbacks": false
+            }
+          }
+        }
+      }
+    }
+  },
+
+  // The default primary TUI agent selects GLM 5.3 Flash's max variant;
+  // Fireworks accepted max in the live probe on 2026-08-31.
+  // Permissions remain inherited; do not redefine them here.
+  "agent": {
+    "build": {
+      "model": "openrouter/z-ai/glm-5.3-flash",
+      "variant": "max"
+    }
+  },
+
+  // --- Permissions: yolo, with two deliberate exceptions ------------------
+  // Matches the rest of the toolchain (claude bypassPermissions, codex
+  // approval_policy=never, grok support_permission=false, agy
+  // always-proceed). Most of these are already opencode's defaults; they are
+  // written out so an upstream default change cannot quietly re-introduce
+  // prompts mid-session.
+  "permission": {
+    "bash": "allow",
+    "edit": "allow",
+    "webfetch": "allow",
+    "websearch": "allow",
+    "task": "allow",
+    "skill": "allow",
+    "lsp": "allow",
+    // Default is "ask". bash is already unrestricted, so prompting on paths
+    // outside the project buys no safety — only friction on ~/projects work.
+    "external_directory": "allow",
+    // Catch-all FIRST, denies last: last matching rule wins. This blocks
+    // ACCIDENTAL secret ingestion into context. It is NOT a security
+    // boundary — bash is unrestricted and can read the same bytes.
+    // Patterns are matched against the WORKTREE-RELATIVE path and `*` already
+    // crosses separators, so a leading `**/` would miss a root-level .env
+    // (the path is literally ".env"). Use slash-free patterns — they cover
+    // both root and nested hits.
+    "read": {
+      "*": "allow",
+      "*.env": "deny",
+      "*.env.*": "deny",
+      "*credentials.env": "deny",
+      "*.ssh": "deny",
+      "*.ssh/*": "deny",
+      "*.pem": "deny"
+    }
+    // doom_loop is deliberately LEFT OUT, so it keeps its "ask" default. It
+    // is the one guard whose failure mode now costs real money (token-billed
+    // credits), and it only trips on genuinely repeated identical calls.
+  },
+
+  // --- Skills: nothing to configure --------------------------------------
+  // opencode auto-discovers ~/.claude/skills and per-project .claude/skills,
+  // the same Claude-compat path grok uses — the dotfiles + overlay library
+  // works as-is. It requires frontmatter name == dirname in kebab-case,
+  // which scripts/lint-skills.sh already gates.
+
+  // --- Privacy / updates -------------------------------------------------
+  "share": "disabled", // never upload sessions to the share service
+  // npm owns the binary; the built-in `opencode upgrade` would self-replace
+  // it behind npm's back, so notify only.
   "autoupdate": "notify",
-  "share": "disabled",
-  "plugin": [
-    "opencode-gemini-auth@latest"
-  ],
+
+  // `plugin: ["opencode-gemini-auth@latest"]` was dropped 2026-08-17: no
+  // longer needed now that the Copilot seat supplies Gemini directly. (It WAS
+  // installed — 1.4.15 under ~/.cache/opencode/packages/ — just not under
+  // ~/.config/opencode/node_modules, which is what misled an earlier note.)
+
+  // --- MCP servers: same set as codex/grok --------------------------------
   "mcp": {
     "serena": {
       "type": "local",
@@ -14,9 +164,11 @@
       "type": "local",
       "command": ["npx", "-y", "@upstash/context7-mcp@latest"]
     },
+    // Privacy flags are mandatory here: usage statistics and CrUX URL upload
+    // from performance traces are both ON by default upstream.
     "chrome-devtools": {
       "type": "local",
-      "command": ["npx", "-y", "chrome-devtools-mcp@latest", "--browser-url=http://127.0.0.1:9222"]
+      "command": ["npx", "-y", "chrome-devtools-mcp@latest", "--browser-url=http://127.0.0.1:9222", "--no-usage-statistics", "--no-performance-crux"]
     }
   }
 }
