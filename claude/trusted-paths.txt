@@ -1,0 +1,18 @@
+# Repo roots pre-accepted for Claude Code's folder-trust dialog.
+# Consumed by scripts/claude-trust-merge.sh at install time, for every Claude
+# identity (~/.claude.json, ~/.claude2, ~/.claude-mic).
+#
+# The flag covers subdirectories and worktrees of each root, so list ROOTS, not
+# every repo. A leading ~ is expanded at install time, so this file stays valid
+# on both the WSL box and the Mac.
+#
+# NOTE: ~ itself is deliberately absent. Claude Code holds home-directory trust
+# for the session only and never persists it, so listing it would be a no-op.
+
+~/projects
+~/projects/clemens33
+~/projects/clemens33/dotfiles
+~/projects/clemens33/ae
+~/projects/mic
+~/projects/mic/ai
+~/projects/mic/k8s

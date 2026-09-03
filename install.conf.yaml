@@ -187,6 +187,11 @@
       description: Purge legacy codex shell snapshots
     - command: scripts/mcp-merge.sh "$HOME/.claude.json" claude/mcpServers.json
       description: Merging Claude Code MCP servers
+    # Pre-accepts the folder-trust dialog. Claude Code has no global trust
+    # setting and permissions.defaultMode does NOT cover it, so the flag has to
+    # be written per repo root into the same (non-symlinkable) state file.
+    - command: scripts/claude-trust-merge.sh "$HOME/.claude.json" claude/trusted-paths.txt
+      description: Pre-accepting folder trust (claude)
     # claude2 identity: skills → the merged ~/.claude/skills real directory.
     # agents is NOT linked here — ~/.claude/agents is created by the private
     # overlay, which runs after this pass and owns the claude2 link too. A
@@ -201,6 +206,8 @@
       description: claude2 skills link
     - command: scripts/mcp-merge.sh "$HOME/.claude2/.claude.json" claude/mcpServers.json
       description: Merging MCP servers into claude2
+    - command: scripts/claude-trust-merge.sh "$HOME/.claude2/.claude.json" claude/trusted-paths.txt
+      description: Pre-accepting folder trust (claude2)
 
 # Periodic harness updater. Platform checks keep launchd off Linux and skip
 # systemd user units on WSL installations without systemd.
@@ -230,14 +237,3 @@
           systemctl --user daemon-reload && systemctl --user enable --now harness-update.timer
         fi
       description: Loading harness updater (systemd)
-
-# Google Cloud CLI — Google's tarball + uv-owned Python, NOT the Homebrew cask
-# (it drags python@3.14 onto PATH; see scripts/gcloud-install.sh). Credential-
-# free and org-agnostic: account/project defaults are the private overlay's job.
-- link:
-    ~/.config/fish/conf.d/gcloud.fish: fish/conf.d/gcloud.fish
-- shell:
-    - command: scripts/gcloud-install.sh
-      description: Installing Google Cloud CLI (gcloud, bq, gsutil)
-      stdout: true
-      stderr: true
