@@ -13,10 +13,15 @@ sandbox_mode = "danger-full-access"
 web_search = "live"
 suppress_unstable_features_warning = true
 tool_output_token_limit = 25000
-# Leave room for native compaction near GPT-5.6's 372k context window.
-# Formula: 372000 - (tool_output_token_limit + 15000)
-# With tool_output_token_limit=25000 => 372000 - (25000 + 15000) = 332000
-model_auto_compact_token_limit = 332000
+# Compact at ~80% of the CLI's ACTIVE window. CLI 0.149.1's model catalog
+# gives GPT-5.6 272k active input — the 372k figure is the Codex App's, not
+# the CLI's, and the previous 332000 sat ABOVE the ceiling so auto-compaction
+# never fired before the hard limit. 220000 leaves ~50k headroom so the
+# compaction call never races the limit mid-turn (ruling 2026-08-25:
+# deliberate earlier compaction; unset would give ~244800 model default).
+# Do NOT also set model_context_window — openai/codex#16068: it resets the
+# token counter and silently breaks auto-compaction.
+model_auto_compact_token_limit = 220000
 project_doc_fallback_filenames = ["CLAUDE.md"]
 service_tier = "default"
 
@@ -49,6 +54,21 @@ max_bytes = 104857600
 # themselves. Legacy array form on purpose — parsed by all codex versions.
 [shell_environment_policy]
 exclude = ["MIC_ASSISTANT_*"]
+
+# Trust: suppresses the "do you trust this folder" prompt. Codex has NO global
+# trust switch — approval_policy/sandbox_mode above are a SEPARATE system and do
+# not silence it — so working roots must be listed per path. Codex appends its
+# own entries below as folders are accepted; the block here is the curated set
+# that must survive a fresh machine. WSL (/home) and macOS (/Users) paths both
+# kept on purpose: this file is shared across both.
+[projects."/Users/ckriech/projects"]
+trust_level = "trusted"
+
+[projects."/Users/ckriech/projects/mic"]
+trust_level = "trusted"
+
+[projects."/Users/ckriech/projects/mic/k8s"]
+trust_level = "trusted"
 
 [projects."/home/ckriech"]
 trust_level = "trusted"
@@ -508,6 +528,15 @@ trust_level = "trusted"
 [projects."/Users/ckriech/projects/mic/ai/mcp-dtrack"]
 trust_level = "trusted"
 
+[projects."/Users/ckriech/projects/mic/ai/mcp-github"]
+trust_level = "trusted"
+
+[projects."/private/tmp/ae-next-canary/repo"]
+trust_level = "trusted"
+
+[projects."/Users/ckriech/projects/clemens33/dotfiles-mic"]
+trust_level = "trusted"
+
 # NO trust for /private/tmp (removed 2026-08-11, cross-model review): it is
 # root-owned mode 1777 — any local process can plant project-local .codex
 # config/hooks under a trusted root. Trust only user-owned project paths.
@@ -565,6 +594,7 @@ env_http_headers = { "x-api-key" = "MIC_ASSISTANT_TEST_API_KEY" }
 
 [notice]
 "hide_gpt-5.1-codex-max_migration_prompt" = true
+hide_rate_limit_model_nudge = true
 
 [notice.model_migrations]
 "gpt-5.1-codex-max" = "gpt-5.2-codex"
