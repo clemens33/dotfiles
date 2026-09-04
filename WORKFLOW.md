@@ -246,6 +246,7 @@ Opus 4.7 defaults to `xhigh` already. Setting *lower* is the explicit choice, no
 5. **Effort matches task class** — `xhigh` everywhere is wasteful; `medium` everywhere is risky.
 6. **Don't abdicate judgment** — Ronacher. The agent does the typing, you do the thinking. Read every diff at S/M, every phase at L.
 7. **Generated code is debt until validated** — Anthropic Trends Report. Test coverage caps real throughput.
+8. **Stop at done** — once the requested outcome is verified and required findings are resolved, stop. No speculative edge cases, no repeated clean reviews, no polish past diminishing returns. Required = BLOCKER/IMPORTANT per the severity contract; NIT stays apply-if-quick.
 
 ---
 

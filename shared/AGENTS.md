@@ -136,6 +136,7 @@ Field knowledge (July 2026 SOTA, source-tiered references): `~/projects/clemens3
 5. **Cross-model review triggers if** (a) *hard to undo cheaply* (touches shared agent behavior, data contracts, public APIs, deps, license/attribution) OR (b) *agent made a decision* rather than mechanically derived it. **Skip only if** already reviewed by a different model family (`/ultrareview` and same-model security skills add depth but do NOT satisfy diversity — see Cross-Model Collaboration above).
 6. **Universal principles** (apply at every bucket):
    - Verify your work (Cherny) — declare verification gaps explicitly.
+   - Stop at done — once the requested outcome is verified and required findings are resolved, do not chase speculative edge cases, repeat clean reviews, or polish past diminishing returns.
    - Articulate before solving (Hashimoto / Ronacher / diagnose-loop) — one-sentence problem statement, then act.
    - Caveman-lite output by default (Efficiency Pact rule 4).
    - Source-tier justifications — Tier A/B (official, academic) drives normative; C/D (practitioner, commercial) suggests.
