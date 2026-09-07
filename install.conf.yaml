@@ -116,6 +116,7 @@
     ~/.claude/skills/cross-model-review: skills/cross-model-review
     ~/.claude/skills/diagnose: skills/diagnose
     ~/.claude/skills/drawio-diagrams-enhanced: skills/drawio-diagrams-enhanced
+    ~/.claude/skills/gcp-operations: skills/gcp-operations
     ~/.claude/skills/gha-security-review: skills/gha-security-review
     ~/.claude/skills/grill-with-docs: skills/grill-with-docs
     ~/.claude/skills/humanizer: skills/humanizer
@@ -146,6 +147,7 @@
     ~/.codex/skills/cross-model-review: skills/cross-model-review
     ~/.codex/skills/diagnose: skills/diagnose
     ~/.codex/skills/drawio-diagrams-enhanced: skills/drawio-diagrams-enhanced
+    ~/.codex/skills/gcp-operations: skills/gcp-operations
     ~/.codex/skills/gha-security-review: skills/gha-security-review
     ~/.codex/skills/grill-with-docs: skills/grill-with-docs
     ~/.codex/skills/humanizer: skills/humanizer
