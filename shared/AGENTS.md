@@ -74,9 +74,9 @@ Pragmatic rules that prevent real bugs. Follow these while writing code.
 
 ## Cross-Model Collaboration
 
-A single model has predictable blind spots. Use a different AI architecture for a second perspective — not just for code review, but for any significant intellectual work: planning, research, design decisions, debugging hard problems.
+A single model has predictable blind spots. Use a different model provider for a second perspective on significant work: planning, research, design decisions, hard debugging, and code review. Classify the served model, not the harness; mutable profiles must declare their provider/model.
 
-**The principle:** If you are Claude, call Codex. If you are Codex, call Claude. If you are Gemini/Antigravity or Grok, call either. The value is in model diversity, not the specific tool.
+**The principle:** Reviewer provider must differ from producer provider (Anthropic, OpenAI, xAI, Google, or another verified provider). Another harness or same-provider model does not satisfy the gate.
 
 ### When to use a second model
 
@@ -125,7 +125,7 @@ because they bind before the skill loads:
 
 This file is the contract — rules to never break. The *full operating doctrine* (triage, S/M/L bucket mandates, anti-patterns, skill cross-reference, mermaid overview) lives in `WORKFLOW.md` at `~/projects/clemens33/dotfiles/WORKFLOW.md`. Read it when starting a non-trivial task, when choosing a workflow shape, or when in doubt.
 
-Field knowledge (July 2026 SOTA, source-tiered references): `~/projects/clemens33/dotfiles/KNOWLEDGE.md`.
+Field knowledge (September 2026 SOTA, source-tiered references): `~/projects/clemens33/dotfiles/KNOWLEDGE.md`.
 
 ### Quick rules (full detail in WORKFLOW.md)
 
@@ -133,14 +133,14 @@ Field knowledge (July 2026 SOTA, source-tiered references): `~/projects/clemens3
 2. **Bug-shaped routes to `diagnose`** skill regardless of size. Reproduce → minimise → hypothesise → instrument → fix → regression-test.
 3. **L mandates only two things**: written plan first (`scope` skill, or equivalent `.local/plan.md`) + phased execution (each phase ends green-or-stop).
 4. **L with high rigor / audit-relevant / multi-session / multi-slice / high blast radius / needs defensible handoff**: reach for the optional **`large-feature` skill** — 7-stage playbook covering grill → plan+critique → vertical tracer-bullet slices → per-slice red-green-refactor with phase isolation → trigger-based drift checks → integrated review → separate architecture refactor cadence. The lean two-mandate L shape (rule 3) remains the default; this is the deeper path when needed.
-5. **Cross-model review triggers if** (a) *hard to undo cheaply* (touches shared agent behavior, data contracts, public APIs, deps, license/attribution) OR (b) *agent made a decision* rather than mechanically derived it. **Skip only if** already reviewed by a different model family (`/ultrareview` and same-model security skills add depth but do NOT satisfy diversity — see Cross-Model Collaboration above).
+5. **Cross-model review triggers if** (a) *hard to undo cheaply* (touches shared agent behavior, data contracts, public APIs, deps, license/attribution) OR (b) *agent made a decision* rather than mechanically derived it. **Skip only if** already reviewed by a different model provider (`/ultrareview` and same-model security skills add depth but do NOT satisfy diversity — see Cross-Model Collaboration above).
 6. **Universal principles** (apply at every bucket):
    - Verify your work (Cherny) — declare verification gaps explicitly.
    - Stop at done — once the requested outcome is verified and required findings are resolved, do not chase speculative edge cases, repeat clean reviews, or polish past diminishing returns.
    - Articulate before solving (Hashimoto / Ronacher / diagnose-loop) — one-sentence problem statement, then act.
    - Caveman-lite output by default (Efficiency Pact rule 4).
    - Source-tier justifications — Tier A/B (official, academic) drives normative; C/D (practitioner, commercial) suggests.
-   - Effort matches task class — `xhigh` everywhere is wasteful; `medium` everywhere is risky.
+   - Effort defaults: judgment `xhigh`; workers at vendor default, change defaults on measured outcome; trivial-work exception in WORKFLOW.md.
    - Don't abdicate judgment (Ronacher) — read every diff at S/M, every phase at L.
    - Generated code is debt until validated (Anthropic 2026 Trends Report).
 
@@ -148,10 +148,10 @@ Field knowledge (July 2026 SOTA, source-tiered references): `~/projects/clemens3
 
 | File | Role | Visibility |
 |---|---|---|
-| `shared/AGENTS.md` (this file) | Contract — rules to never break | Auto-loaded in every configured tool (symlinked into Claude Code, Codex, OpenCode, Antigravity; condensed variant for Grok) |
+| `shared/AGENTS.md` (this file) | Contract — rules to never break | Claude Code / Codex / OpenCode via global links; Antigravity via `~/.gemini/config/plugins/dotfiles/rules/AGENTS.md`; Grok via Claude compatibility + short pointer; Muse reads project `AGENTS.md`, global path unverified |
 | `WORKFLOW.md` | Doctrine — how to approach a task | Read on demand by any tool via absolute path above |
-| `KNOWLEDGE.md` | Field knowledge — what's true in July 2026 | Read on demand by any tool via absolute path above |
-| `skills/large-feature/SKILL.md` | Full-rigor L playbook | Claude Code / OpenCode via `~/.claude/skills/`; Codex via curated `~/.codex/skills/` symlink; Grok reads ~/.claude/skills/ natively; Antigravity has no equivalent skill routing |
+| `KNOWLEDGE.md` | Field knowledge — what's true in September 2026 | Read on demand by any tool via absolute path above |
+| `skills/large-feature/SKILL.md` | Full-rigor L playbook | Claude Code / OpenCode via `~/.claude/skills/`; Codex via `~/.agents/skills/` per-skill links; Grok / Muse read `~/.claude/skills/` natively; Antigravity via `~/.gemini/config/skills` → `~/.claude/skills` |
 | `skills/diagnose/SKILL.md` | Bug-shaped task loop | Same visibility as above |
-| `skills/*/SKILL.md` (many skills) | Operational recipes + doctrine-shaped playbooks | Claude Code / OpenCode auto-discover via the directory symlink; Codex sees only the curated subset in `install.conf.yaml`; other tools must be configured per-skill |
+| `skills/*/SKILL.md` (many skills) | Operational recipes + doctrine-shaped playbooks | Same discovery paths as above; all public/overlay skills linked per-skill for Claude Code and Codex via their Dotbot manifests; Codex-managed `~/.codex/skills/.system` stays separate |
 | `agents/*.md` | Claude Code-specific subagent definitions (domain-specific, typically supplied by a private overlay) | Claude Code only via `~/.claude/agents/` symlink; not available to Codex / OpenCode / Antigravity without explicit per-tool support (Grok reads ~/.claude/agents/ natively) |

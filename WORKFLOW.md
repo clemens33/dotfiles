@@ -16,7 +16,7 @@ Synthesized from the practitioner shortlist in `KNOWLEDGE.md` §18
 Triage every task on three dimensions, take the worst. Bug-shaped work routes
 through `diagnose` regardless of size. L work with high rigor reaches for the
 `large-feature` skill. Cross-model review fires on its own dual-trigger,
-decoupled from the bucket — and is satisfied only by a different model family.
+decoupled from the bucket — and is satisfied only by a different model provider.
 
 ```mermaid
 flowchart TD
@@ -24,9 +24,9 @@ flowchart TD
     BugCheck -- yes --> Diag[diagnose skill loop<br/>reproduce → minimise → fix]
     BugCheck -- no --> Triage{"Triage:<br/>worst of effort × blast × uncertainty"}
 
-    Triage -- low all 3 --> S["S — Small<br/>medium effort<br/>agent runs test, eyeball diff<br/>direct main"]
-    Triage -- medium worst --> M["M — Medium<br/>high effort<br/>inline outline<br/>full local validation<br/>read diff before commit"]
-    Triage -- high any --> L["L — Large<br/>xhigh effort<br/>plan + phased execution<br/>scope skill mandatory"]
+    Triage -- low all 3 --> S["S — Small<br/>effort by seat policy<br/>agent runs test, eyeball diff<br/>direct main"]
+    Triage -- medium worst --> M["M — Medium<br/>effort by seat policy<br/>inline outline<br/>full local validation<br/>read diff before commit"]
+    Triage -- high any --> L["L — Large<br/>effort by seat policy<br/>plan + phased execution<br/>scope or equivalent written plan"]
 
     L -. high rigor / audit-relevant .-> Playbook["large-feature skill<br/>7-stage full-rigor playbook"]
     L -. multi-session / unattended .-> LR["Long-running overlay<br/>.local/session-state.md<br/>.local/agent-brief.md<br/>ae memo · ADRs in repo"]
@@ -40,9 +40,9 @@ flowchart TD
 
     Gate{"Cross-model trigger?<br/>(a) hard to undo cheaply<br/>OR (b) agent made a decision"}
     Gate -- no --> Ship([Ship])
-    Gate -- yes --> CMR{Already reviewed via<br/>different-model path?}
+    Gate -- yes --> CMR{Already reviewed via<br/>different-provider path?}
     CMR -- yes --> Ship
-    CMR -- no --> Review[Different-model review<br/>codex exec / claude -p / ae review<br/>with different model family]
+    CMR -- no --> Review[Different-provider review<br/>ae review inside ae<br/>read-only CLI outside ae]
     Review --> Ship
 ```
 
@@ -79,7 +79,7 @@ Hashimoto's "outsource slam dunks." Stay in minimal-harness mode.
 - You eyeball the diff before committing
 
 **Settings:**
-- Effort: `medium` (`low` for truly trivial — typo, formatting)
+- Effort: follow the seat policy below; workers start at the vendor default.
 - Skills: none forced; caveman-lite tone is enough
 - Subagents: none
 - Branch: direct main is fine (the "YOLO main" stance applies)
@@ -98,7 +98,7 @@ Skill-augmented single agent. Cherny's "always give Claude a way to verify."
 - You read the diff before committing
 
 **Settings:**
-- Effort: `high` (Opus 4.7 default `xhigh` is also fine; never below `high`)
+- Effort: follow the seat policy below; move worker effort only on measured outcome.
 - Skills: domain skills as needed (load from a private overlay if applicable). Consider `code-review` after implementation for non-trivial diffs.
 - Subagents: `Explore` for codebase recon *only if* the change surface is unclear
 - Branch: feature branch + PR for shared repos; direct main for personal/dotfiles
@@ -126,7 +126,7 @@ Plan-first. Phased execution. Osmani's long-running-agents discipline.
 - **`arch-docs` update** if the change touches the living architecture (new module, new boundary, new invariant). Not for every L task.
 
 **Settings:**
-- Effort: `xhigh` for planning + most phases. Consider `max` per-session for the single hardest phase only.
+- Effort: judgment seats use `xhigh`; builders follow the vendor-default policy below.
 - Branch: feature branch minimum. Worktree if you need to context-switch.
 - Commits: per-phase. Each phase = revertable unit.
 
@@ -148,7 +148,7 @@ When an L task spans sessions or runs unsupervised, additional patterns apply. T
 - `~/.claude/memory/` — Claude-only, not visible to Codex/OpenCode/Gemini, not versioned. Use only when (a) you're solo-on-Claude *and* (b) you want auto-memory's surfacing across unrelated sessions. Do not put anything load-bearing here that another tool would need to read.
 
 **Recommended:**
-- **`ae` multi-agent workspace** — spawn `claude:lead` + `codex:coworker` (a different model family — that's the point). Use `ae ask` / `ae review` / `collab` skill for auditable handoffs. See the cross-model review section below for how this satisfies the contract.
+- **`ae` multi-agent workspace** — use the session's full-path `spawn <name> --using <profile>` helper (for example `spawn reviewer --using gpt56sol-review`, if that profile is configured); served providers must differ. Use session `ask` / `review` helpers or the `collab` skill for auditable handoffs. See the cross-model review section below for how this satisfies the contract.
 - **`zoom-out` skill** periodically — step back, look at the work in aggregate, check you're still on the plan. Especially after each phase merges.
 - **Scheduled / unattended runs** via `/loop` (built-in to Claude Code) with an explicit max-iteration bound. Apply Ralph-loop discipline (`KNOWLEDGE.md` §17): mechanical work only, machine-verifiable completion criterion, hard iteration ceiling.
 
@@ -177,17 +177,17 @@ One trigger fires = one cross-model pass. Both fire on an L task = two passes (p
 
 ### What satisfies the cross-model requirement (model diversity)
 
-Only review by a **different model family** than the one that did the work counts:
+Only review by a **different model provider** than the producer counts. Classify the served model, not the harness: Anthropic, OpenAI, xAI, Google, or another verified provider. OpenCode and other mutable profiles must declare their upstream provider/model before they can gate work.
 
-- **`ae review`** signoff *from an agent in a different model family* (e.g., `claude:lead` ↔ `codex:coworker`) — same-family `ae review` does not count.
-- **`collab` skill signoff** from a different-model agent in the round.
-- **Prior `codex exec` / `claude -p` cross-model pass** on the same change.
+- **`ae review`** signoff from an agent serving a different provider — same-provider review does not count.
+- **`collab` skill signoff** from a different-provider agent in the round.
+- **Prior read-only CLI review outside ae** by a different provider on the same change.
 
 ### What does NOT satisfy cross-model (but is still valuable as "review depth")
 
 These add review depth but stay on the same model — useful, but do not waive the cross-model requirement:
 
-- **`/ultrareview`** — Opus 4.7 multi-pass review by the *same* model. Run it, but follow with cross-model if the trigger fired.
+- **`/ultrareview`** — multi-pass review does not establish provider diversity. Follow with cross-provider review if the trigger fired and diversity is still unmet.
 - **`security-review` / `gha-security-review` / Trail of Bits `fp-check`** — adds security-specific depth, same model.
 - **`code-review` skill** — structured adversarial review, same model.
 
@@ -195,45 +195,38 @@ If you've used these, you've raised the quality bar — but you have not yet met
 
 ### Invocation paths in this repo
 
-The direction depends on which model is *acting*. Mirror `shared/AGENTS.md` Cross-Model Collaboration:
+Load the **`cross-model-review` skill** for routing, prompts, and artifact conventions. Inside ae, use the session's full-path `review`/`ask` helper and an eligible provider seat; never launch a reviewer CLI or internal subagent. Verify the served provider first and record it in the verdict (`gate: <provider>/<profile> PASS`).
 
-**From Claude / OpenCode / Gemini / any non-OpenAI tool → call Codex:**
-
-```bash
-codex exec --full-auto -o .local/cross-review.md "Review these uncommitted changes..."
-codex exec --full-auto -o .local/plan-review.md "Review the implementation plan in .local/plan.md..."
-```
-
-**From Codex / OpenAI agent → call Claude:**
+Outside ae, reviewers use explicit read-only forms:
 
 ```bash
-CLAUDECODE= CLAUDE_CODE_SESSION= claude -p --permission-mode bypassPermissions \
-  --allowedTools Read Glob Grep Bash -- "Review these uncommitted changes..." \
-  > .local/cross-review.md
+# Codex interactive review / analysis
+codex -s read-only -a never
+# Codex one-shot diff review
+codex review --uncommitted -c sandbox_mode="read-only" -c approval_policy="never"
+# Claude: no Bash or inherited MCP servers; give it a prepared diff artifact
+claude --restricted --strict-mcp-config --disallowedTools Edit,Write,NotebookEdit
+grok --sandbox read-only
+muse --disable-write --disable-shell
 ```
 
-**`ae` workspace path** (when a different-model coworker is live):
-
-```bash
-ae review codex:coworker "..."   # Claude lead asking Codex coworker
-ae review claude:lead "..."      # Codex coworker asking Claude lead
-```
-
-`ae` does not by itself make a review cross-model — the recipient must be in a different model family. Verify with `ae agents` before relying on `ae review` as your cross-model pass.
+Pick the provider before the harness. These permission forms do not themselves prove provider diversity.
 
 ---
 
 ## Effort level cheat sheet
 
-| Task class | Effort | Why |
+| Harness / served model | Vendor default effort | Verification |
 |---|---|---|
-| Trivial typo / formatting / dep version bump | `low` | nothing to think about |
-| Single-file fix you fully understand | `medium` | wide margin for safety |
-| Normal multi-file work, M-bucket bread-and-butter | `high` | most coding lives here |
-| L tasks, planning, hard bugs, security review | `xhigh` | Opus 4.7's recommended default |
-| The single hardest phase of an L task | `max` **per session only** | not a default — exceptional |
+| Claude Code / Fable 5.1, Opus 5 | `high` | 2.1.263, 2026-09-07 |
+| Codex / GPT-6 Astra | `medium` | 0.153.4 model catalog, 2026-09-07 |
+| Codex / GPT-5.6 Sol | `low` | 0.153.4 model catalog, 2026-09-07 |
+| Codex / GPT-5.6 Luna, Terra | `medium` | 0.153.4 model catalog, 2026-09-07 |
+| Grok / Grok 4.6 | `high` | 1.0.13, 2026-09-07 |
 
-Opus 4.7 defaults to `xhigh` already. Setting *lower* is the explicit choice, not the other way around.
+**Clemens' defaults:** judgment seats (lead/colead and interactive use) use `xhigh`; builders/workers start at the vendor default and change that default only on measured outcome. Keep one effort per Astra thread: effort flips bust the prefix cache. Choose a new thread when a measured change calls for different effort.
+
+For trivial mechanical work (typos, formatting, version bumps), any seat may choose `low`/`medium` per task; worker default changes still need measured outcomes, and Astra effort is chosen only at thread start. Claude `max` is session-only for the single hardest L phase; only `CLAUDE_CODE_EFFORT_LEVEL` persists it.
 
 ---
 
@@ -243,10 +236,10 @@ Opus 4.7 defaults to `xhigh` already. Setting *lower* is the explicit choice, no
 2. **Articulate before solving** — Hashimoto's "reproduce your own work" + Ronacher's "judgment, not abdication"; baked into the `diagnose` skill loop. If you can't state the problem in one sentence, you're not ready to fix it. Reproduce → describe → then act.
 3. **Caveman-lite output** — `shared/AGENTS.md` rule #4. Drift back to verbose = drift back to slop.
 4. **Source-tier your justifications** — `KNOWLEDGE.md` §3. Tier A/B drives, C/D suggests.
-5. **Effort matches task class** — `xhigh` everywhere is wasteful; `medium` everywhere is risky.
+5. **Effort follows seat policy** — judgment defaults to `xhigh`; worker default changes need measured outcomes. Apply the trivial-work exception above, not a blanket task-bucket override.
 6. **Don't abdicate judgment** — Ronacher. The agent does the typing, you do the thinking. Read every diff at S/M, every phase at L.
 7. **Generated code is debt until validated** — Anthropic Trends Report. Test coverage caps real throughput.
-8. **Stop at done** — once the requested outcome is verified and required findings are resolved, stop. No speculative edge cases, no repeated clean reviews, no polish past diminishing returns. Required = BLOCKER/IMPORTANT per the severity contract; NIT stays apply-if-quick.
+8. **Stop at done** — once the requested outcome is verified and required findings are resolved, stop. One provider-diverse review per required gate, then one focused recheck of BLOCKER/IMPORTANT fixes; no new full pass after a clean verdict. No speculative edge cases or polish past diminishing returns. Required = BLOCKER/IMPORTANT per the severity contract; NIT stays apply-if-quick.
 
 ---
 
@@ -258,8 +251,8 @@ Opus 4.7 defaults to `xhigh` already. Setting *lower* is the explicit choice, no
 - Triaging by file count or estimated time — both are downstream, not input
 
 **Process:**
-- Running `xhigh` on S tasks (latency without benefit)
-- Running `medium` on L tasks (under-thinking the hard problem)
+- Forcing every worker to `xhigh` without measured quality gains
+- Switching Astra effort mid-thread and losing the prefix cache
 - Skipping the plan at L because "I get it now" — if you got it, the one-sentence done test would have made it M
 - "Let me just finish this one more thing" mid-phase at L — abandoning the gates that made it L
 - Spawning subagents on S work — overhead exceeds work
@@ -268,7 +261,7 @@ Opus 4.7 defaults to `xhigh` already. Setting *lower* is the explicit choice, no
 **Review:**
 - Skipping cross-model on dual-trigger tasks because "this one's fine"
 - Treating cross-model as a rubber stamp — "LGTM, ship it" without reading findings
-- Running duplicate cross-model review when a different-model pass already happened on the same change (`ae review` / `collab` signoff from a different model family, or a prior `codex exec` / `claude -p` pass). Note: `/ultrareview` and same-model review skills add depth but do *not* satisfy the cross-model requirement — see the Cross-Model Review section.
+- Running duplicate cross-model review when a different-provider pass already happened on the same change (`ae review` / `collab` signoff from a different provider, or a prior read-only CLI pass outside ae). Note: `/ultrareview` and same-model review skills add depth but do *not* satisfy the cross-model requirement — see the Cross-Model Review section.
 
 **Long-running:**
 - Unsupervised autonomous loops without max-iteration bounds
@@ -300,13 +293,13 @@ When the bucket says "use this," reach for these:
 
 ## Where this fits
 
-- **`shared/AGENTS.md`** — the contract, symlinked into every tool. Rules to never break (security, secrets, git commit hygiene, cross-model collaboration mandate). Root `AGENTS.md` is the repo orientation doc, not the contract.
-- **`KNOWLEDGE.md`** — the field knowledge. What's true about agentic engineering in May 2026: models, mechanisms, source tiers, practitioner consensus.
+- **`shared/AGENTS.md`** — the contract, linked into configured tools. Rules to never break (security, secrets, git commit hygiene, cross-model collaboration mandate).
+- **`KNOWLEDGE.md`** — the field knowledge. September 2026 refresh: models, mechanisms, source tiers, practitioner consensus.
 - **`WORKFLOW.md`** (this file) — operating doctrine. How to actually approach a task: triage, bucket, execute.
 
 If these three diverge, `shared/AGENTS.md` wins (it's the contract).
 
 ---
 
-*Last updated: 2026-05-11 (mermaid overview added). Update as the workflow evolves.*
+*Last updated: 2026-09-07 (vendor defaults, seat effort policy, read-only provider-diverse reviews, review cadence). Update as the workflow evolves.*
 *This doc was iteratively grilled via the `grill-with-docs` skill, then cross-model reviewed by codex:coworker via `ae review` per its own dual-trigger rule (touches shared agent behavior + embeds judgment calls). Findings applied before commit.*

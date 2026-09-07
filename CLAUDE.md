@@ -1,8 +1,8 @@
 # CLAUDE.md
 
-@shared/AGENTS.md
+The contract loads via `~/.claude/CLAUDE.md`.
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository. The shared AGENTS.md above carries the cross-tool operating doctrine; the sections below describe the repo itself.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository. The sections below describe the repo itself.
 
 ## Overview
 
@@ -26,11 +26,11 @@ brew bundle --file macos/Brewfile
 **Dotbot** manages symlinks via `install.conf.yaml`:
 - Shell/editor/git/WSL utility links (`~/.config/fish/`, `~/.gitconfig`, `~/.vimrc`, …)
 - Fish functions directory is symlinked entirely (`fish/functions/` → `~/.config/fish/functions/`)
-- AI tool instructions: `shared/AGENTS.md` → `~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, `~/.config/opencode/AGENTS.md`, `~/.gemini/antigravity-cli/AGENTS.md`; Grok gets a condensed `grok/AGENTS.md` → `~/.grok/AGENTS.md` (10k-char rules cap) but also loads the full contract via its Claude-compat reading of `~/.claude/CLAUDE.md`
-- AI tool settings: `claude/`, `codex/`, `opencode/`, `antigravity/`, `grok/` configs (Grok reads `~/.claude/skills/`, `~/.claude/agents/`, and `~/.claude/settings.json` permissions natively — no per-skill symlinks needed). Gemini CLI was retired by Google 2026-06-18; Antigravity CLI (`agy`) replaces it, config under `~/.gemini/antigravity-cli/`
-- Per-skill symlinks into `~/.claude/skills/` and `~/.codex/skills/` (NOT a directory symlink, so an optional private overlay can contribute its own skills into the same target)
+- AI tool instructions: `shared/AGENTS.md` → `~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, `~/.config/opencode/AGENTS.md`, `~/.gemini/config/plugins/dotfiles/rules/AGENTS.md`; Grok gets a short `grok/AGENTS.md` pointer → `~/.grok/AGENTS.md` (10k-char rules cap) and loads the full contract via its Claude-compat reading of `~/.claude/CLAUDE.md`
+- AI tool settings: `claude/`, `codex/`, `opencode/`, `antigravity/`, `grok/` configs (Grok reads `~/.claude/skills/`, `~/.claude/agents/`, and `~/.claude/settings.json` permissions natively — no per-skill symlinks needed). Gemini CLI was retired by Google 2026-06-18; Antigravity CLI (`agy`) replaces it: rules/skills under `~/.gemini/config/`, settings and runtime state under `~/.gemini/antigravity-cli/`
+- Per-skill symlinks into `~/.claude/skills/` and `~/.agents/skills/` for Codex (NOT a directory symlink, so an optional private overlay can contribute its own skills into the same target); Antigravity's `~/.gemini/config/skills` links to `~/.claude/skills`
 
-**AI skill layers:** the 24 generic skills in `skills/` are the public layer. A private overlay (`dotfiles-mic/`, optional git submodule) can add domain-specific skills + agents on machines with access to it. The wrapper `./install` script handles both layers — public always, private only if submodule is populated. See the **manage-skills** skill for the two-layer model.
+**AI skill layers:** the generic skills in `skills/` are the public layer. A private overlay (`dotfiles-mic/`, optional git submodule) can add domain-specific skills + agents on machines with access to it. The wrapper `./install` script handles both layers — public always, private only if submodule is populated. See the **manage-skills** skill for the two-layer model.
 
 **Fish shell** (`config.fish`):
 - PATH includes: `~/.local/bin`, `~/bin`, nvm, go
