@@ -44,16 +44,10 @@ mkdir -p skills/<skill-name>
 $EDITOR skills/<skill-name>/SKILL.md
 ```
 
-Add YAML frontmatter at the top:
+Start from the canonical template below — it is the only skill template in this repo, and it
+is written to pass `lint-skills.sh` on the first run.
 
-```yaml
----
-name: <skill-name>
-description: What this skill does and when to use it.
----
-```
-
-**Add a symlink entry in the public `install.conf.yaml`** for both Claude Code (`~/.claude/skills/<skill-name>: skills/<skill-name>`) and Codex (`~/.codex/skills/<skill-name>: skills/<skill-name>`).
+**Add a symlink entry in the public `install.conf.yaml`** for both Claude Code (`~/.claude/skills/<skill-name>: skills/<skill-name>`) and Codex (`~/.agents/skills/<skill-name>: skills/<skill-name>`). Codex user-scope skills live in `~/.agents/skills`; `~/.codex/skills` is legacy and holds Codex's own `.system` set.
 
 Re-run install to pick up the new symlinks:
 
@@ -64,10 +58,14 @@ Re-run install to pick up the new symlinks:
 Commit + push:
 
 ```bash
-git add skills/<skill-name>/SKILL.md install.conf.yaml
+git add -- skills/<skill-name>/ install.conf.yaml
 git commit -m "add <skill-name> skill"
 git push
 ```
+
+Stage the **skill directory**, not just `SKILL.md`: any `references/`, `scripts/` or `assets/`
+you created alongside it would otherwise stay untracked, and the skill would land broken for
+everyone else. Never `git add -A` — other lanes' work is in this checkout too.
 
 ## Creating a new private skill
 
@@ -77,7 +75,7 @@ mkdir -p skills/<skill-name>
 $EDITOR skills/<skill-name>/SKILL.md
 ```
 
-Same frontmatter as above. Add symlink entries in the **private overlay** `install.conf.yaml`. Re-run install from the public root:
+Same template as above. Add symlink entries in the **private overlay** `install.conf.yaml`. Re-run install from the public root:
 
 ```bash
 cd ~/projects/clemens33/dotfiles
@@ -88,7 +86,7 @@ Commit + push in the private repo first, then update the public submodule pointe
 
 ```bash
 cd dotfiles-mic
-git add skills/<skill-name>/SKILL.md install.conf.yaml
+git add -- skills/<skill-name>/ install.conf.yaml
 git commit -m "add <skill-name> skill"
 git push
 cd ..
@@ -97,21 +95,29 @@ git commit -m "submodule: bump dotfiles-mic"
 git push
 ```
 
-## Skill file format
+## Canonical skill template
+
+One template, both layers. Copy it verbatim and fill it in:
 
 ```markdown
 ---
 name: my-skill
-description: What this skill does and when Claude should use it.
+description: >
+  What this skill does, front-loaded in the first clause. Use when <the
+  concrete triggers — what the user says, or the situation that calls for it>.
+  Not for <the nearest adjacent skill's job> — use `that-skill` instead.
+metadata:
+  category: capability
+
 ---
 
 # Skill Title
 
-One-line description of what this skill does.
+One line on what this skill does.
 
 ## Configuration
 
-API URLs, env vars, credentials paths, etc. Private skills reference
+API URLs, env vars, credentials paths. Private skills reference
 `~/.config/<service>/credentials.env` and `$ENV_VAR` placeholders — never
 inline secrets.
 
@@ -128,6 +134,22 @@ Concrete examples of common operations.
 Guiding principles for decision-making within this skill.
 ```
 
+The frontmatter fields the linter enforces, and why each one is not optional:
+
+| Field | Rule | Gate |
+|---|---|---|
+| `name` | Must equal the directory name; lowercase alphanumerics and single hyphens, 1-64 chars | gate 1 |
+| `description` | Required, at most 500 chars, no embedded newlines (use folded `>`, not literal `\|`) | gates 1-2 |
+| `description` | Must contain the exact-case substring `Use when` — house grammar, checked literally | gate 3 |
+| `metadata.category` | Must be exactly `capability` or `preference` | gate 7 |
+
+`capability` vs `preference` is an ablation test, not a topic label: if removing the skill
+would make a task *impossible*, it is a `capability`; if the task would still get done but in a
+way the user does not want, it is a `preference`.
+
+Body limits: 500 lines and ~5000 estimated tokens (gate 4). Over either, do not add a waiver —
+run `skill-reducer` and split the reference material out.
+
 **Keep skills focused.** One skill = one domain. If a skill grows too broad, split it.
 
 **Include runnable commands.** Claude will use these directly — make them copy-paste ready with placeholders clearly marked.
@@ -143,8 +165,8 @@ Commit and push in the layer that owns the skill. If you edit a private skill, a
 ## Listing installed skills
 
 ```bash
-ls -la ~/.claude/skills/   # all installed skills (both layers merge here)
-ls -la ~/.codex/skills/    # codex curated subset
+ls -la ~/.claude/skills/    # all installed skills (both layers merge here)
+ls -la ~/.agents/skills/    # the same set, linked for Codex
 ```
 
 ## When to create a skill
@@ -175,13 +197,36 @@ Sanitize references → generic examples. Then `git mv` the directory from priva
 
 **Semantic** (judgment — routing quality, collisions, filler, drift): the canonical checklist
 lives in `.github/instructions/skills.instructions.md`. GitHub Copilot applies it automatically
-on PRs touching `skills/**` (via `copilot-review.yml`). Run the same review locally with a
-different model family:
+on PRs touching `skills/**` (via `copilot-review.yml`).
+
+To run it locally, route through `cross-model-review` — do not shell out to another CLI
+yourself. Inside an ae session that means an agent on a different provider than the one that
+wrote the skill:
 
 ```bash
-codex exec -o .local/skill-review.md "$(cat .github/instructions/skills.instructions.md)
-
-Review these changed skills: <names or git diff scope>"
+/Users/ckriech/.ae/sessions/<session>/review <reviewer-agent> \
+  "Apply .github/instructions/skills.instructions.md to <names or git diff scope>. \
+   BLOCKER/IMPORTANT/NIT. State 'No findings' if clean."
 ```
 
+Outside ae, use the CLI forms in `cross-model-review`. Either way the reviewer's provider must
+differ from the author's, and the verdict records which provider ran it.
+
 One instruction file, every consumer — edit it there, never fork the checklist.
+
+## Lifecycle order
+
+Skill edits are shared agent behavior, so they hit the mandatory cross-model gate. Run it in
+this order:
+
+1. **Lint** — `./scripts/lint-skills.sh skills/ dotfiles-mic/skills/` plus
+   `./scripts/lint-skills-test.sh` if you touched the linter. Green before anyone reviews.
+2. **Cross-provider review** — the semantic checklist above, through `cross-model-review`.
+   Apply BLOCKER, apply IMPORTANT unless you can say why not, and send the fixes back to the
+   same reviewer.
+3. **Install** — `./install` only when symlinks changed (a new or removed skill). Pure edits
+   to an existing `SKILL.md` take effect immediately through the existing symlink.
+4. **Commit and push** — following the session's standing authorization, in the layer that owns
+   the skill; private first, then the public gitlink bump. Stage the whole skill directory plus
+   the `install.conf.yaml` you touched (`git add -- skills/<name>/ install.conf.yaml`) and
+   nothing else. Never `git add -A`.

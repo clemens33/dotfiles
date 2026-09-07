@@ -53,15 +53,32 @@ free-response with evidence-validated grading, fingerprinted gap records.
 
 ### 1. Resolve scope — announce before asking
 
-Default (pre-PR ritual): merge-base of the target branch through the current
-worktree — committed + staged + unstaged + untracked. Resolve the target from
-the configured/upstream default branch (`git symbolic-ref refs/remotes/origin/HEAD`,
-fall back `main`/`master`); never hard-code. Explicit user scope always wins
-(staged-only, last N commits, a phase's recorded range, named files).
+Default (pre-PR ritual): the merge-base of the real target branch through the
+current worktree — committed + staged + unstaged + *selected* untracked files.
+Explicit user scope always wins (staged-only, last N commits, a phase's
+recorded range, named files).
 
-Announce: resolved base, endpoints (SHAs), file count. Capture `base SHA`,
-`head SHA`, and a diff hash (`git diff <base>...<head> | sha256sum`) for the
-gap record.
+Use the scope recipe in `code-review` → **Inputs** as-is. It resolves the
+actual base (an explicit PR or user-named target, then `origin/HEAD`, then
+`main`/`master`, then fails rather than guessing — and never the branch's own
+`@{upstream}`, which on a pushed feature branch hides every pushed commit),
+makes you choose untracked files deliberately, and fingerprints the result with
+`git hash-object` rather than `sha256sum`, which does not exist on macOS.
+
+Two of its rules bind harder here, because this fingerprint gets persisted and
+read back later:
+
+- **The fingerprint must cover everything you quizzed on.** Hashing only
+  `git diff base...head` ignores staged, unstaged and untracked work, so a gap
+  record can read as current long after the code it describes moved. Emit every
+  part your resolved scope actually covers.
+- **Never hash or enumerate the whole untracked set.** It holds credentials,
+  unrelated experiments and other agents' in-flight work. Only the files you
+  deliberately selected enter the fingerprint, and the record keeps their paths,
+  never their contents.
+
+Announce: the resolved base and which step resolved it, endpoints (SHAs), file
+count. Capture `base SHA`, `head SHA` and the fingerprint for the gap record.
 
 Skip only mechanically-recognizable noise: whitespace/formatting-only,
 typo-only, generated artifacts, pure version bumps. Do NOT auto-exempt tests,
@@ -126,13 +143,15 @@ object per run:
 
 ```json
 {"ts": "<ISO>", "branch_label": "<sanitized>", "base": "<sha>", "head": "<sha>",
- "diff_hash": "<sha256>", "concepts": ["..."],
+ "diff_hash": "<scope fingerprint>", "concepts": ["..."],
  "items": [{"construct": "...", "outcome": "correct|partial|incorrect|invalid",
             "challenged": false, "evidence": ["file:line"]}],
  "gaps": ["one-line descriptions of what was missed"]}
 ```
 
-Mark prior entries stale when their diff fingerprint no longer matches. Do not
+`diff_hash` is the scope fingerprint from step 1, not a hash of the committed
+diff alone — that is what makes staleness detectable. Mark prior entries stale
+when their fingerprint no longer matches. Do not
 store the user's raw answers. On a later run in the same repo, glance at prior
 gaps — if one resurfaces as a fresh miss, say so (recurring gap = highest-value
 teaching target). No spaced-repetition claims in v1.

@@ -39,7 +39,18 @@ This skill is _informed_ by the project's domain model. The domain language give
 
 Read the project's domain glossary and any ADRs in the area you're touching first.
 
-Then use the Agent tool with `subagent_type=Explore` to walk the codebase. Don't follow rigid heuristics — explore organically and note where you experience friction:
+Then walk the codebase. Do it inline, or delegate an **exploration pass** to whatever
+read-only helper your harness provides — an ae worker, a native search subagent, a parallel
+grep/glob runner. Brief it by role and output, never by tool name:
+
+> Survey these paths for architectural friction. Return a ranked list of candidate seams:
+> file paths, one line of evidence each, no edits.
+
+Read-only is a runtime constraint, not a sentence in a prompt — set it in the helper's actual
+configuration (a read-only profile, a denied write-tool list) rather than asking it politely.
+If no delegation mechanism exists, run the same pass yourself; nothing below depends on it.
+
+Don't follow rigid heuristics — explore organically and note where you experience friction:
 
 - Where does understanding one concept require bouncing between many small modules?
 - Where are modules **shallow** — interface nearly as complex as the implementation?

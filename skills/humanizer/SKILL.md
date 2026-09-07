@@ -1,12 +1,12 @@
 ---
 name: humanizer
 description: >
-  Remove signs of AI-generated writing from text. Use when editing or reviewing
-  text to make it sound more natural and human-written. Based on Wikipedia's
-  comprehensive "Signs of AI writing" guide. Detects and fixes patterns including:
-  inflated symbolism, promotional language, superficial -ing analyses, vague
-  attributions, em dash overuse, rule of three, AI vocabulary words, negative
-  parallelisms, and excessive conjunctive phrases.
+  Rewrite text that reads as AI-generated so it sounds human. Use when the ask is
+  explicitly about tone or voice — "make this sound less like AI", "humanize this
+  draft". Fixes inflated symbolism, promotional language, -ing analyses, vague
+  attributions, em dash overuse, rule of three, AI vocabulary, filler. Based on
+  Wikipedia's "Signs of AI writing". Not for ordinary copy-editing, proofreading
+  or summarizing: it changes voice, never the facts or their certainty.
 metadata:
   category: capability
 
@@ -23,9 +23,62 @@ When given text to humanize:
 1. **Identify AI patterns** - Scan for the patterns listed below
 2. **Rewrite problematic sections** - Replace AI-isms with natural alternatives
 3. **Preserve meaning** - Keep the core message intact
-4. **Maintain voice** - Match the intended tone (formal, casual, technical, etc.)
-5. **Add soul** - Don't just remove bad patterns; inject actual personality
-6. **Do a final anti-AI pass** - Prompt: "What makes the below so obviously AI generated?" Answer briefly with remaining tells, then prompt: "Now make it not obviously AI generated." and revise
+4. **Preserve the facts and their certainty** - see the invariant below; this outranks every style rule here
+5. **Maintain voice** - Match the intended tone (formal, casual, technical, etc.)
+6. **Add soul** - Don't just remove bad patterns; inject actual personality
+7. **Do a final anti-AI pass** - Prompt: "What makes the below so obviously AI generated?" Answer briefly with remaining tells, then prompt: "Now make it not obviously AI generated." and revise
+
+---
+
+## THE FACTUAL INVARIANT
+
+**You edit the prose. You do not edit the evidence.**
+
+Hedged AI writing is a real tell, and the fix is to cut the hedging *language* — not to
+manufacture the certainty the author never had. Deleting "it appears that" from a sentence the
+author could not verify does not make the writing more human; it makes it false, and confidently
+so.
+
+Rules, in force over everything below:
+
+1. **Never add a fact.** No dates, names, numbers, quantities, sources or causes that were not
+   in the input. A specific detail is more human than a vague one — invent one and you have
+   fabricated evidence, not improved style.
+2. **Never raise the certainty of a claim.** "Sometime in the 1990s" does not become "in 1994".
+   "Some researchers argue" becomes a named researcher only if the input named one. Uncertainty
+   is content, not hedging.
+3. **Never remove an attribution** that carries where a claim came from. Vague weasel words
+   ("experts say") get replaced with the real source when the input has one, and get flagged as
+   an open question when it does not.
+4. **Never invent the author's experience.** First person and stated feeling are legitimate
+   voice tools *for the author's own writing*. In third-party or factual copy, voice comes from
+   rhythm, specificity and structure — not from a reaction the author never expressed. If you
+   want to add "here's what gets me", you need the author to have said it.
+5. **Label anything hypothetical.** If a rewrite needs a concrete detail the input lacks, mark
+   it as a placeholder (`<founding year>`) and say so. Do not quietly fill it in.
+
+### Retention check — scale it to what you changed
+
+Check the **claims you touched**, not the whole document. A sentence you left alone cannot have
+gained a fact, so it needs no inventory. Scan your own edits and stop at the ones that carry a
+factual claim; on a long draft with three rewritten paragraphs, that is three claims to check,
+not three hundred.
+
+For each claim you rewrote, compare it against the input on two axes — the content of the claim,
+and how certain it was:
+
+| Claim | Input | Output | Verdict |
+|---|---|---|---|
+| founding date | "sometime in the 1990s", undocumented | "sometime in the 1990s", exact date not documented | preserved |
+| founding date | "sometime in the 1990s", undocumented | "founded in 1994, per registration documents" | **fabricated — reject** |
+
+An edit that gains precision, gains a source, or loses a stated doubt is a defect in the
+rewrite, not a stylistic improvement. Fix it before presenting the draft.
+
+Keep this internal. It is your own check on your own output — do not print the table unless the
+user asks for a factual audit, and do not turn a humanize request into a verification report.
+The invariant above stays absolute regardless: fewer claims to check never licenses one
+invented fact.
 
 ---
 
@@ -49,7 +102,7 @@ Avoiding AI patterns is only half the job. Sterile, voiceless writing is just as
 
 **Acknowledge complexity.** Real humans have mixed feelings. "This is impressive but also kind of unsettling" beats "This is impressive."
 
-**Use "I" when it fits.** First person isn't unprofessional - it's honest. "I keep coming back to..." or "Here's what gets me..." signals a real person thinking.
+**Use "I" when it fits.** First person isn't unprofessional - it's honest. "I keep coming back to..." or "Here's what gets me..." signals a real person thinking. Only when the author actually thinks it: in third-party or factual copy, a manufactured reaction is a fabricated fact about the author. Reach for rhythm and specificity there instead.
 
 **Let some mess in.** Perfect structure feels algorithmic. Tangents, asides, and half-formed thoughts are human.
 
@@ -327,7 +380,12 @@ Fix: Replace all curly quotes with straight quotes.
 > While specific details about the company's founding are not extensively documented in readily available sources, it appears to have been established sometime in the 1990s.
 
 **After:**
-> The company was founded in 1994, according to its registration documents.
+> The company was founded sometime in the 1990s. The exact date isn't documented.
+
+The disclaimer scaffolding goes; the uncertainty stays, because the uncertainty is what the
+source actually supports. "Founded in 1994, according to its registration documents" would read
+better and be an invention — no registration document was in the input. See the factual
+invariant above.
 
 ---
 

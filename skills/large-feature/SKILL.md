@@ -47,7 +47,9 @@ Each stage is labeled by how well-supported it is in May 2026 SOTA:
 
 **Gate:** Run if domain language uncertainty or prior-decision ambiguity is high. Skip if the request is unambiguous and the project's `CONTEXT.md` / ADRs already settle the relevant terms.
 
-Use the `grill-with-docs` skill against `CONTEXT.md`, `docs/adr/`, and existing skills in the area. Output is **sharpened understanding**, not yet a plan. If you can already write a clean one-sentence "done" definition (M↔L bright-line test from `WORKFLOW.md`), this stage probably isn't needed — drop to M.
+Use the `grill-with-docs` skill against `CONTEXT.md`, `docs/adr/`, and existing skills in the area. Output is **sharpened understanding**, not yet a plan.
+
+If you can already write a clean one-sentence "done" definition, skip this stage — the language is already settled. That does **not** reclassify the work. A clear done definition lowers *uncertainty*; it leaves effort and blast radius exactly where they were, and the bucket is the worst of the three (`WORKFLOW.md`). A well-understood change to a shared contract is still L.
 
 **For greenfield features without a spec yet:** add a pre-stage using `to-prd` to write the spec, then grill against it. This repo's vendored Matt-Pocock pipeline is `to-prd` → `scope` → `to-issues`. (Upstream Matt-Pocock also offers `prd-to-plan` / `plan-from-prd` for finer-grained planning steps; those are not vendored here.)
 
@@ -241,7 +243,7 @@ Cross-reference `WORKFLOW.md` Long-running mode. For any L-feature that spans se
 For high-blast-radius slices, do an explicit impact pass before committing:
 
 - Identify callers, ownership boundaries, contracts, migrations, tests affected
-- Use repo tools first (`Grep`, `Glob`, `Explore` subagent)
+- Use local search first — whatever your harness offers for grep/glob and a delegated read-only exploration pass
 - For very large codebases or cross-repo work where completeness matters: Sourcegraph/Amp-style code intelligence or MCP-backed code-search tools
 
 Grep-based exploration is *not enough* when completeness matters (Sourcegraph/Amp lesson, `KNOWLEDGE.md` §18 practitioner refs).

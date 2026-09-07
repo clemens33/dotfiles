@@ -185,7 +185,13 @@ Print:
   `README.md`, and (if MkDocs) `mkdocs.yml`'s nav. Suggest the most
   specific match, not all of them.
 
-Do **not** auto-commit. The user reviews and commits.
+Committing follows the repository's standing authorization, not a rule in
+this skill. If the session or the repo's `AGENTS.md` / `CLAUDE.md` already
+authorizes committing completed work, commit the ADR with the message above
+and say so in the report. If no such authorization is in context, leave the
+file uncommitted and report the proposed message instead. Either way, stage
+only the ADR and any index file you touched — never the user's unrelated
+work in progress.
 
 ## MADR-inspired fallback template
 

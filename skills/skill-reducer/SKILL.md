@@ -8,7 +8,7 @@ description: >
   feels expensive, or before adding new heavy skills. Not for creating,
   updating, or relocating skills — use manage-skills for lifecycle work.
   Based on SkillReducer (arXiv:2603.29919).
-source: based on https://arxiv.org/abs/2603.29919
+source: based on https://arxiv.org/abs/2603.29919v2
 metadata:
   category: capability
 
@@ -26,11 +26,17 @@ Heavy skills cost tokens **every time they load**. The cost compounds where load
 - Skill-triggered invocations in long sessions
 - Multiple agents in agent-team workflows each preloading the same skills
 
-Per the SkillReducer paper survey of 55,315 skills:
+The SkillReducer preprint surveyed 55,315 published skills and reported:
 
-- 26.4% lack proper routing descriptions
-- **>60% of body content is non-actionable**
-- Target on real skills: ~**39% body compression with 0.965 retention**
+| Reported on the paper's corpus | Value |
+|---|---|
+| Skills lacking a usable routing description | 26.4% |
+| Body content classified non-actionable | >60% |
+| Body compression achieved, at 0.965 retention | ~39% |
+
+Those are **external measurements on someone else's corpus**. They are a reason to try
+progressive disclosure here; they are not a target, and not a gain you may promise before
+measuring. Quote your own before/after numbers as the result.
 
 ## When NOT to use this
 
@@ -75,9 +81,27 @@ Implement the split. Keep:
   See `reference/custom-fields.md` for the full custom field table.
   ```
 
-### 4. Verify
+### 4. Verify retention with before/after cases
 
-After the split, the agent should still be able to do everything the original skill enabled. Spot-check by reading the new `SKILL.md` cold and asking: "could a fresh session use this skill correctly without loading the references?" If yes, ship. If no, move content back.
+Reading the new `SKILL.md` cold is a smoke test, not evidence. Before splitting, write down 3-5
+concrete cases the skill must still handle, taken from what it is actually used for. Cover both
+kinds of retention:
+
+- **Critical behavior** — a task whose decision or output must be unchanged from `SKILL.md`
+  alone, with nothing loaded. Pick the ones where being wrong is expensive.
+- **Reference retrieval** — a task that needs relocated content, testing whether `SKILL.md`
+  still names the file that now holds it. A split that hides its own references is a regression
+  even when every rule survived.
+
+Run each case against the original and against the split, and record it:
+
+| Case | Before | After | Verdict |
+|---|---|---|---|
+| <task> | <what it produced> | <what it produced> | same / degraded / improved |
+
+A degraded case means content moved that should have stayed — move it back rather than
+compensating with a longer pointer. Report the cases alongside the measured line/token delta: a
+compression number without retention cases is not a result.
 
 ## Output format
 
@@ -109,22 +133,32 @@ Then ask for confirmation before applying.
 - **Ignoring the routing-description audit**. The paper found 26.4% of skills lack proper descriptions. While you're auditing the body, also check the frontmatter `description:` is concrete and trigger-worthy.
 - **Compressing skills that aren't loaded heavily.** Audit overhead exceeds savings on rarely-loaded skills.
 
-## Candidates in this repo (heuristic)
+## Choosing what to compress
 
-Skills most likely to benefit (by line count and load pattern):
+Do not work from a static ranking — line counts drift, skills get split, and a list written six
+months ago names skills that no longer exist. Pick by **observed load cost weighed against task
+importance**:
 
-- `jira` — ~258 lines, preloaded by `jira-agent` on every spawn
-- `grafana-explore` — ~311 lines, preloaded by `grafana-agent` on every spawn
-- `m365-graph` — heavy reference content typical of API skills
-- `mcp-server` — long enough to plausibly benefit
+1. **How often does it load, and how?** Eager preload costs on every spawn; a manual-only skill
+   costs once when invoked. Find out what actually pulls it in rather than assuming:
+   `grep -rl '<skill-name>' ~/.claude/agents/ ~/.claude/skills/`.
+2. **What does one load cost?** Measure it: `wc -lc skills/<name>/SKILL.md`, and read the
+   linter's own gate-4 numbers (`body is N lines`, `~T est. tokens`).
+3. **How much of that is non-actionable on a typical run?** Bucket the body with the table
+   above. A body that is mostly reference tables is a candidate; one that is mostly rules is not.
+4. **How much does the task matter?** A rarely-loaded skill that is load-bearing when it fires
+   deserves less compression risk than a hot skill nothing depends on precisely.
 
-Skills that probably don't:
+Rank by loads-per-session × tokens-per-load × non-actionable share, then sanity-check against
+step 4. The skills currently carrying gate-4 waivers in `./scripts/lint-skills.waivers` are the
+standing backlog: a waiver is an IOU for this skill, not a permanent exemption.
 
-- `caveman` — ~70 lines, already tight
-- `humanizer` — focused, single-purpose
-- `simplify` — small
-- `viz` — small
+Skills under ~100 lines are not candidates at any load rate — audit overhead exceeds savings.
 
 ## Source
 
-Anthropic / academic survey: arXiv:2603.29919 — "SkillReducer: Optimizing LLM Agent Skills for Token Efficiency". The paper provides the 39% compression / 0.965 retention numbers and the progressive-disclosure architectural pattern. No reference implementation released; this skill applies the principles manually.
+"SkillReducer: Optimizing LLM Agent Skills for Token Efficiency", arXiv:2603.29919v2 (revised
+2026-06-24). It is a preprint, not an Anthropic publication — do not cite it as vendor
+guidance, and re-check the current version before quoting a figure, since v2 already revised
+v1. It contributes the progressive-disclosure architecture and the corpus measurements quoted
+above. No reference implementation was released; this skill applies the principles by hand.

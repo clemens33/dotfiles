@@ -39,14 +39,14 @@ Flow: research notes → decisions logged immediately → signoff when direction
 
 ## Workspace Location
 
-All collaboration artifacts live in `.local/.local/collab/{topic}/` within the target repo. This directory is **gitignored** — collaboration artifacts are ephemeral working state, not permanent documentation. Ensure `.local/` is in the repository's `.gitignore` before starting.
+All collaboration artifacts live in `.local/collab/{topic}/` within the target repo. This directory is **gitignored** — collaboration artifacts are ephemeral working state, not permanent documentation. Ensure `.local/` is in the repository's `.gitignore` before starting.
 
 The durable output is the code itself (committed) and optionally `PLAN.md` if the team wants to preserve the plan alongside the implementation.
 
 ## Quick Start
 
 1. Create workspace in target repo:
-   - `.local/.local/collab/{topic}/`
+   - `.local/collab/{topic}/`
 2. Create `SESSION.md` (human-owned):
    - Goal, scope, deliverable, agents, merge owner, operating mode.
 3. Create `DECISIONS.md` (append-only) and `rounds/r1/`.
@@ -203,6 +203,29 @@ When a second agent joins later:
 2. The original agent reviews the new draft.
 3. Re-write `merged.md` and both signoffs as final (remove `PROVISIONAL`).
 4. Then update `PLAN.md`.
+
+## Inside an ae session — adapt, don't duplicate
+
+This protocol is standalone by default and stays fully usable with no ae session. Inside one,
+ae already owns the session state, and a second copy of it is the failure mode: two plans, two
+decision logs, two owners, and nobody sure which is current.
+
+Map onto what the session already has rather than recreating it:
+
+| Collab artifact | Inside an ae session |
+|---|---|
+| `SESSION.md` (goal, agents, merge owner) | The session goal and the roster in `workspace.md` — read them, don't restate them |
+| `DECISIONS.md` | `memo add --topic decision` is the durable record; keep `DECISIONS.md` only if the session's leads agree it is the one log, and then nobody duplicates rows into memo |
+| `PLAN.md` | The session's existing plan document. One plan, one path, named once. If a plan already exists, collab writes into it — it does not open a rival |
+| Merge owner | The lead or colead seat that already owns the gate. Do not appoint a second one |
+| Per-agent positions, reviews, research notes | Unchanged — these stay per-agent files and are where collab still earns its keep |
+
+Two rules survive the mapping intact:
+
+1. **One writer per shared artifact.** The merge owner is the only writer of `merged.md` and of
+   the plan. Everyone else writes their own evidence files and sends findings to the owner.
+2. **Provider diversity still applies.** A collab round between two seats on the same provider
+   is depth, not a review gate — see `cross-model-review`.
 
 ## Isolation
 

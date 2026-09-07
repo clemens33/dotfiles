@@ -223,7 +223,12 @@ Before finishing:
     ADRs, MkDocs nav update if applicable)
   - Anything you couldn't validate
 
-Do **not** auto-commit. The user reviews and commits.
+Committing follows the repository's standing authorization, not a rule in
+this skill. If the session or the repo's `AGENTS.md` / `CLAUDE.md` already
+authorizes committing completed work, commit the docs you wrote and say so in
+the report. Otherwise leave them uncommitted and report the proposed message.
+Stage only the files this skill created or updated — never the user's
+unrelated work in progress.
 
 ## Overview template (`README.md` or `ARCHITECTURE.md`)
 

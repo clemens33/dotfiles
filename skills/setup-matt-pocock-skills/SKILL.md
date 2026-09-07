@@ -1,6 +1,12 @@
 ---
 name: setup-matt-pocock-skills
-description: Sets up an `## Agent skills` block in AGENTS.md/CLAUDE.md and `docs/agents/` so the engineering skills know this repo's issue tracker (GitHub or local markdown), triage label vocabulary, and domain doc layout. Use when about to first use `to-issues`, `to-prd`, `triage`, `diagnose`, `tdd`, `improve-codebase-architecture`, or `zoom-out` — or if those skills appear to be missing context about the issue tracker, triage labels, or domain docs.
+description: >
+  Record this repo's issue tracker (GitHub, GitLab, or local markdown), triage
+  label vocabulary, and domain doc layout in an `## Agent skills` block plus
+  `docs/agents/`. Use when the user asks for that setup, or when `to-issues`,
+  `to-prd` or `triage` has no configured tracker or labels to act on. Not a
+  prerequisite for ordinary repo work: `diagnose`, `tdd`,
+  `improve-codebase-architecture` and `zoom-out` run without it.
 disable-model-invocation: true
 license: MIT
 source: https://github.com/mattpocock/skills/tree/main/skills/engineering/setup-matt-pocock-skills
@@ -17,7 +23,15 @@ Scaffold the per-repo configuration that the engineering skills assume:
 - **Triage labels** — the strings used for the five canonical triage roles
 - **Domain docs** — where `CONTEXT.md` and ADRs live, and the consumer rules for reading them
 
-This is a prompt-driven skill, not a deterministic script. Explore, present what you found, confirm with the user, then write.
+This is a prompt-driven skill, not a deterministic script. Explore, present
+what you found, confirm the parts that are genuinely open, then write.
+
+**Scope gate.** Run this only when a tracker workflow actually lacks a contract
+it needs, or when the user asks for the setup directly. It is not an onboarding
+step for ordinary repo work — a bug fix, a TDD cycle or an architecture pass
+does not need this scaffold, and turning one of those into a documentation task
+is the failure mode to avoid. If a single missing fact blocks the task at hand,
+ask for that fact and move on rather than running the whole flow.
 
 ## Process
 
@@ -34,7 +48,14 @@ Look at the current repo to understand its starting state. Read whatever exists;
 
 ### 2. Present findings and ask
 
-Summarise what's present and what's missing. Then walk the user through the three decisions **one at a time** — present a section, get the user's answer, then move to the next. Don't dump all three at once.
+Summarise what's present and what's missing. The repo's own evidence answers
+most of this: a GitHub remote settles Section A, existing labels settle Section
+B, an existing `CONTEXT.md` or `CONTEXT-MAP.md` settles Section C. State the
+answer the evidence gives and move on.
+
+Ask only about sections the evidence leaves genuinely open, and then **one at a
+time** — present a section, get the answer, move to the next. Don't dump all
+three at once, and don't re-ask what the repo already told you.
 
 Assume the user does not know what these terms mean. Each section starts with a short explainer (what it is, why these skills need it, what changes if they pick differently). Then show the choices and the default.
 
@@ -79,7 +100,9 @@ Show the user a draft of:
 - The `## Agent skills` block to add to whichever of `CLAUDE.md` / `AGENTS.md` is being edited (see step 4 for selection rules)
 - The contents of `docs/agents/issue-tracker.md`, `docs/agents/triage-labels.md`, `docs/agents/domain.md`
 
-Let them edit before writing.
+Then write, following the session's standing authorization: if writing repo
+docs is already authorized, write the files and report what changed; if it is
+not, show the draft and wait. Let the user edit either way.
 
 ### 4. Write
 

@@ -143,14 +143,23 @@ What would a manual smoke test look like?
 
 ## Complexity levels
 
-- **Trivial**: single file, obvious change, no dependencies. Skip scoping — just do it.
-- **Moderate**: 2-5 files, clear approach, some test coverage needed. Scope briefly.
-- **Complex**: many files, architectural decisions, multiple phases. Full scope.
-- **Needs-spike**: unknowns dominate. The first phase should be a time-boxed investigation, not implementation.
+Classify by **worst-of-three** (`WORKFLOW.md`): take the worst of **effort**, **blast radius**
+and **uncertainty**. Not file count, not elapsed time — a one-line change to a shared auth
+default is not trivial, and a forty-file mechanical rename is not complex.
+
+| Worst of the three | Bucket | Plan field | What to do |
+|---|---|---|---|
+| all three low | S | `trivial` | Skip scoping — just do it |
+| medium | M | `moderate` | Scope briefly: goal, change surface, 1-3 phases |
+| any one high | L | `complex` | Full scope: written plan first, phased execution, each phase ends green-or-stop |
+
+Add `needs-spike` when uncertainty dominates — the first phase is then a time-boxed
+investigation, not implementation. It is a shape, not a fourth size: an L whose unknowns have
+to be retired before the rest of the plan is worth writing.
 
 ## Rules
 
-- **Don't scope trivial work.** If it's a one-file, obvious change — just do it. Scoping a typo fix is waste.
+- **Don't scope trivial work.** If effort, blast radius and uncertainty are all low — just do it. Scoping a typo fix is waste.
 - **Phases must be verifiable.** "Refactor the module" is not a phase. "Extract X into Y and verify tests pass" is.
 - **Be honest about unknowns.** "I don't know if this API supports X" is better than assuming it does.
 - **Stay concrete.** File paths, function names, specific commands — not "update the relevant modules."

@@ -20,16 +20,82 @@ Adversarial, structured code review. Not a rubber stamp — find what's wrong.
 - When the cross-model review in AGENTS.md triggers (significant changes)
 - Anytime you want a second pair of eyes on a diff
 
-## Inputs
+## Inputs — resolve the scope, then fingerprint it
 
-Determine the review scope automatically:
+Explicit user scope always wins. Otherwise:
 
-1. **Uncommitted changes** (default): `git diff` + `git diff --cached` + untracked files
-2. **Branch comparison**: `git diff main...HEAD` (all commits on current branch)
+1. **Uncommitted changes** (default): staged + unstaged + *selected* untracked files
+2. **Branch comparison**: every commit on this branch since its real base
 3. **Specific files**: when the user names files or paths
 4. **PR review**: when given a PR number, URL, or patch (availability depends on tool/environment)
 
-If no scope is specified, use uncommitted changes.
+### Resolve the actual base
+
+Never hard-code `main`. Resolve it, in this order, and say which step answered:
+
+```bash
+# 1. An explicit target always wins: the PR's base branch, or the branch the user named.
+BASE="${REVIEW_BASE:-}"
+# 2. The repository's default branch.
+[ -n "$BASE" ] || BASE=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null) || true
+# 3. Last resort: a conventional name that actually exists.
+[ -n "$BASE" ] || BASE=$(git rev-parse --verify -q --abbrev-ref main ||
+                         git rev-parse --verify -q --abbrev-ref master) || true
+# 4. Nothing resolved — ask, never guess.
+[ -n "$BASE" ] || { echo "no base branch resolved — ask the user which one to diff against"; exit 1; }
+MERGE_BASE=$(git merge-base "$BASE" HEAD)
+```
+
+⚠️ **Do not use `@{upstream}`.** On a feature branch it is almost always `origin/<same-branch>`,
+the pushed copy of the branch you are reviewing — not the branch you are merging into. Once the
+branch is pushed, `git merge-base '@{upstream}' HEAD` lands on the pushed tip, and every commit
+already pushed silently drops out of the review. Only treat an upstream as the base when it is
+provably the merge target, which is what step 1 is for.
+
+Reviewing `main...HEAD` in a repo whose base is `develop` reviews the wrong commits just as
+quietly, and a detached HEAD breaks the hard-coded form outright. Step 4 fails loudly on
+purpose: when nothing resolves, ask, rather than diffing against whichever branch happens to
+exist.
+
+### Select untracked files deliberately
+
+```bash
+git ls-files --others --exclude-standard
+```
+
+**Never sweep the whole list into the review.** Untracked space is the user's scratch area:
+`.env` files and credentials, unrelated experiments, large binaries, another agent's in-flight
+work. Read the list, pick the files that belong to the change under review, name them in the
+scope line, and leave the rest alone. When a file's relevance is unclear, ask rather than
+include it.
+
+### Record the scope
+
+Announce before reviewing — and store this with any persisted record of the review:
+
+- the resolved base, which step resolved it, base SHA and head SHA
+- counts: committed / staged / unstaged / untracked-selected
+- a deterministic fingerprint of exactly the content reviewed
+
+```bash
+# SELECTED = newline-separated list of the untracked files you chose (may be empty)
+{
+  printf 'base %s\nhead %s\n' "$MERGE_BASE" "$(git rev-parse HEAD)"
+  git diff "$MERGE_BASE"...HEAD          # committed
+  git diff --cached                      # staged
+  git diff                               # unstaged
+  printf '%s\n' "$SELECTED" | sort | while IFS= read -r f; do
+    [ -n "$f" ] && printf '%s  %s\n' "$(git hash-object -- "$f")" "$f"
+  done
+} | git hash-object --stdin
+```
+
+Emit only the parts your resolved scope actually covers, always in that order, so the same
+scope yields the same fingerprint. For a **named-file scope** (input 3), append `-- <paths>` to
+all three `git diff` calls and list only those files in `SELECTED`; otherwise an unrelated edit
+elsewhere in the live checkout changes the fingerprint of a review that never looked at it. `git hash-object` is the hash because git is already a hard
+dependency here: `sha256sum` is absent on macOS and `shasum` is absent on some minimal Linux
+images. This is a change fingerprint for "did the reviewed content move", not a security hash.
 
 ## Review process
 

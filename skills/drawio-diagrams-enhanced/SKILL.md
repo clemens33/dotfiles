@@ -1,6 +1,13 @@
 ---
 name: drawio-diagrams-enhanced
-description: Create professional draw.io (diagrams.net) diagrams in XML format (.drawio files), with PMP/PMBOK methodologies, visual asset libraries, and industry-standard templates. Use when asked to create flowcharts, swimlane diagrams, org charts, network diagrams, UML, BPMN, project management diagrams (WBS, Gantt, PERT, RACI), risk matrices, stakeholder maps, or any other draw.io diagram. Includes custom shape libraries for icons, clipart, and professional symbols.
+description: >
+  Write editable draw.io / diagrams.net XML (.drawio files) with PMP/PMBOK
+  methodologies, icon libraries, and industry-standard templates. Use when the
+  deliverable is a .drawio canvas someone will open and rearrange, or when
+  precise layout, slide-ready export, or PM artifacts are asked for: swimlanes,
+  org charts, UML, BPMN, WBS, Gantt, PERT, RACI, risk matrices, stakeholder
+  maps. Not for diagrams inside markdown (ADRs, READMEs, runbooks) — those use
+  `viz` / Mermaid.
 source: https://github.com/jgtolentino/insightpulse-odoo/tree/main/docs/claude-code-skills/community/drawio-diagrams-enhanced
 metadata:
   category: capability

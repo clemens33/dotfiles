@@ -53,16 +53,16 @@ When exploring the codebase, use the project's domain glossary so that test name
 
 Before writing any code:
 
-- [ ] Confirm with user what interface changes are needed
-- [ ] Confirm with user which behaviors to test (prioritize)
+- [ ] Derive the needed interface change from what is already settled — the request, existing public API, ADRs, domain glossary
+- [ ] Rank the behaviors to test from the same evidence: blast radius, boundary behavior, complexity
 - [ ] Identify opportunities for [deep modules](deep-modules.md) (small interface, deep implementation)
 - [ ] Design interfaces for [testability](interface-design.md)
 - [ ] List the behaviors to test (not implementation steps)
-- [ ] Get user approval on the plan
+- [ ] State the plan and proceed, unless an approval is genuinely still outstanding
 
-Ask: "What should the public interface look like? Which behaviors are most important to test?"
+Ask the user only what the available context does not already answer, and only when a different answer would change what you build or test — a public interface that is still genuinely open, or two behaviors you cannot rank from evidence. Otherwise state your assumption in one line and continue; do not re-ask a decision the request or the repo already settled.
 
-**You can't test everything.** Confirm with the user exactly which behaviors matter most. Focus testing effort on critical paths and complex logic, not every possible edge case.
+**You can't test everything.** Focus testing effort on critical paths and complex logic, not every possible edge case.
 
 ### 2. Tracer Bullet
 

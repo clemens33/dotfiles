@@ -1,13 +1,13 @@
 ---
 name: viz
 description: >
-  Add Mermaid diagrams to markdown — for ADRs, architecture overviews, READMEs,
-  runbooks, design notes. Mermaid renders inline on GitHub/GitLab, lives in
-  the markdown, diffs cleanly, and covers ~80% of architecture diagram needs
-  without a toolchain. Use when you need to visualize structure, flow, state,
-  data, or sequence, and layout precision matters less than being version-
-  controlled and AI-editable. Defer to drawio-diagrams-enhanced when precise
-  layout or slide-ready output is needed.
+  Add Mermaid diagrams to markdown — ADRs, architecture overviews, READMEs,
+  runbooks, design notes. Mermaid renders inline on GitHub/GitLab, lives in the
+  markdown, and diffs cleanly. Use when the diagram belongs inside a versioned
+  text document and staying version-controlled and AI-editable matters more
+  than layout precision. Not for editable .drawio canvases, hand-placed layout,
+  slide-ready export, or PM artifacts such as WBS, Gantt or RACI — those use
+  `drawio-diagrams-enhanced`.
 metadata:
   category: capability
 
