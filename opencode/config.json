@@ -12,10 +12,11 @@
   "$schema": "https://opencode.ai/config.json",
 
   // --- Model -------------------------------------------------------------
-  // Primary: OpenRouter GLM 5.3 Flash, pinned to Fireworks.
-  // Fireworks exposes reasoning_effort and 1,048,576-token context; a live
-  // probe with max effort succeeded on 2026-08-31. max is our deliberate
-  // highest-effort default. OpenRouter availability and billing can change.
+  // Primary: OpenRouter GLM 5.3 Flash, routed through an explicit provider
+  // order (EU first, then US, no Chinese-HQ hosts) with everything outside
+  // that list disabled — see the openrouter block below. max is our
+  // deliberate highest-effort default. OpenRouter availability and billing
+  // can change.
   //
   // GitHub Copilot Gemini 3.7 remains declared below as a selectable fallback
   // if the OpenRouter model is unavailable or misbehaves.
@@ -27,7 +28,7 @@
   "small_model": "github-copilot/gpt-5.6-luna",
 
   // Provider model overrides: the primary GLM 5.3 Flash uses deliberate max
-  // reasoning effort; its Fireworks pinning is configured below.
+  // reasoning effort; its provider order is configured below.
   "provider": {
     // Registry back-fill for the selectable fallback, NOT a credential or
     // endpoint change: auth still runs through `opencode auth login -p
@@ -59,9 +60,11 @@
     // of the GitHub Copilot subscription above. Authenticate interactively via
     // `/connect` -> OpenRouter; NEVER put the API key in this tracked file.
     //
-    // Both models are hard-pinned to Fireworks. No provider fallback means a
-    // Fireworks outage fails visibly instead of routing prompts elsewhere.
-    // Fireworks currently exposes a 1,048,576-token endpoint for each model.
+    // Full GLM 5.3 stays hard-pinned to Fireworks; GLM 5.3 Flash (the
+    // primary) walks an explicit provider order. allow_fallbacks=false on
+    // both: a host outside the list is never used, so when the whole list is
+    // down the request fails visibly instead of routing prompts elsewhere.
+    // Every listed endpoint exposes a 1,048,576-token context.
     "openrouter": {
       "models": {
         "z-ai/glm-5.3": {
@@ -75,13 +78,35 @@
           }
         },
         "z-ai/glm-5.3-flash": {
-          // Fireworks exposes reasoning_effort; max accepted by live probe
-          // on 2026-08-31. This is our deliberate highest-effort default.
+          // Provider order, Clemens 2026-09-07: EU preferred, then US, no
+          // Chinese-HQ hosts. OpenRouter walks the list in sequence and moves
+          // on only when a host is not operational — latency or output
+          // quality never trigger failover, so the first entry serves nearly
+          // all traffic. zdr=true additionally restricts the list to
+          // Zero-Data-Retention endpoints, so a host that starts retaining
+          // prompts drops out by itself (verified 2026-09-07: zdr excludes the
+          // prompt-retaining gmicloud with "No endpoints found", while
+          // data_collection=deny does NOT — it only tracks training policy).
+          // Snapshot 2026-09-07 from openrouter.ai/api/v1
+          // (models/z-ai/glm-5.3-flash/endpoints + providers) and the model
+          // page data-policy tags; NextBit/CoreWeave fp8 (Z.AI's own
+          // precision), Fireworks quantization undisclosed; all with
+          // reasoning_effort + tools, status 0, no training, no prompt
+          // retention, $ per M in/out:
+          //   nextbit    HQ ES, DC ES          $0.15/$0.50  max_completion 128k
+          //   coreweave  HQ US, DC US          $0.15/$0.50
+          //   fireworks  HQ US, DC undisclosed $0.15/$0.50  quant undisclosed;
+          //              live-tested 2026-08-31, kept as the last resort.
+          // Excluded on purpose: gmicloud (US, $0.075/$0.25, cheapest) RETAINS
+          // PROMPTS per its data policy and offers tool_choice=auto only.
+          // max effort accepted by live probes (Fireworks 2026-08-31, this
+          // order 2026-09-07). Re-check the snapshot before reordering.
           "options": {
             "reasoningEffort": "max",
             "provider": {
-              "order": ["fireworks"],
-              "allow_fallbacks": false
+              "order": ["nextbit", "coreweave", "fireworks"],
+              "allow_fallbacks": false,
+              "zdr": true
             }
           }
         }
