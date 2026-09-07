@@ -10,10 +10,15 @@
     - ~/.claude
     - ~/.claude/skills
     - ~/.codex
-    - ~/.codex/skills
+    # Codex user-scope skills live in ~/.agents/skills (CX-SKILL); ~/.codex/skills
+    # is legacy and Codex creates its own .system dir there — not managed here.
+    - ~/.agents/skills
     - ~/.config/fish
     - ~/.config/opencode
     - ~/.gemini
+    # agy's real global customization root (~/.gemini/antigravity-cli/ is the
+    # vendor state dir, not a discovery path).
+    - ~/.gemini/config
 
 # Shell / editor / git / terminal links (portable: WSL + macOS)
 - link:
@@ -51,8 +56,15 @@
     ~/.config/opencode/AGENTS.md:
       path: shared/AGENTS.md
       force: true
-    ~/.gemini/antigravity-cli/AGENTS.md:
+    # agy discovers global customizations under ~/.gemini/config/ only. The
+    # contract ships as the rules half of a plugin; plugin.json is the marker
+    # that makes the directory a plugin, and rules/AGENTS.md is the vendor's
+    # recommended single-file rule layout.
+    ~/.gemini/config/plugins/dotfiles/rules/AGENTS.md:
       path: shared/AGENTS.md
+      force: true
+    ~/.gemini/config/plugins/dotfiles/plugin.json:
+      path: antigravity/plugin/plugin.json
       force: true
 
 # AI tool settings + MCP configs
@@ -74,9 +86,6 @@
       force: true
     ~/.gemini/antigravity-cli/settings.json:
       path: antigravity/settings.json
-      force: true
-    ~/.grok/config.toml:
-      path: grok/config.toml
       force: true
     ~/.grok/AGENTS.md:
       path: grok/AGENTS.md
@@ -137,36 +146,39 @@
     ~/.claude/skills/viz: skills/viz
     ~/.claude/skills/zoom-out: skills/zoom-out
 
-# Codex skills — same per-skill pattern
+# Codex skills — same per-skill pattern. The documented user scope is
+# ~/.agents/skills; ~/.codex/skills is legacy (and holds Codex's own .system
+# directory, which is never managed here). Same-name skills are NOT merged
+# across scopes, so the links live in exactly one root.
 - link:
-    ~/.codex/skills/adr: skills/adr
-    ~/.codex/skills/arch-docs: skills/arch-docs
-    ~/.codex/skills/caveman: skills/caveman
-    ~/.codex/skills/code-review: skills/code-review
-    ~/.codex/skills/collab: skills/collab
-    ~/.codex/skills/cross-model-review: skills/cross-model-review
-    ~/.codex/skills/diagnose: skills/diagnose
-    ~/.codex/skills/drawio-diagrams-enhanced: skills/drawio-diagrams-enhanced
-    ~/.codex/skills/gcp-operations: skills/gcp-operations
-    ~/.codex/skills/gha-security-review: skills/gha-security-review
-    ~/.codex/skills/grill-with-docs: skills/grill-with-docs
-    ~/.codex/skills/humanizer: skills/humanizer
-    ~/.codex/skills/improve-codebase-architecture: skills/improve-codebase-architecture
-    ~/.codex/skills/large-feature: skills/large-feature
-    ~/.codex/skills/manage-skills: skills/manage-skills
-    ~/.codex/skills/quiz-diff: skills/quiz-diff
-    ~/.codex/skills/refactor-audit: skills/refactor-audit
-    ~/.codex/skills/scope: skills/scope
-    ~/.codex/skills/security-review: skills/security-review
-    ~/.codex/skills/setup-matt-pocock-skills: skills/setup-matt-pocock-skills
-    ~/.codex/skills/skill-reducer: skills/skill-reducer
-    ~/.codex/skills/tdd: skills/tdd
-    ~/.codex/skills/test-audit: skills/test-audit
-    ~/.codex/skills/to-issues: skills/to-issues
-    ~/.codex/skills/to-prd: skills/to-prd
-    ~/.codex/skills/triage: skills/triage
-    ~/.codex/skills/viz: skills/viz
-    ~/.codex/skills/zoom-out: skills/zoom-out
+    ~/.agents/skills/adr: skills/adr
+    ~/.agents/skills/arch-docs: skills/arch-docs
+    ~/.agents/skills/caveman: skills/caveman
+    ~/.agents/skills/code-review: skills/code-review
+    ~/.agents/skills/collab: skills/collab
+    ~/.agents/skills/cross-model-review: skills/cross-model-review
+    ~/.agents/skills/diagnose: skills/diagnose
+    ~/.agents/skills/drawio-diagrams-enhanced: skills/drawio-diagrams-enhanced
+    ~/.agents/skills/gcp-operations: skills/gcp-operations
+    ~/.agents/skills/gha-security-review: skills/gha-security-review
+    ~/.agents/skills/grill-with-docs: skills/grill-with-docs
+    ~/.agents/skills/humanizer: skills/humanizer
+    ~/.agents/skills/improve-codebase-architecture: skills/improve-codebase-architecture
+    ~/.agents/skills/large-feature: skills/large-feature
+    ~/.agents/skills/manage-skills: skills/manage-skills
+    ~/.agents/skills/quiz-diff: skills/quiz-diff
+    ~/.agents/skills/refactor-audit: skills/refactor-audit
+    ~/.agents/skills/scope: skills/scope
+    ~/.agents/skills/security-review: skills/security-review
+    ~/.agents/skills/setup-matt-pocock-skills: skills/setup-matt-pocock-skills
+    ~/.agents/skills/skill-reducer: skills/skill-reducer
+    ~/.agents/skills/tdd: skills/tdd
+    ~/.agents/skills/test-audit: skills/test-audit
+    ~/.agents/skills/to-issues: skills/to-issues
+    ~/.agents/skills/to-prd: skills/to-prd
+    ~/.agents/skills/triage: skills/triage
+    ~/.agents/skills/viz: skills/viz
+    ~/.agents/skills/zoom-out: skills/zoom-out
 
 - shell:
     - command: mkdir -p ~/.config/fish
@@ -189,6 +201,43 @@
       description: Purge legacy codex shell snapshots
     - command: scripts/mcp-merge.sh "$HOME/.claude.json" claude/mcpServers.json
       description: Merging Claude Code MCP servers
+    # Migration (2026-09-07): Codex user skills moved to ~/.agents/skills. The
+    # legacy root still exists on hosts installed before this change, Codex
+    # scans both, and a link there wins — so a skill deleted or renamed here
+    # would keep shadowing the new root. Remove OUR links only: a symlink whose
+    # recorded target points into this checkout's skills tree (either layer —
+    # the wrapper always runs the public pass from the repo root, so one step
+    # covers the overlay too). Never touch .system, real directories, or links
+    # into anything else, and match the recorded target so links left dangling
+    # by a rename are cleaned up as well.
+    - command: |
+        dir="$HOME/.codex/skills"
+        [ -d "$dir" ] || exit 0
+        find "$dir" -maxdepth 1 -type l -print | while IFS= read -r link; do
+          case "$(readlink "$link")" in
+            "$PWD"/skills/*|"$PWD"/dotfiles-mic/skills/*)
+              rm "$link" && echo "retired legacy codex skill link ${link##*/} (now served from ~/.agents/skills)" ;;
+          esac
+        done
+        exit 0
+      description: Retire legacy ~/.codex/skills links
+    # grok is the one harness whose config must be a REAL FILE: a symlinked
+    # ~/.grok/config.toml makes it reject the hooks-paths registry ("wrong type
+    # (expected real file)") and rewrite the path, which is how the repo copy
+    # and the live file drifted apart. So: drop any old symlink, show what the
+    # install would change, then copy. Never `cp` over the symlink — that writes
+    # through into the repo working tree. Keys grok writes itself (sticky UI
+    # state, auth) are NOT merged back automatically: read the printed diff and
+    # port anything worth keeping into grok/config.toml by hand.
+    - command: |
+        mkdir -p "$HOME/.grok"
+        dst="$HOME/.grok/config.toml"
+        [ -L "$dst" ] && rm "$dst"
+        if ! cmp -s grok/config.toml "$dst"; then
+          diff -u "$dst" grok/config.toml || true
+          cp grok/config.toml "$dst"
+        fi
+      description: Installing grok config (real copy, not a symlink)
     # Pre-accepts the folder-trust dialog. Claude Code has no global trust
     # setting and permissions.defaultMode does NOT cover it, so the flag has to
     # be written per repo root into the same (non-symlinkable) state file.
@@ -200,8 +249,8 @@
     # public-only machine correctly ends up with no agents for any identity.
     - command: |
         dst="$HOME/.claude2/skills"
-        if [ -d "$dst" ] && [ ! -L "$dst" ]; then
-          echo "WARN: $dst is a real directory — resolve manually"
+        if [ -e "$dst" ] && [ ! -L "$dst" ]; then
+          echo "WARN: $dst exists and is not a symlink — resolve manually"
         else
           ln -sfn "$HOME/.claude/skills" "$dst"
         fi
@@ -210,6 +259,24 @@
       description: Merging MCP servers into claude2
     - command: scripts/claude-trust-merge.sh "$HOME/.claude2/.claude.json" claude/trusted-paths.txt
       description: Pre-accepting folder trust (claude2)
+    # agy never read ~/.gemini/antigravity-cli/AGENTS.md — its global root is
+    # ~/.gemini/config/. Remove the retired symlink once; everything else in
+    # that vendor state directory is left alone.
+    - command: |
+        dst="$HOME/.gemini/antigravity-cli/AGENTS.md"
+        if [ -L "$dst" ]; then rm "$dst" && echo "removed retired agy AGENTS.md link $dst"; fi
+      description: Remove retired agy AGENTS.md link
+    # agy skills: one directory symlink suffices — unlike ~/.claude/skills this
+    # path is not a merge target, so it can point straight at the merged real
+    # directory and pick up the private overlay's skills too.
+    - command: |
+        dst="$HOME/.gemini/config/skills"
+        if [ -e "$dst" ] && [ ! -L "$dst" ]; then
+          echo "WARN: $dst exists and is not a symlink — resolve manually"
+        else
+          ln -sfn "$HOME/.claude/skills" "$dst"
+        fi
+      description: agy skills → merged ~/.claude/skills
 
 # Periodic harness updater. Platform checks keep launchd off Linux and skip
 # systemd user units on WSL installations without systemd.
