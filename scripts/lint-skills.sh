@@ -47,6 +47,12 @@
 # Waivers: <waivers-file>, one "<skill-name> <gate-id> # reason" per line.
 # A waived (skill, gate) failure prints as "WAIVED: ..." and does not affect
 # the exit code.
+#
+# Interpreter: the checks need PyYAML. An explicit $PYTHON is honored as-is
+# (fail-closed: a misconfigured override is reported, not papered over).
+# Otherwise the first of `python3`, `/usr/bin/python3` that imports yaml is
+# used — Homebrew's python3 commonly lacks PyYAML while the macOS system
+# one ships it. With no candidate, `python3` runs and reports the ImportError.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -103,7 +109,23 @@ if [[ ${#CONF_ARGS[@]} -eq 0 ]]; then
   )
 fi
 
-python3 - "$WAIVERS_EXPLICIT" "$WAIVERS_ARG" "$CONF_EXPLICIT" "${#CONF_ARGS[@]}" "${CONF_ARGS[@]}" "${DIRS[@]}" <<'PYEOF'
+select_python() {
+  if [[ -n "${PYTHON:-}" ]]; then
+    echo "$PYTHON"
+    return
+  fi
+  local cand
+  for cand in python3 /usr/bin/python3; do
+    if command -v "$cand" >/dev/null 2>&1 && "$cand" -c 'import yaml' >/dev/null 2>&1; then
+      echo "$cand"
+      return
+    fi
+  done
+  echo python3
+}
+PY="$(select_python)"
+
+"$PY" - "$WAIVERS_EXPLICIT" "$WAIVERS_ARG" "$CONF_EXPLICIT" "${#CONF_ARGS[@]}" "${CONF_ARGS[@]}" "${DIRS[@]}" <<'PYEOF'
 import re
 import sys
 from pathlib import Path

@@ -1,0 +1,184 @@
+{
+  "version": 1,
+  "suite": "routing",
+  "prompt_template": "prompt.md",
+  "notes": [
+    "expect: every item must be selected; an item that is a list means any one of those names satisfies it.",
+    "allow: optional companions that do not count as stray loads (correct multi-skill composition).",
+    "forbid: must not be selected. Any selection outside expect+allow is a stray load and fails the case.",
+    "Cases describe user intent; expectations are what a careful router should do regardless of how a description is worded."
+  ],
+  "cases": [
+    {
+      "id": "viz-adr-sequence",
+      "lane": "diagram",
+      "prompt": "Add a sequence diagram of the token refresh flow to docs/adr/0007-auth-tokens.md so it renders on GitHub.",
+      "expect": ["viz"],
+      "allow": ["adr"],
+      "forbid": ["drawio-diagrams-enhanced"],
+      "note": "Diagram inside a versioned markdown doc: Mermaid, not a .drawio canvas."
+    },
+    {
+      "id": "adr-viz-composition",
+      "lane": "diagram",
+      "prompt": "Write an ADR for choosing SQLite over Postgres for the desktop build and include a Mermaid diagram of the data flow in it.",
+      "expect": ["adr", "viz"],
+      "allow": [],
+      "forbid": ["drawio-diagrams-enhanced", "arch-docs"],
+      "note": "Correct multi-skill composition: both adr and viz are required."
+    },
+    {
+      "id": "drawio-org-chart",
+      "lane": "diagram",
+      "prompt": "Create an org chart of the platform team as a .drawio file I can open in diagrams.net and rearrange for the all-hands slides.",
+      "expect": ["drawio-diagrams-enhanced"],
+      "allow": [],
+      "forbid": ["viz"],
+      "note": "Editable .drawio canvas, slide-ready: not Mermaid."
+    },
+    {
+      "id": "drawio-gantt-deck",
+      "lane": "diagram",
+      "prompt": "Build a Gantt chart for the Q4 migration project with milestones and dependencies as a diagram file for the steering committee deck.",
+      "expect": ["drawio-diagrams-enhanced"],
+      "allow": [],
+      "forbid": ["viz"],
+      "note": "PM artifact, exported file, slide-ready: drawio."
+    },
+    {
+      "id": "no-diagram-plain-text",
+      "lane": "diagram",
+      "prompt": "Explain in plain text how a request flows through the auth middleware in src/auth/. No diagram needed.",
+      "expect": [],
+      "allow": ["zoom-out"],
+      "forbid": ["viz", "drawio-diagrams-enhanced", "arch-docs"],
+      "note": "Adjacent negative: explanation request explicitly without a diagram."
+    },
+    {
+      "id": "setup-agent-skills-new-repo",
+      "lane": "setup",
+      "prompt": "This is a fresh repo. Set up the '## Agent skills' block in AGENTS.md and the docs/agents/ layout so the triage and to-issues skills know we use GitHub issues and our label vocabulary.",
+      "expect": ["setup-matt-pocock-skills"],
+      "allow": [],
+      "forbid": ["manage-skills", "triage", "to-issues"],
+      "note": "Repo wiring for the engineering skills; not skill authoring, not issue work."
+    },
+    {
+      "id": "bugfix-failing-test-no-setup",
+      "lane": "setup",
+      "prompt": "tests/test_parser.py::test_nested_quotes started failing after the last refactor of tokenize(). Find the cause and fix it.",
+      "expect": ["diagnose"],
+      "allow": ["tdd"],
+      "forbid": ["setup-matt-pocock-skills", "triage", "to-issues", "scope"],
+      "note": "Bug-shaped ordinary work: diagnose; no setup detour."
+    },
+    {
+      "id": "feature-flag-ordinary-work",
+      "lane": "setup",
+      "prompt": "Add a --json flag to the CLI's list command and update the README usage section.",
+      "expect": [],
+      "allow": ["tdd", "scope"],
+      "forbid": ["setup-matt-pocock-skills", "to-issues", "triage", "manage-skills", "large-feature"],
+      "note": "Small ordinary feature: no process skill required."
+    },
+    {
+      "id": "triage-create-issue",
+      "lane": "setup",
+      "prompt": "Create an issue on this project's tracker for the flaky login test and label it needs-triage.",
+      "expect": ["triage"],
+      "allow": [],
+      "forbid": ["setup-matt-pocock-skills", "jira", "jira-agent", "to-issues"],
+      "note": "Issue workflow on the project tracker, not MIC Jira, not repo setup."
+    },
+    {
+      "id": "grafana-remote-latency",
+      "lane": "mic-telemetry",
+      "prompt": "p95 latency of the AI Assistant in ai-shared-prod doubled since yesterday's deploy. Check the Grafana dashboards and Loki logs for what changed.",
+      "expect": [["grafana-agent", "grafana-explore"]],
+      "allow": ["ai-k8s-deploy", "diagnose"],
+      "forbid": ["langfuse-debug", "assistant-test"],
+      "note": "Remote MIC telemetry investigation."
+    },
+    {
+      "id": "local-perf-no-telemetry",
+      "lane": "mic-telemetry",
+      "prompt": "My local pytest run got 10x slower after upgrading pydantic. Profile it and find the cause.",
+      "expect": ["diagnose"],
+      "allow": [],
+      "forbid": ["grafana-agent", "grafana-explore", "langfuse-debug", "assistant-test"],
+      "note": "Adjacent negative: local performance regression, no MIC telemetry."
+    },
+    {
+      "id": "langfuse-trace-wrong-tool",
+      "lane": "mic-telemetry",
+      "prompt": "Open the Langfuse trace for session 7f3a and figure out why the agent called the wrong tool twice.",
+      "expect": ["langfuse-debug"],
+      "allow": [],
+      "forbid": ["grafana-agent", "grafana-explore", "assistant-test"],
+      "note": "Langfuse trace inspection, not Grafana."
+    },
+    {
+      "id": "otel-error-rate-namespace",
+      "lane": "mic-telemetry",
+      "prompt": "The error rate of mcp-jira in namespace ai-dev-shared-test is spiking. Correlate the OTEL traces with the pod logs.",
+      "expect": [["grafana-agent", "grafana-explore"]],
+      "allow": ["ai-k8s-deploy", "diagnose"],
+      "forbid": ["langfuse-debug", "jira", "jira-agent"],
+      "note": "Service name contains 'jira' but this is telemetry, not Jira ticket work."
+    },
+    {
+      "id": "assistant-smoke-test-stage",
+      "lane": "mic-assistant",
+      "prompt": "We just deployed the AI Assistant to the test stage. Run a smoke test through the UI and confirm the Jira tool call returns results.",
+      "expect": ["assistant-test"],
+      "allow": ["ai-k8s-deploy"],
+      "forbid": ["mcp-server", "jira", "jira-agent"],
+      "note": "Deployed assistant smoke test."
+    },
+    {
+      "id": "mcp-scaffold-new-server",
+      "lane": "mic-assistant",
+      "prompt": "Scaffold a new MCP server that exposes two read-only tools over our inventory API, using FastMCP, with health endpoints and a Dockerfile.",
+      "expect": ["mcp-server"],
+      "allow": ["ci-pipeline"],
+      "forbid": ["assistant-test"],
+      "note": "MCP development, not deployed-assistant testing."
+    },
+    {
+      "id": "mcp-unit-tests-no-smoke",
+      "lane": "mic-assistant",
+      "prompt": "Write pytest unit tests for the tools in my FastMCP server using in-process calls. No browser, no deployed environment.",
+      "expect": [],
+      "allow": ["mcp-server", "tdd"],
+      "forbid": ["assistant-test"],
+      "note": "Adjacent negative: MCP unit tests are development work, not assistant smoke tests."
+    },
+    {
+      "id": "manage-skills-save-workflow",
+      "lane": "skills-lifecycle",
+      "prompt": "Save the release checklist we just walked through as a reusable skill in my dotfiles.",
+      "expect": ["manage-skills"],
+      "allow": [],
+      "forbid": ["skill-reducer"],
+      "note": "Skill creation."
+    },
+    {
+      "id": "skill-reducer-compress",
+      "lane": "skills-lifecycle",
+      "prompt": "The mcp-server skill is 990 lines and blows the lint body budget. Split it so the main file stays small and the templates load on demand.",
+      "expect": ["skill-reducer"],
+      "allow": [],
+      "forbid": ["manage-skills"],
+      "note": "Compression via progressive disclosure, not lifecycle work."
+    },
+    {
+      "id": "manage-skills-promote-private",
+      "lane": "skills-lifecycle",
+      "prompt": "Promote the langfuse-debug skill from the private overlay to the public dotfiles skills.",
+      "expect": ["manage-skills"],
+      "allow": [],
+      "forbid": ["skill-reducer", "langfuse-debug"],
+      "note": "Lifecycle: promotion between layers. Naming a skill is not a reason to load it."
+    }
+  ]
+}

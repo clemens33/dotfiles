@@ -193,6 +193,30 @@ OUT="$("$LINT" "$TMPROOT/gate7/skills" --waivers "$WAIVERS_FIX" 2>&1)"; CODE=$?
 check "a waived (skill, gate) prints WAIVED and does not fail the run" 0 "$CODE" "$OUT" "WAIVED:.*metadata.category"
 
 # ---------------------------------------------------------------------------
+# interpreter selection: a python3 on PATH without PyYAML must fall back to
+# /usr/bin/python3 (when that one imports yaml); an explicit $PYTHON is honored
+# as-is and fails loudly. `-S` drops site-packages, which is where PyYAML lives.
+# ---------------------------------------------------------------------------
+NOYAML_BIN="$TMPROOT/noyaml-bin"
+mkdir -p "$NOYAML_BIN"
+cat > "$NOYAML_BIN/python3" <<'EOF'
+#!/bin/sh
+exec /usr/bin/python3 -S "$@"
+EOF
+chmod +x "$NOYAML_BIN/python3"
+if [[ -x /usr/bin/python3 ]] && /usr/bin/python3 -c 'import yaml' >/dev/null 2>&1 \
+   && ! "$NOYAML_BIN/python3" -c 'import yaml' >/dev/null 2>&1; then
+  OUT="$(PATH="$NOYAML_BIN:$PATH" PYTHON='' "$LINT" "$TMPROOT/gate7/skills" --waivers "$WAIVERS_FIX" 2>&1)"; CODE=$?
+  check "python3 on PATH without PyYAML falls back to /usr/bin/python3" 0 "$CODE" "$OUT" "WAIVED:.*metadata.category"
+  OUT="$(PYTHON="$NOYAML_BIN/python3" "$LINT" "$TMPROOT/gate7/skills" --waivers "$WAIVERS_FIX" 2>&1)"; CODE=$?
+  check "explicit PYTHON without PyYAML is honored and fails loudly" 1 "$CODE" "$OUT" "PyYAML is required"
+  OUT="$(PYTHON=/usr/bin/python3 "$LINT" "$TMPROOT/gate7/skills" --waivers "$WAIVERS_FIX" 2>&1)"; CODE=$?
+  check "explicit PYTHON with PyYAML is used" 0 "$CODE" "$OUT" "WAIVED:.*metadata.category"
+else
+  echo "SKIP: interpreter fallback tests (need /usr/bin/python3 with PyYAML and a -S run without it)"
+fi
+
+# ---------------------------------------------------------------------------
 # tilde fence: content inside a ~~~ fence must not be gate-5 checked
 # ---------------------------------------------------------------------------
 FIX="$TMPROOT/tilde/skills/tilde-ok"

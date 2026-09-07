@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "suite": "tasks",
+  "prompt_template": "prompt.md",
+  "notes": [
+    "Each case embeds one skill body from the side under test (HEAD or worktree) and asks for a small, checkable artifact.",
+    "verify.extract: 'all' or 'fence:<lang>' (concatenates matching fenced blocks; missing fence fails).",
+    "include: optional glob patterns (relative to the skill dir) whose files are embedded after SKILL.md on the same side, capped by --include-cap chars.",
+    "verify.parse: 'python' runs ast.parse on the extracted text.",
+    "verify.must / must_not: regexes (re.M|re.S; add flags 'i' for case-insensitive). Every must must match; no must_not may match.",
+    "These check outcome properties (parses, portable, states the required fact), not adherence to the skill's wording."
+  ],
+  "cases": [
+    {
+      "id": "mcp-scaffold-stdio-ping",
+      "lane": "mcp",
+      "skill": "mcp-server",
+      "prompt": "Write the complete minimal server module for an MCP server named `demo` with exactly one tool `ping` that returns the string \"pong\". Follow the skill's FastMCP conventions and its default transport; do not add HTTP unless the skill says it is the default. Reply with exactly one ```python fenced block containing the module and nothing else.",
+      "verify": {
+        "extract": "fence:python",
+        "parse": "python",
+        "must": [
+          "FastMCP\\(",
+          "def ping\\b",
+          "\"pong\"|'pong'"
+        ],
+        "must_not": [
+          "transport\\s*=\\s*[\"'](?:streamable-)?http[\"']"
+        ]
+      },
+      "note": "Progressive-disclosure guard for the MCP lane: a compressed skill must still yield a parseable stdio scaffold.",
+      "include": [
+        "reference/*.md",
+        "scripts/*.py"
+      ]
+    },
+    {
+      "id": "manage-skills-lint-facts",
+      "lane": "skills-lifecycle",
+      "skill": "manage-skills",
+      "prompt": "In two or three sentences: besides name and description, which frontmatter field must a new skill in this repo carry to pass the lint gate, and which file declares the per-skill symlinks for Claude Code?",
+      "verify": {
+        "extract": "all",
+        "must": [
+          "category",
+          "install\\.conf\\.yaml"
+        ],
+        "must_not": [],
+        "flags": "i"
+      },
+      "note": "F15 outcome: the skill text must carry the lint-required field and the symlink manifest."
+    },
+    {
+      "id": "grafana-loki-portable-window",
+      "lane": "mic-helper",
+      "skill": "grafana-explore",
+      "prompt": "Give the exact shell command(s) from the skill to query Loki logs for namespace ai-shared-prod over the last 2 hours, for a macOS machine with BSD userland and no GNU coreutils. Reply with exactly one ```bash fenced block and nothing else.",
+      "verify": {
+        "extract": "fence:bash",
+        "must": [
+          "query_range"
+        ],
+        "must_not": [
+          "date -d",
+          "grep -oP",
+          "readlink -f",
+          "stat -c"
+        ]
+      },
+      "note": "F18 outcome: the command must not depend on GNU-only date/grep/stat/readlink on macOS."
+    }
+  ]
+}
