@@ -1,6 +1,10 @@
 # Disable greeting message
 set -g fish_greeting
 
+# Claude Code: updates only via scripts/harness-update.sh (row #31);
+# autoUpdatesChannel in settings keeps channel choice.
+set -gx DISABLE_AUTOUPDATER 1
+
 # Homebrew (macOS, Apple Silicon) — early, so brew-installed tools resolve
 # before anything below. No-op on Linux/WSL where the path doesn't exist.
 # Explicit `fish` arg: shellenv's auto-detection can emit POSIX syntax.

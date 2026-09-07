@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
 # Update installed AI coding harnesses without letting one failure skip the rest.
+# Step functions are exported and invoked in supervised child shells.
+# shellcheck disable=SC2329
 set -uo pipefail
 
 export PATH="$HOME/.local/bin:$HOME/.grok/bin:$HOME/.local/share/mise/shims:$HOME/.local/share/fnm:$HOME/.fnm:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
@@ -12,22 +14,25 @@ INCLUDE_AE=0
 ONLY_TOOL=""
 LOG_DIR="$HOME/.local/state/harness-update"
 LOG_FILE="$LOG_DIR/$(date +%F).log"
+STEP_TIMEOUT=${HARNESS_UPDATE_TIMEOUT_SECONDS:-300}
 
 usage() {
   cat <<'EOF'
 Usage: scripts/harness-update.sh [--check] [--only TOOL] [--include-ae]
 
-Tools: claude, codex, agy, grok, opencode, ae
+Tools: claude, codex, agy, grok, opencode, muse, ae
 
   --check       Report installed and latest versions without changing anything
   --only TOOL   Process one tool only
   --include-ae  Include ae; updates require an explicit AE_VERSION pin
+
+Each tool has a 300-second deadline (HARNESS_UPDATE_TIMEOUT_SECONDS overrides it).
 EOF
 }
 
 valid_tool() {
   case "$1" in
-    claude|codex|agy|grok|opencode|ae) return 0 ;;
+    claude|codex|agy|grok|opencode|muse|ae) return 0 ;;
     *) return 1 ;;
   esac
 }
@@ -42,7 +47,7 @@ while [ "$#" -gt 0 ]; do
       ;;
     --only)
       if [ "$#" -lt 2 ] || ! valid_tool "$2"; then
-        printf 'error: --only requires one of: claude, codex, agy, grok, opencode, ae\n' >&2
+        printf 'error: --only requires one of: claude, codex, agy, grok, opencode, muse, ae\n' >&2
         usage >&2
         exit 2
       fi
@@ -61,6 +66,13 @@ while [ "$#" -gt 0 ]; do
   esac
   shift
 done
+
+case "$STEP_TIMEOUT" in
+  ''|*[!0-9]*|0*)
+    printf 'error: HARNESS_UPDATE_TIMEOUT_SECONDS must be a positive integer\n' >&2
+    exit 2
+    ;;
+esac
 
 if ! mkdir -p "$LOG_DIR"; then
   printf 'error: cannot create log directory: %s\n' "$LOG_DIR" >&2
@@ -95,6 +107,55 @@ summary() {
 
 selected() {
   [ -z "$ONLY_TOOL" ] || [ "$ONLY_TOOL" = "$1" ]
+}
+
+# Bound the entire step, including version probes. Kill descendants too: an npm
+# or installer child must not keep updating after its parent reports a timeout.
+with_timeout() {
+  if command -v gtimeout >/dev/null 2>&1; then
+    gtimeout --kill-after=5 "$STEP_TIMEOUT" "$@"
+  elif command -v timeout >/dev/null 2>&1; then
+    timeout --kill-after=5 "$STEP_TIMEOUT" "$@"
+  else
+    # macOS ships Perl, but not GNU timeout. A new session owns the child group.
+    perl -MPOSIX=setsid -e '
+      my $seconds = shift @ARGV;
+      my $pid = fork();
+      defined $pid or die "fork: $!\n";
+      if (!$pid) {
+        setsid() >= 0 or die "setsid: $!\n";
+        exec @ARGV or die "exec: $!\n";
+      }
+      my $stop = sub {
+        my ($code) = @_;
+        kill "TERM", -$pid;
+        select undef, undef, undef, 0.5;
+        kill "KILL", -$pid;
+        waitpid $pid, 0;
+        exit $code;
+      };
+      $SIG{ALRM} = sub { $stop->(124) };
+      $SIG{INT} = sub { $stop->(130) };
+      $SIG{TERM} = sub { $stop->(143) };
+      alarm $seconds;
+      waitpid $pid, 0;
+      my $status = $?;
+      alarm 0;
+      exit(($status & 127) ? 128 + ($status & 127) : $status >> 8);
+    ' "$STEP_TIMEOUT" "$@"
+  fi
+}
+
+run_step() {
+  local result
+  # Expand the positional argument in the child, not the supervising shell.
+  # shellcheck disable=SC2016
+  with_timeout bash -c 'set -uo pipefail; "process_$1"' bash "$1"
+  result=$?
+  if [ "$result" -eq 124 ] || [ "$result" -eq 137 ]; then
+    summary "$1 FAIL timed out after ${STEP_TIMEOUT}s"
+  fi
+  return "$result"
 }
 
 log_run() {
@@ -193,6 +254,7 @@ installed_version() {
     agy) agy --version 2>>"$LOG_FILE" | awk 'NR == 1 { print $1 }' ;;
     grok) grok --version 2>>"$LOG_FILE" | awk 'NR == 1 { print $2 }' ;;
     opencode) run_opencode --version 2>>"$LOG_FILE" | awk 'NR == 1 { print $1 }' ;;
+    muse) muse --version 2>>"$LOG_FILE" | awk 'NR == 1 { gsub(/[()]/, "", $NF); print $NF }' ;;
     ae) ae --version 2>>"$LOG_FILE" | awk 'NR == 1 { print $NF }' ;;
     *) return 1 ;;
   esac
@@ -389,13 +451,53 @@ process_ae() {
   summary "ae OK $before -> $after"
 }
 
+install_muse() {
+  curl -fsSL https://dev.meta.ai/install.sh | bash
+}
+
+process_muse() {
+  if ! command -v muse >/dev/null 2>&1; then
+    summary 'muse SKIP not installed'
+    return 0
+  fi
+  local before after
+  before=$(installed_version muse) || before=""
+  if [ -z "$before" ]; then
+    summary 'muse FAIL unable to read installed version'
+    return 1
+  fi
+  if [ "$CHECK_ONLY" -eq 1 ]; then
+    summary "muse CHECK current=$before latest=unknown (installer has no version lookup)"
+    return 0
+  fi
+  if ! log_run install_muse; then
+    summary "muse FAIL current=$before installer failed"
+    return 1
+  fi
+  hash -r
+  after=$(installed_version muse) || after=""
+  if [ -z "$after" ]; then
+    summary "muse FAIL before=$before unable to read updated version"
+    return 1
+  fi
+  if [ "$before" = "$after" ]; then
+    summary "muse OK $before -> $after (muse: up to date)"
+  else
+    summary "muse OK $before -> $after"
+  fi
+}
+
+# Export existing step functions so timeout can supervise a separate Bash process.
+export CHECK_ONLY INCLUDE_AE LOG_FILE
+export -f summary log_run npm_mode nvm_exec npm_latest npm_install_latest \
+  opencode_available run_opencode installed_version agy_latest grok_latest \
+  check_with_npm update_native install_muse process_claude process_codex \
+  process_agy process_grok process_opencode process_muse process_ae
+
 failures=0
-if selected claude && ! process_claude; then failures=1; fi
-if selected codex && ! process_codex; then failures=1; fi
-if selected agy && ! process_agy; then failures=1; fi
-if selected grok && ! process_grok; then failures=1; fi
-if selected opencode && ! process_opencode; then failures=1; fi
-if selected ae && ! process_ae; then failures=1; fi
+for tool in claude codex agy grok opencode muse ae; do
+  if selected "$tool" && ! run_step "$tool"; then failures=1; fi
+done
 
 printf '[%s] harness update finish exit=%s\n' \
   "$(date '+%Y-%m-%dT%H:%M:%S%z')" "$failures" >>"$LOG_FILE"
