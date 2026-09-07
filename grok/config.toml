@@ -1,10 +1,18 @@
-# Grok Build (xAI CLI) — symlinked to ~/.grok/config.toml via dotbot.
-# Grok also WRITES sticky state here (ui prefs, marketplace flags) — expect churn.
+# Grok Build (xAI CLI) — installed to ~/.grok/config.toml as a plain COPY by
+# dotbot (not a symlink: grok's hooks-paths registry rejects symlinks, so
+# `grok --sandbox read-only` refuses to start on one — seen 2026-09-07). This
+# repo file is the source of truth; grok also WRITES sticky state into the live
+# copy (ui prefs, marketplace flags), so diff live vs repo and merge grok-written
+# keys back here BEFORE re-running ./install.
 # Skills need no config: Grok natively reads ~/.claude/skills/ (user scope).
 
 [cli]
 installer = "internal"
-auto_update = true
+# OFF (2026-09-07, sota-audit L1 #31): scripts/harness-update.sh owns grok
+# updates (`grok update`, with timeouts). Two updaters raced; the native one
+# hung the daily job 18 min on "GCS channel pointer fetch failed". Vendor's own
+# enterprise example (GK-README §Enterprise Deployment) sets this false.
+auto_update = false
 
 [models]
 # grok-4.6 = current Grok Build default (500k context; grok CLI 1.0.3, 4.5 also
@@ -33,6 +41,41 @@ disable_zdr_incompatible_tools = true
 # (.env, credentials) into model context. Keep true.
 respect_gitignore = true
 
+# Ignore all 23 vendor-bundled skills (2026-09-07, sota-audit L1 #40): every
+# one either duplicates a dotfiles skill (review -> code-review; create-skill /
+# skill-design-principles -> manage-skills; design / execute-plan / implement /
+# create-workflow -> scope / large-feature), collides (`imagine` vs /imagine)
+# or is irrelevant on this seat (game-*, pptx, docx, pdf, xAI-API build guide).
+# Each costs ~70-130 description tokens per session start. `ignore` takes PATHS
+# (GK-README §Skills Configuration); names from `grok inspect` 1.0.13. A new
+# bundled skill shows up in `grok inspect` again — decide, then add it here.
+[skills]
+ignore = [
+  "~/.grok/bundled/skills/build-with-ai",
+  "~/.grok/bundled/skills/create-skill",
+  "~/.grok/bundled/skills/create-workflow",
+  "~/.grok/bundled/skills/design",
+  "~/.grok/bundled/skills/docx",
+  "~/.grok/bundled/skills/execute-plan",
+  "~/.grok/bundled/skills/game-animation-frames",
+  "~/.grok/bundled/skills/game-asset-core",
+  "~/.grok/bundled/skills/game-character-consistency",
+  "~/.grok/bundled/skills/game-tilesets",
+  "~/.grok/bundled/skills/game-ui-icons",
+  "~/.grok/bundled/skills/imagine",
+  "~/.grok/bundled/skills/implement",
+  "~/.grok/bundled/skills/long-running-background-tasks",
+  "~/.grok/bundled/skills/pdf",
+  "~/.grok/bundled/skills/pptx",
+  "~/.grok/bundled/skills/pr-babysit",
+  "~/.grok/bundled/skills/resume-claude",
+  "~/.grok/bundled/skills/resume-codex",
+  "~/.grok/bundled/skills/resume-cursor",
+  "~/.grok/bundled/skills/review",
+  "~/.grok/bundled/skills/skill-design-principles",
+  "~/.grok/bundled/skills/statusline",
+]
+
 [marketplace]
 official_marketplace_auto_installed = true
 default_skills_installs_purged = true
@@ -42,14 +85,18 @@ name = "xAI Official"
 git = "https://github.com/xai-org/plugin-marketplace.git"
 
 # MCP servers — same set as codex/config.toml, identical TOML shape.
+# Pinned 2026-09-07 (bump via harness-update): serena v1.7.0 = commit
+# 949a27ef; @upstash/context7-mcp 4.0.5; chrome-devtools-mcp 1.8.0. Same pins
+# in codex/config.toml, claude/mcpServers.json, opencode/config.json,
+# antigravity/settings.json — bump all five together.
 [mcp_servers.serena]
 command = "uvx"
-args = ["--from", "git+https://github.com/oraios/serena", "serena", "start-mcp-server", "--context", "ide-assistant", "--enable-web-dashboard", "false"]
+args = ["--from", "git+https://github.com/oraios/serena@949a27ef1e5fda1a6e7b561e777bcece345c6ffd", "serena", "start-mcp-server", "--context", "ide-assistant", "--enable-web-dashboard", "false"]
 startup_timeout_sec = 30
 
 [mcp_servers.context7]
 command = "npx"
-args = ["-y", "@upstash/context7-mcp@latest"]
+args = ["-y", "@upstash/context7-mcp@4.0.5"]
 startup_timeout_sec = 30
 
 # 20s (STRICTER than other servers on purpose): this attaches to an existing
@@ -59,12 +106,12 @@ startup_timeout_sec = 30
 # under 20s; if Chrome is running and this still trips, launch Chrome first.
 [mcp_servers.chrome-devtools]
 command = "npx"
-args = ["-y", "chrome-devtools-mcp@latest", "--browser-url=http://127.0.0.1:9222", "--no-usage-statistics", "--no-performance-crux"]
+args = ["-y", "chrome-devtools-mcp@1.8.0", "--browser-url=http://127.0.0.1:9222", "--no-usage-statistics", "--no-performance-crux"]
 startup_timeout_sec = 20
 
 # codebase-memory dropped 2026-07-29 (trial ended; serena covers it).
 
-# Sticky UI state grok wrote back (kept so a dotbot relink doesn't reset it).
+# Sticky UI state grok wrote back (kept so a dotbot reinstall doesn't reset it).
 [ui]
 max_thoughts_width = 120
 fork_secondary_model = "grok-4.6"

@@ -180,20 +180,24 @@
   // ~/.config/opencode/node_modules, which is what misled an earlier note.)
 
   // --- MCP servers: same set as codex/grok --------------------------------
+  // Pinned 2026-09-07 (bump via harness-update): serena v1.7.0 = commit
+  // 949a27ef; @upstash/context7-mcp 4.0.5; chrome-devtools-mcp 1.8.0. Same
+  // pins in codex/config.toml, claude/mcpServers.json, antigravity/settings.json,
+  // grok/config.toml — bump all five together.
   "mcp": {
     "serena": {
       "type": "local",
-      "command": ["uvx", "--from", "git+https://github.com/oraios/serena", "serena", "start-mcp-server", "--context", "ide-assistant", "--enable-web-dashboard", "false"]
+      "command": ["uvx", "--from", "git+https://github.com/oraios/serena@949a27ef1e5fda1a6e7b561e777bcece345c6ffd", "serena", "start-mcp-server", "--context", "ide-assistant", "--enable-web-dashboard", "false"]
     },
     "context7": {
       "type": "local",
-      "command": ["npx", "-y", "@upstash/context7-mcp@latest"]
+      "command": ["npx", "-y", "@upstash/context7-mcp@4.0.5"]
     },
     // Privacy flags are mandatory here: usage statistics and CrUX URL upload
     // from performance traces are both ON by default upstream.
     "chrome-devtools": {
       "type": "local",
-      "command": ["npx", "-y", "chrome-devtools-mcp@latest", "--browser-url=http://127.0.0.1:9222", "--no-usage-statistics", "--no-performance-crux"]
+      "command": ["npx", "-y", "chrome-devtools-mcp@1.8.0", "--browser-url=http://127.0.0.1:9222", "--no-usage-statistics", "--no-performance-crux"]
     }
   }
 }

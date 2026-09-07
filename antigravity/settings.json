@@ -23,12 +23,13 @@
     "/Users/ckriech/projects/clemens33/ae-rust",
     "/Users/ckriech/projects/clemens33/portfolio"
   ],
+  "//mcpServers": "Pinned 2026-09-07 (bump via harness-update): serena v1.7.0 = commit 949a27ef; @upstash/context7-mcp 4.0.5; chrome-devtools-mcp 1.8.0. Same pins in codex/config.toml, claude/mcpServers.json, opencode/config.json, grok/config.toml \u2014 bump all five together. No comment key inside mcpServers itself: every key there is a server name.",
   "mcpServers": {
     "serena": {
       "command": "uvx",
       "args": [
         "--from",
-        "git+https://github.com/oraios/serena",
+        "git+https://github.com/oraios/serena@949a27ef1e5fda1a6e7b561e777bcece345c6ffd",
         "serena",
         "start-mcp-server",
         "--context",
@@ -41,14 +42,14 @@
       "command": "npx",
       "args": [
         "-y",
-        "@upstash/context7-mcp@latest"
+        "@upstash/context7-mcp@4.0.5"
       ]
     },
     "chrome-devtools": {
       "command": "npx",
       "args": [
         "-y",
-        "chrome-devtools-mcp@latest",
+        "chrome-devtools-mcp@1.8.0",
         "--browser-url=http://127.0.0.1:9222",
         "--no-usage-statistics",
         "--no-performance-crux"
