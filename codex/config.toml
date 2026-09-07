@@ -1,9 +1,14 @@
-model = "gpt-5.6-sol"
+model = "gpt-6-astra"
 personality = "pragmatic"
-# GPT-5.6 Sol efforts: low/medium/high/xhigh/max/ultra (ultra = auto subagent
-# delegation, Pro/Business-only). OpenAI's default is medium ("Sol is highly
-# capable at lower reasoning efforts"); xhigh = deep-by-default, mirrors the
-# Claude Code effortLevel. Drop to high/medium via /effort to conserve quota;
+# GPT-6 Astra (codex debug models, 0.153.4, 2026-09-07): context_window
+# 272000, effective 95 % (258,400), default_reasoning_level medium. Efforts:
+# low/medium/high/xhigh/max/ultra (ultra = auto subagent delegation). Vendor
+# defaults per model: Astra medium, Luna medium, Terra medium, Sol low.
+# xhigh below is NOT a vendor default: it is Clemens's judgment-seat policy for
+# this interactive config. ae worker profiles set their own effort per seat
+# via `-c model_reasoning_effort=...` (~/.ae/config) and do not inherit this.
+# One effort per thread: flipping effort mid-thread busts the prompt-prefix
+# cache (CX-42996). Drop to high/medium via /effort to conserve quota;
 # max/ultra stay as per-task escalation.
 model_reasoning_effort = "xhigh"
 # Plan mode benefits from deeper reasoning than execution.
@@ -13,12 +18,15 @@ sandbox_mode = "danger-full-access"
 web_search = "live"
 suppress_unstable_features_warning = true
 tool_output_token_limit = 25000
-# Compact at ~80% of the CLI's ACTIVE window. CLI 0.149.1's model catalog
-# gives GPT-5.6 272k active input — the 372k figure is the Codex App's, not
-# the CLI's, and the previous 332000 sat ABOVE the ceiling so auto-compaction
-# never fired before the hard limit. 220000 leaves ~50k headroom so the
-# compaction call never races the limit mid-turn (ruling 2026-08-25:
-# deliberate earlier compaction; unset would give ~244800 model default).
+# Compact at 85 % of the CLI's EFFECTIVE window. codex debug models (0.153.4,
+# 2026-09-07): gpt-6-astra context_window 272000 x effective 95 % = 258,400
+# tokens (same numbers for gpt-5.6-sol/luna/terra). 220000 leaves ~38k headroom
+# so the compaction call never races the hard limit mid-turn (ruling
+# 2026-08-25: deliberate earlier compaction; unset falls back to codex's own
+# model-derived default). Do NOT raise this toward API-capacity figures: the
+# 1.05M Astra window is the API's, not the CLI's, and the catalog's
+# max_context_window (872000) is not the window this limit is measured
+# against either — 272k is (ruling 2026-09-07, sota-audit L1 #11).
 # Do NOT also set model_context_window — openai/codex#16068: it resets the
 # token counter and silently breaks auto-compaction.
 model_auto_compact_token_limit = 220000
@@ -26,8 +34,8 @@ project_doc_fallback_filenames = ["CLAUDE.md"]
 service_tier = "default"
 
 [features]
-unified_exec = true
-apply_patch_freeform = true
+# unified_exec (default true) and apply_patch_freeform (removed upstream)
+# dropped 2026-09-07 per `codex features list` 0.153.4.
 # OFF on purpose (2026-08-11, found during cross-model review remediation):
 # shell_snapshot dumps codex's inherited environment — secrets included — as
 # literal `export` lines into world-readable ~/.codex/shell_snapshots/*.sh,
@@ -537,18 +545,27 @@ trust_level = "trusted"
 [projects."/Users/ckriech/projects/clemens33/dotfiles-mic"]
 trust_level = "trusted"
 
+[projects."/Users/ckriech/projects/clemens33/ae-legacy"]
+trust_level = "trusted"
+
 # NO trust for /private/tmp (removed 2026-08-11, cross-model review): it is
 # root-owned mode 1777 — any local process can plant project-local .codex
 # config/hooks under a trusted root. Trust only user-owned project paths.
 
+# Pinned 2026-09-07 (bump via harness-update): serena v1.7.0 = commit
+# 949a27ef; @upstash/context7-mcp 4.0.5; chrome-devtools-mcp 1.8.0. Exact pins
+# stop `uvx --from git+…` / `npx -y pkg@latest` re-resolving upstream on every
+# session start and keep a breaking release from landing on all harnesses the
+# same day. Same pins in claude/mcpServers.json, opencode/config.json,
+# antigravity/settings.json, grok/config.toml — bump all five together.
 [mcp_servers.serena]
 command = "uvx"
-args = ["--from", "git+https://github.com/oraios/serena", "serena", "start-mcp-server", "--context", "ide-assistant", "--enable-web-dashboard", "false"]
+args = ["--from", "git+https://github.com/oraios/serena@949a27ef1e5fda1a6e7b561e777bcece345c6ffd", "serena", "start-mcp-server", "--context", "ide-assistant", "--enable-web-dashboard", "false"]
 startup_timeout_sec = 30
 
 [mcp_servers.context7]
 command = "npx"
-args = ["-y", "@upstash/context7-mcp@latest"]
+args = ["-y", "@upstash/context7-mcp@4.0.5"]
 startup_timeout_sec = 30
 
 # 20s (STRICTER than other servers on purpose): this attaches to an existing
@@ -558,7 +575,7 @@ startup_timeout_sec = 30
 # under 20s; if Chrome is running and this still trips, launch Chrome first.
 [mcp_servers.chrome-devtools]
 command = "npx"
-args = ["-y", "chrome-devtools-mcp@latest", "--browser-url=http://127.0.0.1:9222", "--no-usage-statistics", "--no-performance-crux"]
+args = ["-y", "chrome-devtools-mcp@1.8.0", "--browser-url=http://127.0.0.1:9222", "--no-usage-statistics", "--no-performance-crux"]
 startup_timeout_sec = 20
 
 # codebase-memory dropped 2026-07-29: trial ended with the mac migration —
@@ -596,10 +613,8 @@ env_http_headers = { "x-api-key" = "MIC_ASSISTANT_TEST_API_KEY" }
 "hide_gpt-5.1-codex-max_migration_prompt" = true
 hide_rate_limit_model_nudge = true
 
-[notice.model_migrations]
-"gpt-5.1-codex-max" = "gpt-5.2-codex"
-
 [tui.model_availability_nux]
 "gpt-5.3-codex-spark" = 4
 "gpt-5.5" = 4
 "gpt-5.6-sol" = 4
+gpt-6-astra = 4
