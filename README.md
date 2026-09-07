@@ -53,8 +53,8 @@ The wrapper install script detects the overlay submodule and runs its Dotbot pas
 | Claude Code | `claude/settings.json`, `claude/mcpServers.json` | `~/.claude/` |
 | Codex CLI | `codex/config.toml` | `~/.codex/config.toml` |
 | OpenCode | `opencode/config.json` | `~/.config/opencode/config.json` |
-| Gemini CLI | `gemini/settings.json` | `~/.gemini/settings.json` |
-| Shared AI doctrine | `shared/AGENTS.md` | `~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, `~/.config/opencode/AGENTS.md`, `~/.gemini/GEMINI.md` |
+| Antigravity CLI (`agy`) | `antigravity/settings.json` | `~/.gemini/antigravity-cli/settings.json` |
+| Shared AI doctrine | `shared/AGENTS.md` | `~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, `~/.config/opencode/AGENTS.md`, `~/.gemini/config/plugins/dotfiles/rules/AGENTS.md` |
 | AI skills | `skills/<name>/` | `~/.claude/skills/<name>/`, `~/.agents/skills/<name>/` |
 
 ## AI operating doctrine

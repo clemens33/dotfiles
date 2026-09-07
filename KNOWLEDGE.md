@@ -363,17 +363,17 @@ project/
 
 ## 11. Codex CLI Configuration
 
-> Model catalog and managed system-skill path verified locally on Codex 0.153.4,
-> 2026-09-07. Instruction and user-skill discovery checked against official docs
-> on the same date; user-skill picker migration still needs a live check.
+> Model catalog, managed system-skill path, and model-visible user-skill discovery
+> verified locally on Codex 0.153.4, 2026-09-07. Instruction and skill discovery
+> also checked against official docs on the same date.
 
 - Global instructions: `~/.codex/AGENTS.md`
 - Config: `~/.codex/config.toml` — fields include `model`, `approval_policy`, `sandbox_mode`, `web_search`, `model_reasoning_effort`, `personality`, `tool_output_token_limit`. (Note: the field is `approval_policy`, not `approval_mode`.)
 - Walks from project root to cwd; each directory contributes its first available `AGENTS.override.md`, `AGENTS.md`, or configured fallback file.
 - `project_doc_fallback_filenames = ["CLAUDE.md"]` for projects without `AGENTS.md`.
 - Does not auto-discover `CLAUDE.md` by default; add it to `project_doc_fallback_filenames` when needed. The [official instruction-discovery order](https://developers.openai.com/codex/guides/agents-md) still names overrides, `AGENTS.md`, then configured fallbacks (checked 2026-09-07).
-- User skills: **`$HOME/.agents/skills`**, per-skill symlinks for the public and optional overlay layers. Codex follows skill symlinks. Same-name skills across scopes **are not merged** and can both appear in the picker; migrate user links rather than duplicate them. `~/.codex/skills/.system` is Codex-managed and stays separate. See [official skill discovery](https://developers.openai.com/codex/skills).
-- **Open gap G11:** verify each migrated user skill appears once in the live picker before removing legacy `~/.codex/skills/<name>` links; the audit did not run a billed discovery check.
+- User skills: **`$HOME/.agents/skills`**, per-skill symlinks for the public and optional overlay layers. Codex follows skill symlinks. `~/.codex/skills/.system` is Codex-managed and stays separate. The [official skill discovery docs](https://developers.openai.com/codex/skills) say same-name skills across scopes are not merged and both can appear in selectors; the local 0.153.4 measurement below found de-duplication in the model-visible catalog across the two user roots, not an interactive selector check.
+- **G11 closed (2026-09-07):** `codex debug prompt-input` verified that 0.153.4 scans both `~/.agents/skills` and legacy `~/.codex/skills`. A unique probe confirmed the new root was scanned while both were populated; duplicate names appeared once, with the legacy root winning. Before and after migration, the catalog contained 44 user skills + 5 managed system skills, no duplicate names. The installer created the new links and retired the repository-owned legacy symlinks. No billed run was needed; these counts and precedence are version-scoped observations.
 - **Profiles** (`[profiles.<name>]`) for swappable presets — `review`, `quick`, `deep` patterns common.
 - Power-user defaults: `approval_policy = "never"` + `sandbox_mode = "danger-full-access"` for full YOLO; alternate is `approval_policy = "on-request"` + `sandbox_mode = "workspace-write"`.
 
@@ -390,12 +390,14 @@ GPT-5.5 in Codex requires ChatGPT auth, not API-key auth, at launch. API-key use
 
 ### Antigravity CLI (`agy`) — Gemini CLI's replacement
 
-> Paths verified locally on agy 1.1.25, 2026-09-07; post-install live rule loading remains to be measured.
+> Paths and post-install live rule/skill loading verified locally on agy 1.1.27, 2026-09-07.
 
 - Rules/skills root: **`~/.gemini/config/`**, also containing `config.json`, `hooks.json`, `mcp_config.json`, and `projects/`. The `AGENTS.md` rules file under `~/.gemini/antigravity-cli/` was never read.
 - Settings and runtime state remain under **`~/.gemini/antigravity-cli/`** (`settings.json`, `annotations/`, `brain/`, `cache/`). Dotbot links `antigravity/settings.json` to `~/.gemini/antigravity-cli/settings.json`; keys include `model` (display-name string), `trustedWorkspaces` (path list), `mcpServers` (Claude-style JSON), and `permissions.allow/deny` (grant strings).
 - Rules: project `GEMINI.md` / `AGENTS.md` discovery, or plugin rules. Dotbot installs the shared contract at **`~/.gemini/config/plugins/dotfiles/rules/AGENTS.md`** with the plugin manifest.
 - Skills: **`~/.gemini/config/skills` → `~/.claude/skills`**; project skills under `.agents/skills/`. The same skill files serve both harnesses.
+- Live loading check: `agy -p` correctly echoed the contract's first heading, `# SOUL.md`; the run's log no longer reported an empty `user_rules` section. A separate skill-list prompt returned 44 names: 42 repository skills and 2 vendor built-ins. The two remaining repository skills, `setup-matt-pocock-skills` and `zoom-out`, were excluded from the model-facing list by `disable-model-invocation: true`.
+- Citation spot check: a fixed prompt requesting five official hooks-documentation URLs returned **5/5 valid URLs**, checked for HTTP 200 and relevant page bodies. The earlier broader audit found 37/56 fabricated citations. Different prompts and sample sizes prevent a direct comparison or a claim that loading the rules caused an improvement.
 - Model selection uses display-name strings (for example `"Gemini 3.8 Flash (High)"`); `--effort low|medium|high` overrides per session. Google's 3.8 Flash default is `medium`.
 - Permission modes (via `/config`): `request-review` (default) / `proceed-in-sandbox` / `always-proceed` / `strict`; per-session yolo via `--dangerously-skip-permissions`. The persistent-mode settings key is undocumented — set it once via `/config` and diff the config files to capture it.
 - Print mode (`-p`) executes tools without prompting; MCP servers spin up in interactive sessions only. Google-grounded `search_web` is built in (server-side grounding with citations).
