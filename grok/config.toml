@@ -85,10 +85,11 @@ name = "xAI Official"
 git = "https://github.com/xai-org/plugin-marketplace.git"
 
 # MCP servers — same set as codex/config.toml, identical TOML shape.
-# Pinned 2026-09-07 (bump via harness-update): serena v1.7.0 = commit
+# Package pins (bump via harness-update): serena v1.7.0 = commit
 # 949a27ef; @upstash/context7-mcp 4.0.5; chrome-devtools-mcp 1.8.0. Same pins
 # in codex/config.toml, claude/mcpServers.json, opencode/config.json,
-# antigravity/settings.json — bump all five together.
+# antigravity/settings.json — bump all five together. OpenDesign is separately
+# digest-pinned in open-design/compose.yaml and is not managed by harness-update.
 [mcp_servers.serena]
 command = "uvx"
 args = ["--from", "git+https://github.com/oraios/serena@949a27ef1e5fda1a6e7b561e777bcece345c6ffd", "serena", "start-mcp-server", "--context", "ide-assistant", "--enable-web-dashboard", "false"]
@@ -108,6 +109,10 @@ startup_timeout_sec = 30
 command = "npx"
 args = ["-y", "chrome-devtools-mcp@1.8.0", "--browser-url=http://127.0.0.1:9222", "--no-usage-statistics", "--no-performance-crux"]
 startup_timeout_sec = 20
+
+[mcp_servers.open-design]
+command = "open-design-mcp"
+startup_timeout_sec = 30
 
 # codebase-memory dropped 2026-07-29 (trial ended; serena covers it).
 

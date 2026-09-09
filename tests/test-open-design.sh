@@ -1,0 +1,260 @@
+#!/bin/sh
+
+set -eu
+
+ROOT=$(CDPATH='' cd -- "$(dirname "$0")/.." && pwd -P)
+WRAPPER=$ROOT/bin/open-design
+TMP_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/test-open-design.XXXXXX")
+STUB_BIN=$TMP_ROOT/stub-bin
+DOCKER_LOG=$TMP_ROOT/docker.log
+TOOL_LOG=$TMP_ROOT/tool.log
+
+cleanup() {
+    rm -rf "$TMP_ROOT"
+}
+trap cleanup EXIT HUP INT TERM
+
+fail() {
+    printf 'FAIL: %s\n' "$*" >&2
+    exit 1
+}
+
+assert_contains() {
+    file=$1
+    expected=$(printf '%b' "$2")
+    grep -F -- "$expected" "$file" >/dev/null ||
+        fail "$file does not contain: $expected"
+}
+
+assert_not_contains() {
+    file=$1
+    unexpected=$2
+    if grep -F -- "$unexpected" "$file" >/dev/null; then
+        fail "$file unexpectedly contains: $unexpected"
+    fi
+}
+
+assert_empty() {
+    [ ! -s "$1" ] || fail "$1 is not empty"
+}
+
+reset_logs() {
+    : > "$DOCKER_LOG"
+    : > "$TOOL_LOG"
+}
+
+mkdir -p "$STUB_BIN"
+
+cat > "$STUB_BIN/docker" <<'STUB'
+#!/bin/sh
+{
+    printf 'CALL'
+    for arg do
+        printf '\t<%s>' "$arg"
+    done
+    printf '\n'
+} >> "$DOCKER_LOG"
+
+case ${1:-} in
+    info)
+        exit "${STUB_INFO_RC:-0}"
+        ;;
+    inspect)
+        printf '%s\n' "${STUB_RUNNING:-true}"
+        exit 0
+        ;;
+    compose)
+        exit "${STUB_COMPOSE_RC:-0}"
+        ;;
+    exec)
+        case " $* " in
+            *' mktemp -d /tmp/open-design-import.XXXXXX '*)
+                printf '%s\n' /tmp/open-design-import.stub123
+                exit 0
+                ;;
+            *' tar -xf - -C /tmp/open-design-import.stub123 '*)
+                dd of=/dev/null 2>/dev/null
+                exit "${STUB_TRANSFER_RC:-0}"
+                ;;
+            *' design-systems import-local /tmp/open-design-import.stub123 '*)
+                exit "${STUB_IMPORT_RC:-0}"
+                ;;
+            *' mcp --daemon-url http://127.0.0.1:7456 '*)
+                if [ -n "${STUB_EXEC_SIGNAL:-}" ]; then
+                    kill -"$STUB_EXEC_SIGNAL" "$$"
+                fi
+                exit "${STUB_EXEC_RC:-0}"
+                ;;
+        esac
+        exit "${STUB_EXEC_RC:-0}"
+        ;;
+esac
+exit 0
+STUB
+
+cat > "$STUB_BIN/curl" <<'STUB'
+#!/bin/sh
+{
+    printf 'CALL'
+    for arg do
+        printf '\t<%s>' "$arg"
+    done
+    printf '\n'
+} >> "$TOOL_LOG"
+case " $* " in
+    *'/api/health '*) printf '{"status":"ok"}\n' ;;
+    *'/api/version '*) printf '{"version":"0.21.1"}\n' ;;
+esac
+STUB
+
+cat > "$STUB_BIN/open" <<'STUB'
+#!/bin/sh
+printf 'CALL\t<%s>\n' "$1" >> "$TOOL_LOG"
+STUB
+
+chmod +x "$STUB_BIN/docker" "$STUB_BIN/curl" "$STUB_BIN/open"
+
+TEST_HOME=$TMP_ROOT/home
+CONFIG_DIR=$TEST_HOME/.config/open-design
+mkdir -p "$CONFIG_DIR" "$TMP_ROOT/commands"
+ln -s "$WRAPPER" "$TMP_ROOT/commands/open-design"
+ln -s "$WRAPPER" "$TMP_ROOT/commands/open-design-mcp"
+OD=$TMP_ROOT/commands/open-design
+MCP=$TMP_ROOT/commands/open-design-mcp
+
+export HOME="$TEST_HOME"
+export PATH="$STUB_BIN:/usr/bin:/bin"
+export DOCKER_LOG TOOL_LOG
+
+: > "$CONFIG_DIR/compose.yaml"
+
+prefix="CALL\t<compose>\t<--project-directory>\t<$CONFIG_DIR>\t<-f>\t<$CONFIG_DIR/compose.yaml>"
+
+reset_logs
+"$OD" install
+assert_contains "$DOCKER_LOG" "$prefix\t<pull>"
+assert_contains "$DOCKER_LOG" "$prefix\t<up>\t<-d>\t<--no-build>\t<--wait>"
+
+reset_logs
+"$OD" pull
+assert_contains "$DOCKER_LOG" "$prefix\t<pull>"
+
+reset_logs
+"$OD" start
+assert_contains "$DOCKER_LOG" "$prefix\t<up>\t<-d>\t<--no-build>\t<--wait>"
+
+reset_logs
+"$OD" stop
+assert_contains "$DOCKER_LOG" "$prefix\t<stop>"
+
+reset_logs
+"$OD" down
+assert_contains "$DOCKER_LOG" "$prefix\t<down>\t<--remove-orphans>"
+assert_not_contains "$DOCKER_LOG" '<-v>'
+assert_not_contains "$DOCKER_LOG" '<--volumes>'
+
+reset_logs
+"$OD" restart
+assert_contains "$DOCKER_LOG" "$prefix\t<up>\t<-d>\t<--no-build>\t<--force-recreate>\t<--wait>"
+
+reset_logs
+"$OD" status
+assert_contains "$DOCKER_LOG" "$prefix\t<ps>"
+
+reset_logs
+"$OD" logs --tail 7 --since 'two hours ago'
+assert_contains "$DOCKER_LOG" "$prefix\t<logs>\t<--tail>\t<7>\t<--since>\t<two hours ago>"
+
+reset_logs
+"$OD" open
+assert_contains "$TOOL_LOG" 'CALL\t<http://127.0.0.1:7456>'
+
+reset_logs
+"$OD" health > "$TMP_ROOT/health.out"
+assert_contains "$TOOL_LOG" '<http://127.0.0.1:7456/api/health>'
+assert_contains "$TMP_ROOT/health.out" '"status":"ok"'
+
+reset_logs
+"$OD" version > "$TMP_ROOT/version.out"
+assert_contains "$TOOL_LOG" '<http://127.0.0.1:7456/api/version>'
+assert_contains "$TMP_ROOT/version.out" '"version":"0.21.1"'
+
+reset_logs
+"$OD" cli project create --name 'Name with spaces' --metadata-json '' --json
+assert_contains "$DOCKER_LOG" '<project>\t<create>\t<--name>\t<Name with spaces>\t<--metadata-json>\t<>\t<--json>\t<--daemon-url>\t<http://127.0.0.1:7456>'
+
+"$OD" help > "$TMP_ROOT/help.out"
+assert_contains "$TMP_ROOT/help.out" 'import-design-system'
+if "$OD" does-not-exist > "$TMP_ROOT/unknown.out" 2> "$TMP_ROOT/unknown.err"; then
+    fail 'unknown command succeeded'
+fi
+assert_empty "$TMP_ROOT/unknown.out"
+
+# MCP bridge is stdout-clean and propagates docker exit and signal status.
+reset_logs
+"$MCP" > "$TMP_ROOT/mcp.out" 2> "$TMP_ROOT/mcp.err"
+assert_empty "$TMP_ROOT/mcp.out"
+assert_empty "$TMP_ROOT/mcp.err"
+assert_contains "$DOCKER_LOG" '<exec>\t<-i>\t<open-design>\t<node>\t<apps/daemon/dist/cli.js>\t<mcp>\t<--daemon-url>\t<http://127.0.0.1:7456>'
+
+set +e
+STUB_EXEC_RC=37 "$MCP" > "$TMP_ROOT/mcp-exit.out" 2> "$TMP_ROOT/mcp-exit.err"
+mcp_rc=$?
+set -e
+[ "$mcp_rc" -eq 37 ] || fail "MCP exit status was $mcp_rc, expected 37"
+assert_empty "$TMP_ROOT/mcp-exit.out"
+
+set +e
+STUB_EXEC_SIGNAL=TERM "$MCP" > "$TMP_ROOT/mcp-signal.out" 2> "$TMP_ROOT/mcp-signal.err"
+mcp_signal_rc=$?
+set -e
+[ "$mcp_signal_rc" -eq 143 ] || fail "MCP signal status was $mcp_signal_rc, expected 143"
+assert_empty "$TMP_ROOT/mcp-signal.out"
+
+if "$MCP" unexpected > "$TMP_ROOT/mcp-arg.out" 2> "$TMP_ROOT/mcp-arg.err"; then
+    fail 'MCP bridge accepted an argument'
+fi
+assert_empty "$TMP_ROOT/mcp-arg.out"
+
+# Import streams only the selected directory, preserves args (including an
+# empty string), and exact-path-cleans container temp data on success/failure.
+fixture=$TMP_ROOT/'fixture with spaces'
+mkdir -p "$fixture"
+printf '# Fixture\n' > "$fixture/DESIGN.md"
+
+reset_logs
+"$OD" import-design-system "$fixture" --name 'Fixture with spaces' --craft '' --json
+assert_contains "$DOCKER_LOG" '<design-systems>\t<import-local>\t</tmp/open-design-import.stub123>\t<--name>\t<Fixture with spaces>\t<--craft>\t<>\t<--json>\t<--import-mode>\t<hybrid>\t<--daemon-url>\t<http://127.0.0.1:7456>'
+assert_contains "$DOCKER_LOG" '<rm>\t<-rf>\t</tmp/open-design-import.stub123>'
+assert_not_contains "$DOCKER_LOG" "$fixture"
+assert_not_contains "$DOCKER_LOG" "$HOME"
+assert_not_contains "$DOCKER_LOG" '<--volume>'
+assert_not_contains "$DOCKER_LOG" '<-v>'
+
+reset_logs
+set +e
+STUB_IMPORT_RC=23 "$OD" import-design-system "$fixture" --json
+import_rc=$?
+set -e
+[ "$import_rc" -eq 23 ] || fail "import exit status was $import_rc, expected 23"
+assert_contains "$DOCKER_LOG" '<rm>\t<-rf>\t</tmp/open-design-import.stub123>'
+
+reset_logs
+set +e
+STUB_TRANSFER_RC=24 "$OD" import-design-system "$fixture" > "$TMP_ROOT/transfer.out" 2> "$TMP_ROOT/transfer.err"
+transfer_rc=$?
+set -e
+[ "$transfer_rc" -ne 0 ] || fail 'failed transfer returned success'
+assert_contains "$DOCKER_LOG" '<rm>\t<-rf>\t</tmp/open-design-import.stub123>'
+
+if "$OD" import-design-system / > "$TMP_ROOT/root.out" 2> "$TMP_ROOT/root.err"; then
+    fail 'filesystem-root import succeeded'
+fi
+assert_empty "$TMP_ROOT/root.out"
+
+if "$OD" import-design-system "$TMP_ROOT/missing" > "$TMP_ROOT/missing.out" 2> "$TMP_ROOT/missing.err"; then
+    fail 'missing-directory import succeeded'
+fi
+assert_empty "$TMP_ROOT/missing.out"
+
+printf 'PASS: OpenDesign dispatcher stub suite\n'

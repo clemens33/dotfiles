@@ -1,0 +1,40 @@
+name: open-design
+
+services:
+  open-design:
+    container_name: open-design
+    image: ghcr.io/nexu-io/od@sha256:441daca881e699657bacf28e0c27b16cd6be551dfff4bd63368dd74bec581f39
+    restart: always
+    environment:
+      NODE_ENV: production
+      NODE_OPTIONS: --max-old-space-size=192
+      OD_BIND_HOST: 0.0.0.0
+      OD_ALLOWED_ORIGINS: ""
+      OD_PORT: 7456
+      OD_WEB_PORT: 7456
+      OD_DISABLE_API_AUTH: "1"
+      OD_CODEX_SANDBOX: ""
+    ports:
+      - "127.0.0.1:7456:7456"
+    volumes:
+      - open_design_data:/app/.od
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 384m
+    pids_limit: 256
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:7456/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  open_design_data:

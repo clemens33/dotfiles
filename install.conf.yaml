@@ -14,6 +14,7 @@
     # is legacy and Codex creates its own .system dir there — not managed here.
     - ~/.agents/skills
     - ~/.config/fish
+    - ~/.config/open-design
     - ~/.config/opencode
     - ~/.gemini
     # agy's real global customization root (~/.gemini/antigravity-cli/ is the
@@ -38,6 +39,9 @@
     # rustup-owned — only this one file is managed here. Safe to link: cargo
     # never rewrites it. No-op harm on machines without rust.
     ~/.cargo/config.toml: rust/cargo-config.toml
+    ~/.config/open-design/compose.yaml: open-design/compose.yaml
+    ~/.local/bin/open-design: bin/open-design
+    ~/.local/bin/open-design-mcp: bin/open-design
     # Karabiner (macOS only; the dir simply stays unused elsewhere). NOTE: this
     # links the importable RULE SET, not karabiner.json — Karabiner rewrites
     # karabiner.json itself on device connect, so symlinking it would fight the

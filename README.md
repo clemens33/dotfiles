@@ -54,6 +54,7 @@ The wrapper install script detects the overlay submodule and runs its Dotbot pas
 | Codex CLI | `codex/config.toml` | `~/.codex/config.toml` |
 | OpenCode | `opencode/config.json` | `~/.config/opencode/config.json` |
 | Antigravity CLI (`agy`) | `antigravity/settings.json` | `~/.gemini/antigravity-cli/settings.json` |
+| OpenDesign | `open-design/compose.yaml`, `bin/open-design` | `~/.config/open-design/compose.yaml`, `~/.local/bin/open-design{,-mcp}` |
 | Shared AI doctrine | `shared/AGENTS.md` | `~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, `~/.config/opencode/AGENTS.md`, `~/.gemini/config/plugins/dotfiles/rules/AGENTS.md` |
 | AI skills | `skills/<name>/` | `~/.claude/skills/<name>/`, `~/.agents/skills/<name>/` |
 
@@ -64,6 +65,83 @@ The wrapper install script detects the overlay submodule and runs its Dotbot pas
 - **`KNOWLEDGE.md`** — field knowledge, source-tiered references (May 2026 snapshot).
 
 See the `manage-skills` skill for the two-layer model — when to add a generic skill here vs. a domain-specific skill in the private overlay.
+
+## OpenDesign
+
+The public install wires a persistent local [OpenDesign](https://github.com/nexu-io/open-design)
+daemon and web UI. It pulls no image and starts no container. Install and start
+it explicitly:
+
+```bash
+./install
+open-design install
+open-design open
+```
+
+Open `http://127.0.0.1:7456`. This trusted local setup disables OpenDesign's API
+authentication and binds the published port strictly to `127.0.0.1`; it is not
+reachable on the LAN. Do not change the bind address without restoring
+authentication and TLS in front of the service.
+
+Common operations:
+
+```bash
+open-design start       # create/start and wait until healthy
+open-design stop        # stop; keep container and data
+open-design restart     # recreate and wait until healthy
+open-design status
+open-design logs --tail 100
+open-design health
+open-design version
+open-design down        # remove container/network; keep data volume
+```
+
+Release `0.21.1` is pinned by immutable multi-architecture index digest
+`sha256:441daca881e699657bacf28e0c27b16cd6be551dfff4bd63368dd74bec581f39`.
+It is deliberately outside `scripts/harness-update.sh`. To update or roll back,
+change the digest in `open-design/compose.yaml`, then run
+`open-design pull && open-design restart`. The persistent Docker volume is
+`open-design_open_design_data`. `open-design down` never removes it. Full data
+deletion is intentionally not wrapped; after separately confirming data loss,
+stop the stack and explicitly remove that exact volume with
+`docker volume rm open-design_open_design_data`.
+
+Import one local design-system package without mounting a repository or home
+directory:
+
+```bash
+open-design import-design-system ./path/to/brand --name "Brand" --json
+```
+
+The wrapper streams only that directory to a unique container `/tmp` path,
+imports it in `hybrid` mode, then removes the exact temporary path. A current
+package centers on `DESIGN.md` and can add `manifest.json`, compiled
+`tokens.css`, component fixtures, assets, and provenance/evidence. Legacy
+directories containing only `DESIGN.md` remain compatible.
+
+`open-design-mcp` is registered as a managed stdio MCP server for Claude Code,
+Codex, OpenCode, and Grok. ae-launched seats inherit their underlying harness's
+same user configuration; ae needs no separate MCP entry. Antigravity (`agy`)
+currently ignores the managed settings file's `mcpServers` block. Register it
+machine-locally with `agy mcp add open-design open-design-mcp`; clean-install
+registration remains a known gap.
+OpenDesign 0.21.1 does not support Docker/Compose MCP snippets or shared HTTP
+transport upstream, so this setup uses a locally tested `docker exec -i` stdio
+compatibility bridge. Muse Code 1.0.3 exposes no MCP client configuration and is
+not integrated.
+
+Direction matters: a host harness can call OpenDesign's MCP to read projects and
+write artifacts. The isolated container cannot launch host Claude/Codex/OpenCode
+binaries. Generation initiated in the OpenDesign UI therefore needs its own BYOK
+provider configured in OpenDesign; host subscriptions and credentials are not
+mounted or copied into it.
+
+To uninstall, run `open-design down`, revert the managed config entries and
+links, and remove `open-design` explicitly from every existing Claude identity
+state file (`~/.claude.json`, `~/.claude2/.claude.json`, and
+`~/.claude-mic/.claude.json` when present). The Claude merge is additive, so
+rerunning `./install` alone cannot retire an old server. Keep or explicitly
+remove the named volume according to the data-retention choice above.
 
 ## Automatic harness updates
 

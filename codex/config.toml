@@ -552,12 +552,14 @@ trust_level = "trusted"
 # root-owned mode 1777 — any local process can plant project-local .codex
 # config/hooks under a trusted root. Trust only user-owned project paths.
 
-# Pinned 2026-09-07 (bump via harness-update): serena v1.7.0 = commit
+# Shared MCP servers. Package pins (bump via harness-update): serena v1.7.0 = commit
 # 949a27ef; @upstash/context7-mcp 4.0.5; chrome-devtools-mcp 1.8.0. Exact pins
 # stop `uvx --from git+…` / `npx -y pkg@latest` re-resolving upstream on every
 # session start and keep a breaking release from landing on all harnesses the
 # same day. Same pins in claude/mcpServers.json, opencode/config.json,
 # antigravity/settings.json, grok/config.toml — bump all five together.
+# OpenDesign is separately digest-pinned in open-design/compose.yaml; it is not
+# managed by harness-update.
 [mcp_servers.serena]
 command = "uvx"
 args = ["--from", "git+https://github.com/oraios/serena@949a27ef1e5fda1a6e7b561e777bcece345c6ffd", "serena", "start-mcp-server", "--context", "ide-assistant", "--enable-web-dashboard", "false"]
@@ -577,6 +579,10 @@ startup_timeout_sec = 30
 command = "npx"
 args = ["-y", "chrome-devtools-mcp@1.8.0", "--browser-url=http://127.0.0.1:9222", "--no-usage-statistics", "--no-performance-crux"]
 startup_timeout_sec = 20
+
+[mcp_servers.open-design]
+command = "open-design-mcp"
+startup_timeout_sec = 30
 
 # codebase-memory dropped 2026-07-29: trial ended with the mac migration —
 # serena covers the need. Binary may linger in ~/.local/bin on WSL; not

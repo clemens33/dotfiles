@@ -1,0 +1,225 @@
+#!/bin/sh
+
+set -eu
+
+PROGRAM=${0##*/}
+CONFIG_DIR=$HOME/.config/open-design
+COMPOSE_FILE=$CONFIG_DIR/compose.yaml
+CONTAINER=open-design
+DAEMON_URL=http://127.0.0.1:7456
+CLI_PATH=apps/daemon/dist/cli.js
+import_tmp=
+mcp_pid=
+
+fail() {
+    printf '%s: %s\n' "$PROGRAM" "$*" >&2
+    exit 1
+}
+
+need_command() {
+    command -v "$1" >/dev/null 2>&1 || fail "required command not found: $1"
+}
+
+require_docker() {
+    need_command docker
+    docker info >/dev/null 2>&1 || fail "Docker daemon is unavailable"
+}
+
+require_compose() {
+    [ -f "$COMPOSE_FILE" ] || fail "Compose file not found: $COMPOSE_FILE (run ./install from the dotfiles checkout)"
+    require_docker
+    docker compose version >/dev/null 2>&1 || fail "Docker Compose plugin is unavailable"
+}
+
+compose() {
+    require_compose
+    docker compose \
+        --project-directory "$CONFIG_DIR" \
+        -f "$COMPOSE_FILE" \
+        "$@"
+}
+
+require_running_container() {
+    require_docker
+    running=$(docker inspect --format '{{.State.Running}}' "$CONTAINER" 2>/dev/null) ||
+        fail "container $CONTAINER does not exist; run open-design start"
+    [ "$running" = true ] || fail "container $CONTAINER is not running; run open-design start"
+}
+
+run_cli() {
+    require_running_container
+    exec docker exec -i "$CONTAINER" node "$CLI_PATH" "$@" --daemon-url "$DAEMON_URL"
+}
+
+mcp_signal() {
+    signal=$1
+    code=$2
+    trap - HUP INT TERM
+    if [ -n "$mcp_pid" ]; then
+        kill -"$signal" "$mcp_pid" 2>/dev/null || :
+        wait "$mcp_pid" 2>/dev/null || :
+    fi
+    exit "$code"
+}
+
+run_mcp_bridge() {
+    trap 'mcp_signal HUP 129' HUP
+    trap 'mcp_signal INT 130' INT
+    trap 'mcp_signal TERM 143' TERM
+    docker exec -i "$CONTAINER" node "$CLI_PATH" mcp --daemon-url "$DAEMON_URL" <&0 &
+    mcp_pid=$!
+    if wait "$mcp_pid"; then
+        status=0
+    else
+        status=$?
+    fi
+    mcp_pid=
+    trap - HUP INT TERM
+    return "$status"
+}
+
+cleanup_import() {
+    case $import_tmp in
+        /tmp/open-design-import.*)
+            docker exec "$CONTAINER" rm -rf "$import_tmp" >/dev/null 2>&1 || :
+            ;;
+    esac
+    import_tmp=
+}
+
+import_design_system() {
+    [ "$#" -ge 1 ] || fail "usage: open-design import-design-system <host-dir> [OpenDesign import args]"
+    host_dir=$1
+    shift
+    [ -n "$host_dir" ] || fail "design-system path must not be empty"
+    [ -d "$host_dir" ] || fail "design-system path is not a directory: $host_dir"
+    source_dir=$(CDPATH='' cd -- "$host_dir" 2>/dev/null && pwd -P) ||
+        fail "cannot resolve design-system path: $host_dir"
+    [ "$source_dir" != / ] || fail "refusing to import filesystem root"
+
+    need_command tar
+    require_running_container
+    import_tmp=$(docker exec "$CONTAINER" mktemp -d '/tmp/open-design-import.XXXXXX') ||
+        fail "cannot create container import directory"
+    case $import_tmp in
+        /tmp/open-design-import.*) ;;
+        *) import_tmp=; fail "container returned unsafe import directory" ;;
+    esac
+    trap 'cleanup_import' EXIT HUP INT TERM
+
+    if ! tar -C "$source_dir" -cf - . |
+        docker exec -i "$CONTAINER" tar -xf - -C "$import_tmp"; then
+        fail "failed to stream design-system package into container"
+    fi
+
+    status=0
+    docker exec -i "$CONTAINER" node "$CLI_PATH" \
+        design-systems import-local "$import_tmp" "$@" \
+        --import-mode hybrid --daemon-url "$DAEMON_URL" || status=$?
+    cleanup_import
+    trap - EXIT HUP INT TERM
+    return "$status"
+}
+
+print_help() {
+    cat <<'EOF'
+Usage: open-design <command> [args]
+
+Commands:
+  install                      Pull and start OpenDesign.
+  pull                         Pull the digest-pinned image.
+  start                        Create/start the service and wait until healthy.
+  stop                         Stop the container; keep container and data.
+  down                         Remove the container/network; keep named data volume.
+  restart                      Recreate the container and wait until healthy.
+  status                       Show Compose service status.
+  logs [compose log args]       Show service logs.
+  open                         Open http://127.0.0.1:7456 in the browser.
+  health                       Read the unauthenticated health endpoint.
+  version                      Read the unauthenticated version endpoint.
+  cli <od args>                Run the bundled OpenDesign CLI against the daemon.
+  import-design-system <dir>   Stream one local package into persistent storage.
+  help                         Show this help.
+
+The open-design-mcp symlink launches only the quiet stdio MCP bridge.
+EOF
+}
+
+if [ "$PROGRAM" = open-design-mcp ]; then
+    [ "$#" -eq 0 ] || fail "the MCP bridge accepts no arguments"
+    require_running_container
+    run_mcp_bridge
+    exit $?
+fi
+
+command=${1:-help}
+[ "$#" -eq 0 ] || shift
+
+case $command in
+    install)
+        [ "$#" -eq 0 ] || fail "install accepts no arguments"
+        compose pull
+        compose up -d --no-build --wait
+        ;;
+    pull)
+        [ "$#" -eq 0 ] || fail "pull accepts no arguments"
+        compose pull
+        ;;
+    start)
+        [ "$#" -eq 0 ] || fail "start accepts no arguments"
+        compose up -d --no-build --wait
+        ;;
+    stop)
+        [ "$#" -eq 0 ] || fail "stop accepts no arguments"
+        compose stop
+        ;;
+    down)
+        [ "$#" -eq 0 ] || fail "down accepts no arguments"
+        compose down --remove-orphans
+        ;;
+    restart)
+        [ "$#" -eq 0 ] || fail "restart accepts no arguments"
+        compose up -d --no-build --force-recreate --wait
+        ;;
+    status)
+        [ "$#" -eq 0 ] || fail "status accepts no arguments"
+        compose ps
+        ;;
+    logs)
+        compose logs "$@"
+        ;;
+    open)
+        [ "$#" -eq 0 ] || fail "open accepts no arguments"
+        if command -v open >/dev/null 2>&1; then
+            open "$DAEMON_URL"
+        elif command -v xdg-open >/dev/null 2>&1; then
+            xdg-open "$DAEMON_URL"
+        else
+            fail "no browser opener found (open or xdg-open)"
+        fi
+        ;;
+    health)
+        [ "$#" -eq 0 ] || fail "health accepts no arguments"
+        need_command curl
+        curl --fail --silent --show-error --max-time 10 "$DAEMON_URL/api/health"
+        ;;
+    version)
+        [ "$#" -eq 0 ] || fail "version accepts no arguments"
+        need_command curl
+        curl --fail --silent --show-error --max-time 10 "$DAEMON_URL/api/version"
+        ;;
+    cli)
+        [ "$#" -gt 0 ] || fail "usage: open-design cli <od args>"
+        run_cli "$@"
+        ;;
+    import-design-system)
+        import_design_system "$@"
+        ;;
+    help|-h|--help)
+        [ "$#" -eq 0 ] || fail "help accepts no arguments"
+        print_help
+        ;;
+    *)
+        fail "unknown command: $command (run open-design help)"
+        ;;
+esac

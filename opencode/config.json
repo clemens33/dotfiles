@@ -180,10 +180,11 @@
   // ~/.config/opencode/node_modules, which is what misled an earlier note.)
 
   // --- MCP servers: same set as codex/grok --------------------------------
-  // Pinned 2026-09-07 (bump via harness-update): serena v1.7.0 = commit
+  // Package pins (bump via harness-update): serena v1.7.0 = commit
   // 949a27ef; @upstash/context7-mcp 4.0.5; chrome-devtools-mcp 1.8.0. Same
   // pins in codex/config.toml, claude/mcpServers.json, antigravity/settings.json,
-  // grok/config.toml — bump all five together.
+  // grok/config.toml — bump all five together. OpenDesign is separately digest-
+  // pinned in open-design/compose.yaml and is not managed by harness-update.
   "mcp": {
     "serena": {
       "type": "local",
@@ -198,6 +199,10 @@
     "chrome-devtools": {
       "type": "local",
       "command": ["npx", "-y", "chrome-devtools-mcp@1.8.0", "--browser-url=http://127.0.0.1:9222", "--no-usage-statistics", "--no-performance-crux"]
+    },
+    "open-design": {
+      "type": "local",
+      "command": ["open-design-mcp"]
     }
   }
 }

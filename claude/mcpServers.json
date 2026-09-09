@@ -34,5 +34,11 @@
       "--no-performance-crux"
     ],
     "env": {}
+  },
+  "open-design": {
+    "type": "stdio",
+    "command": "open-design-mcp",
+    "args": [],
+    "env": {}
   }
 }
