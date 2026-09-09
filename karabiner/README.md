@@ -6,8 +6,8 @@ survive side by side.
 
 ## What is versioned here
 
-`assets/complex_modifications/windows-layout.json` — the rule set (5 rules,
-51 manipulators), in Karabiner's importable asset format.
+`assets/complex_modifications/windows-layout.json` — the rule set (6 rules,
+52 manipulators), in Karabiner's importable asset format.
 
 **Not** `karabiner.json`. Karabiner rewrites that file itself (device entries
 change as keyboards connect), so symlinking it into a repo fights the app and
@@ -65,15 +65,38 @@ claim something untrue. Vendor 1133 is every Logitech device on the desk.
 | `Ctrl+←/→` | `Option+←/→` (word jump) |
 | `Ctrl+Backspace` / `Ctrl+Delete` | `Option+…` (delete word) |
 | AltGr (right Option) + `q 7 8 9 0 ß < +` | `@ { [ ] } \ | ~` — German positions |
-| `Ctrl+Shift+S` | `⌘⌃⇧4` — select area, **to clipboard** (Windows `Win+Shift+S`) |
+| `Win+Shift+S` | `⌘⌃⇧4` — select area, **to clipboard** (same key as Windows) |
+| `Win+H` | Dictation (same key as Windows) |
 
-The screenshot rule must stay **first** in the rule list: Karabiner takes the
-first matching manipulator, and the `Ctrl+key → Cmd+key` rule below it would
-otherwise swallow `Ctrl+Shift+S` and emit `⌘⇧S` (Save As). It is also the one
-rule with no terminal exclusion — screenshotting a terminal is a normal thing
-to want, and `Ctrl+Shift+S` has no shell meaning. To save a *file* instead of
-copying to the clipboard, drop `control` from that rule's `to` modifiers
-(`⌘⇧4`).
+**These two use the physical Windows key, not Ctrl** — matching Windows
+exactly, where the snip is `Win+Shift+S` and dictation is `Win+H`. A PC
+keyboard's Win key arrives on macOS as `command`, so the rules read
+`mandatory: [command, shift]` and `mandatory: [command]`.
+
+Using the Win key rather than Ctrl buys two things:
+
+- **`Ctrl+Shift+S` stays free** and falls through to the `Ctrl+key → Cmd+key`
+  rule, which forwards the optional `shift` and emits `⌘⇧S` = **Save As** —
+  which is what `Ctrl+Shift+S` does on Windows too. An earlier version of this
+  rule set claimed `Ctrl+Shift+S` for the screenshot and silently cost Save As.
+- **`Cmd+H` (Hide window) gets shadowed on external keyboards**, which is a
+  feature here: `Ctrl+H/M/Q` are deliberately unmapped below precisely because
+  hide/minimise/quit make windows vanish irrecoverably for a Windows user.
+
+Neither rule carries a terminal exclusion — screenshotting or dictating into a
+terminal is a normal thing to want, and neither combo has a shell meaning. To
+save a screenshot *file* instead of copying to the clipboard, drop `control`
+from the screenshot rule's `to` modifiers (`⌘⇧4`).
+
+**Why dictation needs a rule at all.** macOS triggers dictation from the
+dedicated mic key that lives on `F5` of *Apple* keyboards, which emits the
+`dictation` consumer usage — not a key combination. A PC keyboard has no such
+key, and its `Fn` is handled in the keyboard's own firmware and never reaches
+macOS, so `Fn+F5` is physically unsendable from an external board. This rule
+emits `consumer_key_code: dictation` directly, i.e. exactly what the MacBook's
+F5 sends. The native alternative, which needs no rule and works on both
+keyboards, is System Settings → Keyboard → Dictation → *Shortcut* →
+**Press Control Key Twice**.
 
 **Deliberately not mapped:** `Ctrl+H`, `Ctrl+M`, `Ctrl+Q`. On macOS those
 become hide / minimise / quit — a Windows user hits them by reflex and the

@@ -2,7 +2,7 @@
   "title": "Windows-style layout (external keyboards only)",
   "rules": [
     {
-      "description": "External kbd: Ctrl+Shift+S -> area screenshot to clipboard (Win+Shift+S)",
+      "description": "External kbd: Win+Shift+S -> area screenshot to clipboard",
       "manipulators": [
         {
           "type": "basic",
@@ -29,7 +29,7 @@
             "key_code": "s",
             "modifiers": {
               "mandatory": [
-                "control",
+                "command",
                 "shift"
               ],
               "optional": [
@@ -45,6 +45,49 @@
                 "control",
                 "shift"
               ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "External kbd: Win+H -> Dictation",
+      "manipulators": [
+        {
+          "type": "basic",
+          "conditions": [
+            {
+              "type": "device_if",
+              "identifiers": [
+                {
+                  "vendor_id": 1121,
+                  "product_id": 20110
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 45961
+                },
+                {
+                  "vendor_id": 1133,
+                  "product_id": 50005
+                }
+              ]
+            }
+          ],
+          "from": {
+            "key_code": "h",
+            "modifiers": {
+              "mandatory": [
+                "command"
+              ],
+              "optional": [
+                "caps_lock"
+              ]
+            }
+          },
+          "to": [
+            {
+              "consumer_key_code": "dictation"
             }
           ]
         }
