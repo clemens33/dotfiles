@@ -4,7 +4,7 @@ Personal dotfiles for Ubuntu WSL2 with fish shell + AI coding tool configuration
 
 Two-layer setup:
 
-- **Public layer** (this repo): shell/editor/git config, AI tool settings, 24 generic skills, operating doctrine (`shared/AGENTS.md`, `WORKFLOW.md`, `KNOWLEDGE.md`).
+- **Public layer** (this repo): shell/editor/git config, AI tool settings, the generic skills, operating doctrine (`shared/AGENTS.md`, `WORKFLOW.md`, `KNOWLEDGE.md`).
 - **Private overlay** (`dotfiles-mic/`, optional git submodule): org-specific skills + agents + private git/shell config. Only fetched on machines with auth to the private repo.
 
 ## Prerequisites
@@ -55,8 +55,10 @@ The wrapper install script detects the overlay submodule and runs its Dotbot pas
 | OpenCode | `opencode/config.json` | `~/.config/opencode/config.json` |
 | Antigravity CLI (`agy`) | `antigravity/settings.json` | `~/.gemini/antigravity-cli/settings.json` |
 | OpenDesign | `open-design/compose.yaml`, `open-design/Dockerfile`, `bin/open-design` | `~/.config/open-design/compose.yaml`, `~/.config/open-design/Dockerfile`, `~/.local/bin/open-design{,-mcp}` |
-| Shared AI doctrine | `shared/AGENTS.md` | `~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, `~/.config/opencode/AGENTS.md`, `~/.gemini/config/plugins/dotfiles/rules/AGENTS.md` |
 | AI skills | `skills/<name>/` | `~/.claude/skills/<name>/`, `~/.agents/skills/<name>/` |
+
+The AI contract is the one exception: it is **rendered**, not symlinked. See
+[How the contract reaches each tool](#how-the-contract-reaches-each-tool).
 
 ## AI operating doctrine
 
@@ -65,6 +67,47 @@ The wrapper install script detects the overlay submodule and runs its Dotbot pas
 - **`KNOWLEDGE.md`** — field knowledge, source-tiered references (May 2026 snapshot).
 
 See the `manage-skills` skill for the two-layer model — when to add a generic skill here vs. a domain-specific skill in the private overlay.
+
+### How the contract reaches each tool
+
+`scripts/render-contract.sh` concatenates `shared/AGENTS.md` with the private
+overlay's `dotfiles-mic/AGENTS-MIC.md`, when that submodule is checked out, and
+writes the result as a **regular file** into every harness identity:
+
+```
+~/.claude/CLAUDE.md                                ~/.codex/AGENTS.md
+~/.claude2/CLAUDE.md                               ~/.config/opencode/AGENTS.md
+~/.claude-mic/CLAUDE.md                            ~/.gemini/config/plugins/dotfiles/rules/AGENTS.md
+```
+
+`./install` runs the renderer; nothing links to `shared/AGENTS.md` any more. The
+renderer creates no identity of its own — it skips any whose directory is
+missing. `./install` is what provisions them: the public pass creates
+`~/.claude2`, the private overlay's pass creates `~/.claude-mic`. So a
+public-only clone has no `~/.claude-mic`, and the renderer simply skips it.
+
+Concatenation rather than a second file, because it is the only portable
+option. Measured 2026-09-09: of the five harnesses, only Claude Code reads an
+instruction file one level *above* a git root, and only under the name
+`CLAUDE.md`; Codex, Grok, `agy` and OpenCode read nothing above the repo root.
+Directory-scoped org rules therefore cannot be made to work everywhere, so the
+org half ships inside the file each tool already loads.
+
+- **Regenerate**: `./install`, or `scripts/render-contract.sh` on its own. The
+  private overlay's Dotbot pass runs the renderer a second time on purpose:
+  `~/.claude-mic` is created *in* that pass, so only the second call can reach
+  it. Do not "tidy" that duplicate away — a clean machine would then need two
+  `./install` runs. Re-rendering the other five targets is a no-op.
+- **Check for drift**: `scripts/render-contract.sh --check` lists stale targets,
+  exits 1, and writes nothing. The daily harness updater runs it as its
+  `contract` step and only reports — it never re-renders behind your back.
+- **Never edit a target.** Each one opens with a generated-file header; edits
+  are lost on the next install. Edit the source, then re-run `./install`.
+- **Without the private overlay** the render is public-only. A public clone
+  installs and works with no missing pieces.
+- **Grok is unchanged**: `grok/AGENTS.md` → `~/.grok/AGENTS.md` stays a symlink
+  because of grok's 10k-char rules cap, and grok picks the full contract up
+  through its Claude-compatible read of `~/.claude/CLAUDE.md`.
 
 ## OpenDesign
 
@@ -201,7 +244,13 @@ scripts/harness-update.sh --check
 # Update everything installed, or one tool
 scripts/harness-update.sh
 scripts/harness-update.sh --only codex
+
+# Report instruction files that drifted from the rendered contract
+scripts/harness-update.sh --only contract
 ```
+
+`contract` is a step, not a CLI: it runs `render-contract.sh --check` and names
+any target that no longer matches. It never renders — `./install` does that.
 
 `ae` is excluded by default because session glue is version-pinned. Its
 checksum-verified upgrader remains opt-in and requires an explicit calver:

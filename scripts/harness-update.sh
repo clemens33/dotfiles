@@ -9,6 +9,7 @@ export PATH="$HOME/.local/bin:$HOME/.grok/bin:$HOME/.local/share/mise/shims:$HOM
 export CI=1
 export NO_COLOR=1
 
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CHECK_ONLY=0
 INCLUDE_AE=0
 ONLY_TOOL=""
@@ -20,11 +21,14 @@ usage() {
   cat <<'EOF'
 Usage: scripts/harness-update.sh [--check] [--only TOOL] [--include-ae]
 
-Tools: claude, codex, agy, grok, opencode, muse, ae
+Tools: claude, codex, agy, grok, opencode, muse, ae, contract
 
   --check       Report installed and latest versions without changing anything
   --only TOOL   Process one tool only
   --include-ae  Include ae; updates require an explicit AE_VERSION pin
+
+contract is not a CLI: it reports harness instruction files that no longer match
+the rendered contract. It never renders — run ./install for that.
 
 Each tool has a 300-second deadline (HARNESS_UPDATE_TIMEOUT_SECONDS overrides it).
 EOF
@@ -32,7 +36,7 @@ EOF
 
 valid_tool() {
   case "$1" in
-    claude|codex|agy|grok|opencode|muse|ae) return 0 ;;
+    claude|codex|agy|grok|opencode|muse|ae|contract) return 0 ;;
     *) return 1 ;;
   esac
 }
@@ -47,7 +51,7 @@ while [ "$#" -gt 0 ]; do
       ;;
     --only)
       if [ "$#" -lt 2 ] || ! valid_tool "$2"; then
-        printf 'error: --only requires one of: claude, codex, agy, grok, opencode, muse, ae\n' >&2
+        printf 'error: --only requires one of: claude, codex, agy, grok, opencode, muse, ae, contract\n' >&2
         usage >&2
         exit 2
       fi
@@ -487,15 +491,52 @@ process_muse() {
   fi
 }
 
+# Drift only — the contract is rendered by ./install, never from here. An
+# unattended job must not rewrite the rules every harness reads next session.
+process_contract() {
+  local renderer="$REPO_ROOT/scripts/render-contract.sh"
+  if [ ! -x "$renderer" ]; then
+    summary 'contract SKIP renderer not found'
+    return 0
+  fi
+  local output result stale count
+  output=$("$renderer" --check 2>&1)
+  result=$?
+  printf '[%s] contract --check exit=%s\n%s\n' \
+    "$(date '+%Y-%m-%dT%H:%M:%S%z')" "$result" "$output" >>"$LOG_FILE"
+  case "$result" in
+    0)
+      summary 'contract OK all targets match the rendered contract'
+      ;;
+    1)
+      # Home-relative and counted: this line lands in a daily log, unread
+      # until something is wrong.
+      stale=$(printf '%s\n' "$output" | awk -v home="$HOME" '
+        $1 == "stale" {
+          path = $2
+          if (index(path, home) == 1) { path = "~" substr(path, length(home) + 1) }
+          printf "%s ", path
+        }')
+      count=$(printf '%s\n' "$output" | grep -c '^stale ')
+      summary "contract STALE $count target(s), run ./install: ${stale% }"
+      ;;
+    *)
+      summary "contract FAIL --check exited $result"
+      return 1
+      ;;
+  esac
+}
+
 # Export existing step functions so timeout can supervise a separate Bash process.
-export CHECK_ONLY INCLUDE_AE LOG_FILE
+export CHECK_ONLY INCLUDE_AE LOG_FILE REPO_ROOT
 export -f summary log_run npm_mode nvm_exec npm_latest npm_install_latest \
   opencode_available run_opencode installed_version agy_latest grok_latest \
   check_with_npm update_native install_muse process_claude process_codex \
-  process_agy process_grok process_opencode process_muse process_ae
+  process_agy process_grok process_opencode process_muse process_ae \
+  process_contract
 
 failures=0
-for tool in claude codex agy grok opencode muse ae; do
+for tool in claude codex agy grok opencode muse ae contract; do
   if selected "$tool" && ! run_step "$tool"; then failures=1; fi
 done
 

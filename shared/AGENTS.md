@@ -148,7 +148,7 @@ Field knowledge (September 2026 SOTA, source-tiered references): `~/projects/cle
 
 | File | Role | Visibility |
 |---|---|---|
-| `shared/AGENTS.md` (this file) | Contract — rules to never break | Claude Code / Codex / OpenCode via global links; Antigravity via `~/.gemini/config/plugins/dotfiles/rules/AGENTS.md`; Grok via Claude compatibility + short pointer; Muse reads project `AGENTS.md`, global path unverified |
+| `shared/AGENTS.md` (this file) | Contract — rules to never break | Rendered, not linked: `scripts/render-contract.sh` concatenates this file with the private overlay's `AGENTS-MIC.md` into the global instruction file of Claude Code / Codex / OpenCode / Antigravity. Grok via its own short pointer + Claude compatibility; Muse reads project `AGENTS.md`, global path unverified |
 | `WORKFLOW.md` | Doctrine — how to approach a task | Read on demand by any tool via absolute path above |
 | `KNOWLEDGE.md` | Field knowledge — what's true in September 2026 | Read on demand by any tool via absolute path above |
 | `skills/large-feature/SKILL.md` | Full-rigor L playbook | Claude Code / OpenCode via `~/.claude/skills/`; Codex via `~/.agents/skills/` per-skill links; Grok / Muse read `~/.claude/skills/` natively; Antigravity via `~/.gemini/config/skills` → `~/.claude/skills` |

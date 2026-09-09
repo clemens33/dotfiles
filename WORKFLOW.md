@@ -2,8 +2,8 @@
 
 Operating doctrine for how to actually approach a task with an agent in this
 repo. Sibling to `KNOWLEDGE.md` (field knowledge — what's true) and
-`shared/AGENTS.md` (the contract symlinked into every tool — what to never
-do). This file answers *what to do*.
+`shared/AGENTS.md` (the contract rendered into every tool's global
+instruction file — what to never do). This file answers *what to do*.
 
 Synthesized from the practitioner shortlist in `KNOWLEDGE.md` §18
 (References / Practitioner references) and stress-tested via the
@@ -293,7 +293,7 @@ When the bucket says "use this," reach for these:
 
 ## Where this fits
 
-- **`shared/AGENTS.md`** — the contract, linked into configured tools. Rules to never break (security, secrets, git commit hygiene, cross-model collaboration mandate).
+- **`shared/AGENTS.md`** — the contract, rendered into every configured tool's global instruction file. Rules to never break (security, secrets, git commit hygiene, cross-model collaboration mandate). Those installed files are **generated**: editing one is pointless, the next `./install` overwrites it. Edit this file.
 - **`KNOWLEDGE.md`** — the field knowledge. September 2026 refresh: models, mechanisms, source tiers, practitioner consensus.
 - **`WORKFLOW.md`** (this file) — operating doctrine. How to actually approach a task: triage, bucket, execute.
 

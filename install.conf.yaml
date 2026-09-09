@@ -54,24 +54,17 @@
     # → Add rule → "Windows-style layout". See karabiner/README.md.
     ~/.config/karabiner/assets/complex_modifications/windows-layout.json: karabiner/assets/complex_modifications/windows-layout.json
 
-# AI tool instructions — all four tools share one doctrine file (shared/AGENTS.md)
+# AI tool instructions — NOT linked. The contract is RENDERED: shared/AGENTS.md
+# plus the private overlay's AGENTS-MIC.md are concatenated into one regular
+# file per harness by the scripts/render-contract.sh step in the shell block
+# below. Measured 2026-09-09: only Claude Code reads a marker file one level
+# above a git root, so directory-scoped org rules are not portable and
+# concatenation is the only cross-harness way to add them.
+#
+# agy discovers global customizations under ~/.gemini/config/ only, and the
+# contract ships as the rules half of a plugin — plugin.json is the marker that
+# makes the directory a plugin, its rules/AGENTS.md sibling is rendered.
 - link:
-    ~/.claude/CLAUDE.md:
-      path: shared/AGENTS.md
-      force: true
-    ~/.codex/AGENTS.md:
-      path: shared/AGENTS.md
-      force: true
-    ~/.config/opencode/AGENTS.md:
-      path: shared/AGENTS.md
-      force: true
-    # agy discovers global customizations under ~/.gemini/config/ only. The
-    # contract ships as the rules half of a plugin; plugin.json is the marker
-    # that makes the directory a plugin, and rules/AGENTS.md is the vendor's
-    # recommended single-file rule layout.
-    ~/.gemini/config/plugins/dotfiles/rules/AGENTS.md:
-      path: shared/AGENTS.md
-      force: true
     ~/.gemini/config/plugins/dotfiles/plugin.json:
       path: antigravity/plugin/plugin.json
       force: true
@@ -105,14 +98,12 @@
 # (macOS: own Keychain entry keyed off the dir path; Linux:
 # ~/.claude2/.credentials.json) while sharing all config with ~/.claude.
 # skills/agents dir symlinks + MCP merge happen in the shell block below
-# (targets live in $HOME, not the repo). NOT linked (rewritten per identity):
-# .claude.json, settings.local.json, projects/, history.
+# (targets live in $HOME, not the repo). CLAUDE.md is rendered there too, not
+# linked. NOT linked (rewritten per identity): .claude.json,
+# settings.local.json, projects/, history.
 - create:
     - ~/.claude2
 - link:
-    ~/.claude2/CLAUDE.md:
-      path: shared/AGENTS.md
-      force: true
     ~/.claude2/settings.json:
       path: claude/settings.json
       force: true
@@ -192,6 +183,17 @@
 - shell:
     - command: mkdir -p ~/.config/fish
       description: Ensure fish config dir
+    # The contract, concatenated and written as a REGULAR file per harness. Runs
+    # after the create/link steps because it needs the identity directories to
+    # exist — it renders only into identities a machine actually has, and never
+    # creates one. The six targets used to be symlinks into this repo, so the
+    # renderer unlinks before it moves a file into place; writing through one
+    # would truncate shared/AGENTS.md. ~/.claude-mic belongs to the overlay pass,
+    # which runs this same script again once that identity exists. Idempotent:
+    # an unchanged target is not even rewritten.
+    - command: scripts/render-contract.sh
+      description: Rendering the AI contract (shared + private addendum)
+      stdout: true
     # Migration (2026-08-11): codex features.shell_snapshot dumped the inherited
     # environment — secrets included — into world-readable snapshot scripts.
     # The feature is now off in codex/config.toml; purge any legacy snapshots.
