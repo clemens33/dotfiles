@@ -3,7 +3,14 @@ name: open-design
 services:
   open-design:
     container_name: open-design
-    image: ghcr.io/nexu-io/od@sha256:441daca881e699657bacf28e0c27b16cd6be551dfff4bd63368dd74bec581f39
+    # Thin local derivative of the digest-pinned upstream image, whose sign-in
+    # action cannot run without the Vela CLI; see open-design/Dockerfile. There
+    # is deliberately no `build:` stanza: a Docker build context does not follow
+    # the Dotbot symlink that puts the Dockerfile beside this file, and widening
+    # the context to the dotfiles checkout would ship the whole repo to the
+    # daemon. `open-design build` instead builds the COPY-free Dockerfile with no
+    # context at all, tagging exactly the name below.
+    image: open-design-vela:0.21.1-vela0.0.33
     restart: always
     environment:
       NODE_ENV: production
@@ -18,6 +25,11 @@ services:
       - "127.0.0.1:7456:7456"
     volumes:
       - open_design_data:/app/.od
+      # Vela's device-login state lives in $HOME; the daemon reports its config
+      # at /home/open-design/.amr/config.json. Keeping it in its own named
+      # volume means the sign-in survives restarts and `open-design down`
+      # without widening what the OpenDesign data volume holds.
+      - open_design_vela_data:/home/open-design
     read_only: true
     tmpfs:
       - /tmp
@@ -38,3 +50,5 @@ services:
 
 volumes:
   open_design_data:
+  # Credential-bearing: holds an authenticated Vela session. Do not export.
+  open_design_vela_data:

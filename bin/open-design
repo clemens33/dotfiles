@@ -5,6 +5,7 @@ set -eu
 PROGRAM=${0##*/}
 CONFIG_DIR=$HOME/.config/open-design
 COMPOSE_FILE=$CONFIG_DIR/compose.yaml
+DOCKERFILE=$CONFIG_DIR/Dockerfile
 CONTAINER=open-design
 DAEMON_URL=http://127.0.0.1:7456
 CLI_PATH=apps/daemon/dist/cli.js
@@ -44,6 +45,23 @@ require_running_container() {
     running=$(docker inspect --format '{{.State.Running}}' "$CONTAINER" 2>/dev/null) ||
         fail "container $CONTAINER does not exist; run open-design start"
     [ "$running" = true ] || fail "container $CONTAINER is not running; run open-design start"
+}
+
+build_image() {
+    [ -f "$DOCKERFILE" ] ||
+        fail "Dockerfile not found: $DOCKERFILE (run ./install from the dotfiles checkout)"
+    # Compose owns the image name so the tag cannot drift between these files.
+    image=$(compose config --images) || fail "cannot read the service image name"
+    case $image in
+        '' | *[!0-9A-Za-z._:/-]*)
+            fail "unexpected service image name in $COMPOSE_FILE: $image"
+            ;;
+    esac
+    # A Docker build context does not follow the Dotbot symlink that installs
+    # this Dockerfile, and pointing the context at the dotfiles checkout would
+    # ship the whole repo to the daemon. The Dockerfile is COPY-free, so it goes
+    # in on stdin and the build runs with no context at all.
+    docker build --tag "$image" - < "$DOCKERFILE"
 }
 
 run_cli() {
@@ -126,11 +144,11 @@ print_help() {
 Usage: open-design <command> [args]
 
 Commands:
-  install                      Pull and start OpenDesign.
-  pull                         Pull the digest-pinned image.
+  install                      Build the local image and start OpenDesign.
+  build                        Build the local image from the pinned base digest.
   start                        Create/start the service and wait until healthy.
   stop                         Stop the container; keep container and data.
-  down                         Remove the container/network; keep named data volume.
+  down                         Remove the container/network; keep both named volumes.
   restart                      Recreate the container and wait until healthy.
   status                       Show Compose service status.
   logs [compose log args]       Show service logs.
@@ -158,16 +176,16 @@ command=${1:-help}
 case $command in
     install)
         [ "$#" -eq 0 ] || fail "install accepts no arguments"
-        compose pull
-        compose up -d --no-build --wait
+        build_image
+        compose up -d --no-build --pull never --wait
         ;;
-    pull)
-        [ "$#" -eq 0 ] || fail "pull accepts no arguments"
-        compose pull
+    build)
+        [ "$#" -eq 0 ] || fail "build accepts no arguments"
+        build_image
         ;;
     start)
         [ "$#" -eq 0 ] || fail "start accepts no arguments"
-        compose up -d --no-build --wait
+        compose up -d --no-build --pull never --wait
         ;;
     stop)
         [ "$#" -eq 0 ] || fail "stop accepts no arguments"
@@ -179,7 +197,7 @@ case $command in
         ;;
     restart)
         [ "$#" -eq 0 ] || fail "restart accepts no arguments"
-        compose up -d --no-build --force-recreate --wait
+        compose up -d --no-build --pull never --force-recreate --wait
         ;;
     status)
         [ "$#" -eq 0 ] || fail "status accepts no arguments"

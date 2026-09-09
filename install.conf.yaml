@@ -40,6 +40,11 @@
     # never rewrites it. No-op harm on machines without rust.
     ~/.cargo/config.toml: rust/cargo-config.toml
     ~/.config/open-design/compose.yaml: open-design/compose.yaml
+    # The service image is a thin local derivative of the pinned upstream image,
+    # so the Dockerfile is a required input: `open-design build` reads it from
+    # this directory and feeds it to docker on stdin with no build context at
+    # all, because a build context does not follow this symlink.
+    ~/.config/open-design/Dockerfile: open-design/Dockerfile
     ~/.local/bin/open-design: bin/open-design
     ~/.local/bin/open-design-mcp: bin/open-design
     # Karabiner (macOS only; the dir simply stays unused elsewhere). NOTE: this

@@ -54,7 +54,7 @@ The wrapper install script detects the overlay submodule and runs its Dotbot pas
 | Codex CLI | `codex/config.toml` | `~/.codex/config.toml` |
 | OpenCode | `opencode/config.json` | `~/.config/opencode/config.json` |
 | Antigravity CLI (`agy`) | `antigravity/settings.json` | `~/.gemini/antigravity-cli/settings.json` |
-| OpenDesign | `open-design/compose.yaml`, `bin/open-design` | `~/.config/open-design/compose.yaml`, `~/.local/bin/open-design{,-mcp}` |
+| OpenDesign | `open-design/compose.yaml`, `open-design/Dockerfile`, `bin/open-design` | `~/.config/open-design/compose.yaml`, `~/.config/open-design/Dockerfile`, `~/.local/bin/open-design{,-mcp}` |
 | Shared AI doctrine | `shared/AGENTS.md` | `~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, `~/.config/opencode/AGENTS.md`, `~/.gemini/config/plugins/dotfiles/rules/AGENTS.md` |
 | AI skills | `skills/<name>/` | `~/.claude/skills/<name>/`, `~/.agents/skills/<name>/` |
 
@@ -69,8 +69,9 @@ See the `manage-skills` skill for the two-layer model — when to add a generic 
 ## OpenDesign
 
 The public install wires a persistent local [OpenDesign](https://github.com/nexu-io/open-design)
-daemon and web UI. It pulls no image and starts no container. Install and start
-it explicitly:
+daemon and web UI. It builds no image and starts no container. Install and start
+it explicitly — `open-design install` builds the local image first, so a clean
+machine never starts against a missing one:
 
 ```bash
 ./install
@@ -86,6 +87,7 @@ authentication and TLS in front of the service.
 Common operations:
 
 ```bash
+open-design build       # build the local image from the pinned base digest
 open-design start       # create/start and wait until healthy
 open-design stop        # stop; keep container and data
 open-design restart     # recreate and wait until healthy
@@ -93,18 +95,59 @@ open-design status
 open-design logs --tail 100
 open-design health
 open-design version
-open-design down        # remove container/network; keep data volume
+open-design down        # remove container/network; keep both named volumes
 ```
 
-Release `0.21.1` is pinned by immutable multi-architecture index digest
+### Image, updates, and data
+
+The container image is a thin local derivative, `open-design-vela:0.21.1-vela0.0.33`,
+built by `open-design/Dockerfile` from release `0.21.1` pinned by immutable
+multi-architecture index digest
 `sha256:441daca881e699657bacf28e0c27b16cd6be551dfff4bd63368dd74bec581f39`.
+The Dockerfile is COPY-free and builds with no build context at all: a Docker
+build context cannot follow the Dotbot symlink that installs it, and widening
+the context to this checkout would ship the whole repo to the daemon.
+
 It is deliberately outside `scripts/harness-update.sh`. To update or roll back,
-change the digest in `open-design/compose.yaml`, then run
-`open-design pull && open-design restart`. The persistent Docker volume is
-`open-design_open_design_data`. `open-design down` never removes it. Full data
-deletion is intentionally not wrapped; after separately confirming data loss,
-stop the stack and explicitly remove that exact volume with
-`docker volume rm open-design_open_design_data`.
+change the `FROM` digest in `open-design/Dockerfile`, then run
+`open-design build && open-design restart`. Nothing is pulled by tag and no
+lifecycle command rebuilds, so the running image only ever changes when you
+build it.
+
+Two named Docker volumes hold all state and both survive `open-design down`:
+
+| Volume | Holds |
+|---|---|
+| `open-design_open_design_data` | Projects, artifacts, design systems (`/app/.od`) |
+| `open-design_open_design_vela_data` | The container home, including the Vela sign-in (`/home/open-design`) |
+
+Full data deletion is intentionally not wrapped. After separately confirming
+data loss, stop the stack and explicitly remove the exact volume you mean, e.g.
+`docker volume rm open-design_open_design_data`. Sign out in the UI before
+deleting the Vela volume — see below.
+
+### Vela sign-in
+
+Upstream's published image ships the daemon but never bundles the Vela CLI, so
+on the official image the UI's **Sign in to OpenDesign** fails with
+`vela binary not found; install vela or configure VELA_BIN`
+(nexu-io/open-design issue #5700; Docker/Compose is only partially supported
+upstream). `open-design/Dockerfile` is the local answer: it adds Alpine
+`gcompat` plus the exact `@powerformer/vela-cli` 0.0.33 that tag 0.21.1 pins,
+and fails the build if `vela --version` is not `0.0.33`.
+
+Signing in is still a human device activation. OpenDesign prints an activation
+URL and user code; opening the link and approving it happens on your own device,
+and nothing in this repo logs in for you. The container is headless, so its own
+attempt to open a browser fails by design — use the URL the UI shows.
+
+The resulting session is a bearer credential on disk in the container home —
+the daemon reports its config at `/home/open-design/.amr/config.json` — inside
+`open-design_open_design_vela_data`. Treat that volume as secret material: do
+not export, back up, or copy it, and do not move it between machines.
+`open-design down` deliberately leaves the authenticated session in place so a
+restart does not force a new sign-in. When retiring it, sign out in the UI
+first, then remove the volume explicitly.
 
 Import one local design-system package without mounting a repository or home
 directory:
@@ -140,8 +183,9 @@ To uninstall, run `open-design down`, revert the managed config entries and
 links, and remove `open-design` explicitly from every existing Claude identity
 state file (`~/.claude.json`, `~/.claude2/.claude.json`, and
 `~/.claude-mic/.claude.json` when present). The Claude merge is additive, so
-rerunning `./install` alone cannot retire an old server. Keep or explicitly
-remove the named volume according to the data-retention choice above.
+rerunning `./install` alone cannot retire an old server. Sign out in the UI
+before retiring the Vela volume, then keep or explicitly remove each named
+volume according to the data-retention choice above.
 
 ## Automatic harness updates
 

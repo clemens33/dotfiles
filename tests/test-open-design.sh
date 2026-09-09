@@ -64,7 +64,17 @@ case ${1:-} in
         exit 0
         ;;
     compose)
+        case " $* " in
+            *' config --images '*)
+                printf '%s\n' "${STUB_IMAGE:-open-design-vela:0.21.1-vela0.0.33}"
+                exit "${STUB_CONFIG_RC:-0}"
+                ;;
+        esac
         exit "${STUB_COMPOSE_RC:-0}"
+        ;;
+    build)
+        dd of=/dev/null 2>/dev/null
+        exit "${STUB_BUILD_RC:-0}"
         ;;
     exec)
         case " $* " in
@@ -127,21 +137,61 @@ export PATH="$STUB_BIN:/usr/bin:/bin"
 export DOCKER_LOG TOOL_LOG
 
 : > "$CONFIG_DIR/compose.yaml"
+: > "$CONFIG_DIR/Dockerfile"
+
+# The service image is a local derivative, so a missing Dockerfile must fail
+# before any Compose call rather than build an unpinned image.
+reset_logs
+mv "$CONFIG_DIR/Dockerfile" "$CONFIG_DIR/Dockerfile.away"
+if "$OD" build > "$TMP_ROOT/nodockerfile.out" 2> "$TMP_ROOT/nodockerfile.err"; then
+    fail 'build succeeded without a Dockerfile'
+fi
+assert_empty "$TMP_ROOT/nodockerfile.out"
+assert_contains "$TMP_ROOT/nodockerfile.err" 'Dockerfile not found'
+assert_empty "$DOCKER_LOG"
+mv "$CONFIG_DIR/Dockerfile.away" "$CONFIG_DIR/Dockerfile"
 
 prefix="CALL\t<compose>\t<--project-directory>\t<$CONFIG_DIR>\t<-f>\t<$CONFIG_DIR/compose.yaml>"
 
+# The image name comes from Compose, and the Dockerfile is fed on stdin with no
+# build context, because a context cannot follow the Dotbot symlink and must not
+# be widened to the dotfiles checkout.
+build_call='CALL\t<build>\t<--tag>\t<open-design-vela:0.21.1-vela0.0.33>\t<->'
+
+# install builds the local derivative first, so a clean machine never starts
+# against a missing image, then brings the service up without rebuilding.
 reset_logs
 "$OD" install
-assert_contains "$DOCKER_LOG" "$prefix\t<pull>"
-assert_contains "$DOCKER_LOG" "$prefix\t<up>\t<-d>\t<--no-build>\t<--wait>"
+assert_contains "$DOCKER_LOG" "$build_call"
+assert_contains "$DOCKER_LOG" "$prefix\t<up>\t<-d>\t<--no-build>\t<--pull>\t<never>\t<--wait>"
 
 reset_logs
-"$OD" pull
-assert_contains "$DOCKER_LOG" "$prefix\t<pull>"
+"$OD" build
+assert_contains "$DOCKER_LOG" "$build_call"
+assert_not_contains "$DOCKER_LOG" "$ROOT"
 
+# A Compose file naming an unexpected image must not become a docker build
+# argument, and a failing build must propagate.
+reset_logs
+if STUB_IMAGE='evil; rm -rf /' "$OD" build > "$TMP_ROOT/badimage.out" 2> "$TMP_ROOT/badimage.err"; then
+    fail 'build accepted an unexpected image name'
+fi
+assert_empty "$TMP_ROOT/badimage.out"
+assert_not_contains "$DOCKER_LOG" '<build>'
+
+reset_logs
+set +e
+STUB_BUILD_RC=41 "$OD" build > "$TMP_ROOT/buildfail.out" 2> "$TMP_ROOT/buildfail.err"
+build_rc=$?
+set -e
+[ "$build_rc" -eq 41 ] || fail "build exit status was $build_rc, expected 41"
+
+# Lifecycle commands never rebuild and never reach a registry; image changes go
+# through `build`.
 reset_logs
 "$OD" start
-assert_contains "$DOCKER_LOG" "$prefix\t<up>\t<-d>\t<--no-build>\t<--wait>"
+assert_contains "$DOCKER_LOG" "$prefix\t<up>\t<-d>\t<--no-build>\t<--pull>\t<never>\t<--wait>"
+assert_not_contains "$DOCKER_LOG" '<build>'
 
 reset_logs
 "$OD" stop
@@ -152,10 +202,12 @@ reset_logs
 assert_contains "$DOCKER_LOG" "$prefix\t<down>\t<--remove-orphans>"
 assert_not_contains "$DOCKER_LOG" '<-v>'
 assert_not_contains "$DOCKER_LOG" '<--volumes>'
+assert_not_contains "$DOCKER_LOG" '<build>'
 
 reset_logs
 "$OD" restart
-assert_contains "$DOCKER_LOG" "$prefix\t<up>\t<-d>\t<--no-build>\t<--force-recreate>\t<--wait>"
+assert_contains "$DOCKER_LOG" "$prefix\t<up>\t<-d>\t<--no-build>\t<--pull>\t<never>\t<--force-recreate>\t<--wait>"
+assert_not_contains "$DOCKER_LOG" '<build>'
 
 reset_logs
 "$OD" status
@@ -185,6 +237,12 @@ assert_contains "$DOCKER_LOG" '<project>\t<create>\t<--name>\t<Name with spaces>
 
 "$OD" help > "$TMP_ROOT/help.out"
 assert_contains "$TMP_ROOT/help.out" 'import-design-system'
+assert_contains "$TMP_ROOT/help.out" 'build'
+assert_not_contains "$TMP_ROOT/help.out" 'pull'
+if "$OD" pull > "$TMP_ROOT/pull.out" 2> "$TMP_ROOT/pull.err"; then
+    fail 'retired pull command still succeeds'
+fi
+assert_empty "$TMP_ROOT/pull.out"
 if "$OD" does-not-exist > "$TMP_ROOT/unknown.out" 2> "$TMP_ROOT/unknown.err"; then
     fail 'unknown command succeeded'
 fi
