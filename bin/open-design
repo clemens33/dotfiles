@@ -9,7 +9,18 @@ DOCKERFILE=$CONFIG_DIR/Dockerfile
 CONTAINER=open-design
 DAEMON_URL=http://127.0.0.1:7456
 CLI_PATH=apps/daemon/dist/cli.js
+# Persistent, volume-backed storage inside the container. A local install is a
+# symlink from the catalog directory into a source directory, so the source has
+# to outlive the temp dir the package arrives in.
+SOURCES_DIR=/app/.od/design-system-sources
+CATALOG_DIR=/app/.od/design-systems
+SYNC_MARKER=.open-design-sync.json
 import_tmp=
+sync_tmp=
+sync_backup=
+sync_id=
+sync_lock=
+sync_link_created=
 mcp_pid=
 
 fail() {
@@ -139,6 +150,205 @@ import_design_system() {
     return "$status"
 }
 
+in_container() {
+    docker exec -i "$CONTAINER" "$@"
+}
+
+cleanup_sync() {
+    case $sync_tmp in
+        /tmp/open-design-sync.*)
+            in_container rm -rf "$sync_tmp" >/dev/null 2>&1 || :
+            ;;
+    esac
+    sync_tmp=
+}
+
+release_lock() {
+    case $sync_lock in
+        /tmp/open-design-sync-lock.*)
+            in_container rm -rf "$sync_lock" >/dev/null 2>&1 || :
+            ;;
+    esac
+    sync_lock=
+}
+
+# Undo everything this run changed, in reverse order, then release the lock.
+# Called on any failure once the package has started replacing the installed
+# one, and from the EXIT/signal trap.
+rollback_sync() {
+    if [ -n "$sync_link_created" ]; then
+        # Remove the catalog entry through the API, not by deleting the
+        # symlink: the daemon also holds a workspace binding for an installed
+        # design system, and unlinking behind its back would leave that behind.
+        if in_container_delete_design_system "$sync_id"; then
+            sync_link_created=
+        else
+            printf '%s: warning: could not remove the catalog entry user:%s; leaving the installed package in place\n' \
+                "$PROGRAM" "$sync_id" >&2
+            # Removing the source now would leave the catalog pointing at
+            # nothing, which is worse than a package that is merely newer than
+            # intended. Keep it and let a human decide.
+            sync_link_created=
+            sync_backup=
+            release_lock
+            cleanup_sync
+            return
+        fi
+    fi
+    if [ -n "$sync_backup" ]; then
+        # shellcheck disable=SC2016  # $1/$2 are the container shell's positional args
+        in_container sh -c '
+            set -eu
+            rm -rf "$1"
+            if [ -d "$2" ]; then mv "$2" "$1"; fi
+        ' _ "$SOURCES_DIR/$sync_id" "$sync_backup" >/dev/null 2>&1 || :
+        sync_backup=
+    fi
+    release_lock
+    cleanup_sync
+}
+
+sync_fail() {
+    rollback_sync
+    trap - EXIT HUP INT TERM
+    fail "$*"
+}
+
+in_container_delete_design_system() {
+    need_command curl
+    curl --fail --silent --show-error --max-time 30 \
+        -X DELETE "$DAEMON_URL/api/design-systems/user:$1" >/dev/null 2>&1
+}
+
+# Read one string field out of a JSON file using the container's own node, so
+# the bridge needs no jq on the host and no JSON parsing in shell.
+read_manifest_field() {
+    in_container node -e '
+        const fs = require("fs");
+        const value = JSON.parse(fs.readFileSync(process.argv[1], "utf8"))[process.argv[2]];
+        process.stdout.write(typeof value === "string" ? value : "");
+    ' "$1" "$2"
+}
+
+sync_package() {
+    [ "$#" -eq 1 ] || fail "usage: open-design sync-package <package-dir>"
+    host_dir=$1
+    [ -n "$host_dir" ] || fail "package path must not be empty"
+    [ -d "$host_dir" ] || fail "package path is not a directory: $host_dir"
+    source_dir=$(CDPATH='' cd -- "$host_dir" 2>/dev/null && pwd -P) ||
+        fail "cannot resolve package path: $host_dir"
+    [ "$source_dir" != / ] || fail "refusing to sync the filesystem root"
+    for required in manifest.json DESIGN.md tokens.css; do
+        [ -f "$source_dir/$required" ] ||
+            fail "not a design-system package: $source_dir/$required is missing"
+    done
+
+    need_command tar
+    require_running_container
+
+    sync_tmp=$(in_container mktemp -d '/tmp/open-design-sync.XXXXXX') ||
+        fail "cannot create container staging directory"
+    case $sync_tmp in
+        /tmp/open-design-sync.*) ;;
+        *) sync_tmp=; fail "container returned an unsafe staging directory" ;;
+    esac
+    trap 'rollback_sync' EXIT HUP INT TERM
+
+    tar -C "$source_dir" -cf - . | in_container tar -xf - -C "$sync_tmp" ||
+        sync_fail "failed to stream the package into the container"
+
+    schema=$(read_manifest_field "$sync_tmp/manifest.json" schemaVersion) ||
+        sync_fail "cannot read manifest.json"
+    [ "$schema" = od-design-system-project/v1 ] ||
+        sync_fail "unsupported manifest schemaVersion: ${schema:-<missing>}"
+    sync_id=$(read_manifest_field "$sync_tmp/manifest.json" id) ||
+        sync_fail "cannot read manifest.json"
+    case $sync_id in
+        '' | *[!0-9a-z-]* | -* | *- )
+            sync_fail "unsafe design-system id in manifest.json: ${sync_id:-<missing>}"
+            ;;
+    esac
+
+    # One writer per design system. mkdir is atomic, so two concurrent runs
+    # cannot both pass this point and race over the same source directory,
+    # backup and catalog entry. The lock lives in the container's /tmp, so a
+    # container restart clears any lock a killed run left behind.
+    sync_lock=/tmp/open-design-sync-lock.$sync_id
+    in_container mkdir "$sync_lock" >/dev/null 2>&1 || {
+        sync_lock=
+        sync_fail "another sync-package run holds the lock for \"$sync_id\" (clear $CONTAINER:/tmp/open-design-sync-lock.$sync_id if no run is active)"
+    }
+
+    # Refuse anything this command did not install: an unrelated design system
+    # of the same name must never be silently replaced.
+    # shellcheck disable=SC2016  # the probe runs in the container; host expansion would be wrong
+    state=$(in_container sh -c '
+        set -eu
+        src="$1/$3"
+        link="$2/$3"
+        marker="$src/$4"
+        if [ -e "$src" ] || [ -L "$src" ]; then
+            if [ ! -d "$src" ] || [ ! -f "$marker" ]; then echo foreign-source; exit 0; fi
+        fi
+        if [ -L "$link" ]; then
+            target=$(readlink "$link")
+            if [ "$target" != "$src" ]; then echo foreign-link; exit 0; fi
+            echo update
+            exit 0
+        fi
+        if [ -e "$link" ]; then echo foreign-link; exit 0; fi
+        echo install
+    ' _ "$SOURCES_DIR" "$CATALOG_DIR" "$sync_id" "$SYNC_MARKER") ||
+        sync_fail "cannot inspect installed design systems"
+
+    case $state in
+        foreign-source)
+            sync_fail "$SOURCES_DIR/$sync_id exists and was not installed by this command"
+            ;;
+        foreign-link)
+            sync_fail "a different design system is already installed as \"$sync_id\""
+            ;;
+        install | update) ;;
+        *) sync_fail "unexpected install state: $state" ;;
+    esac
+
+    # Name the backup after this run, so a crashed earlier run can never have
+    # left one that this run would delete.
+    sync_backup=$SOURCES_DIR/.backup-$sync_id-${sync_tmp##*.}
+    # shellcheck disable=SC2016  # same: container-side positional args, not host variables
+    in_container sh -c '
+        set -eu
+        mkdir -p "$1"
+        rm -rf "$4"
+        if [ -d "$1/$3" ]; then mv "$1/$3" "$4"; fi
+        mv "$2" "$1/$3"
+        printf "{\"managedBy\":\"open-design sync-package\",\"id\":\"%s\"}\n" "$3" > "$1/$3/$5"
+    ' _ "$SOURCES_DIR" "$sync_tmp" "$sync_id" "$sync_backup" "$SYNC_MARKER" ||
+        sync_fail "failed to install the package into $SOURCES_DIR"
+    sync_tmp=
+
+    if [ "$state" = install ]; then
+        need_command curl
+        curl --fail --silent --show-error --max-time 30 \
+            -H 'Content-Type: application/json' \
+            -d "{\"source\":\"local\",\"path\":\"$SOURCES_DIR/$sync_id\"}" \
+            "$DAEMON_URL/api/design-systems/install" >/dev/null ||
+            sync_fail "OpenDesign refused to install the package"
+        sync_link_created=1
+    fi
+
+    in_container node "$CLI_PATH" design-systems show "user:$sync_id" \
+        --daemon-url "$DAEMON_URL" >/dev/null ||
+        sync_fail "the installed package did not validate; previous state restored"
+
+    in_container rm -rf "$sync_backup" >/dev/null 2>&1 || :
+    sync_backup=
+    sync_link_created=
+    release_lock
+    trap - EXIT HUP INT TERM
+    printf '%s: %s user:%s\n' "$PROGRAM" "$state" "$sync_id"
+}
+
 print_help() {
     cat <<'EOF'
 Usage: open-design <command> [args]
@@ -156,7 +366,8 @@ Commands:
   health                       Read the unauthenticated health endpoint.
   version                      Read the unauthenticated version endpoint.
   cli <od args>                Run the bundled OpenDesign CLI against the daemon.
-  import-design-system <dir>   Stream one local package into persistent storage.
+  import-design-system <dir>   Run OpenDesign's own local importer on a folder.
+  sync-package <dir>           Install/update a finished design-system package.
   help                         Show this help.
 
 The open-design-mcp symlink launches only the quiet stdio MCP bridge.
@@ -232,6 +443,9 @@ case $command in
         ;;
     import-design-system)
         import_design_system "$@"
+        ;;
+    sync-package)
+        sync_package "$@"
         ;;
     help|-h|--help)
         [ "$#" -eq 0 ] || fail "help accepts no arguments"

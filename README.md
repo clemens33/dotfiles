@@ -141,6 +141,40 @@ open-design version
 open-design down        # remove container/network; keep both named volumes
 ```
 
+### Installing a design-system package
+
+`sync-package` installs a finished OpenDesign design-system package — a
+directory holding `manifest.json`, `DESIGN.md` and `tokens.css` — into the
+daemon's persistent storage:
+
+```bash
+open-design sync-package /path/to/package
+open-design cli design-systems show user:<id>
+```
+
+The command is generic: the id, and everything else about the package, comes
+from its `manifest.json`. It streams the directory into the container (no repo
+is ever mounted), places it under `/app/.od/design-system-sources/<id>`, and on
+the first run asks OpenDesign's own local-install API to add it to the catalog.
+Later runs replace the files in place, so the catalog entry and its id survive.
+
+It only ever touches a package it installed itself. A source directory without
+its marker file, or a catalog entry pointing somewhere else, is refused rather
+than overwritten. If the transfer, the install call, or the post-install
+validation fails, the previous package is moved back and the catalog entry this
+run created is removed.
+
+This is a **pinned-version compatibility surface**. The package format belongs
+to the OpenDesign release named above, not to a stable interchange standard:
+`manifest.json` is validated against that release's
+`design-systems/_schema/manifest.schema.ts`. When the pinned digest moves,
+re-validate a package before trusting a sync.
+
+`import-design-system` is a different thing and stays as it was: it runs
+OpenDesign's own importer, which scans a source tree and emits its own canonical
+package. Use it for a foreign project; use `sync-package` when you already have
+a package you want installed verbatim.
+
 ### Image, updates, and data
 
 The container image is a thin local derivative, `open-design-vela:0.21.1-vela0.0.33`,

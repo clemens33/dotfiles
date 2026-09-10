@@ -89,6 +89,38 @@ case ${1:-} in
             *' design-systems import-local /tmp/open-design-import.stub123 '*)
                 exit "${STUB_IMPORT_RC:-0}"
                 ;;
+            *' mkdir /tmp/open-design-sync-lock.'*)
+                exit "${STUB_LOCK_RC:-0}"
+                ;;
+            *' rm -rf /tmp/open-design-sync-lock.'*)
+                exit 0
+                ;;
+            *' mktemp -d /tmp/open-design-sync.XXXXXX '*)
+                printf '%s\n' /tmp/open-design-sync.stub456
+                exit 0
+                ;;
+            *' tar -xf - -C /tmp/open-design-sync.stub456 '*)
+                dd of=/dev/null 2>/dev/null
+                exit "${STUB_SYNC_TRANSFER_RC:-0}"
+                ;;
+            *'manifest.json schemaVersion '*)
+                printf '%s' "${STUB_SYNC_SCHEMA-od-design-system-project/v1}"
+                exit "${STUB_SYNC_MANIFEST_RC:-0}"
+                ;;
+            *'manifest.json id '*)
+                printf '%s' "${STUB_SYNC_ID-assistant}"
+                exit "${STUB_SYNC_MANIFEST_RC:-0}"
+                ;;
+            *foreign-source*)
+                printf '%s\n' "${STUB_SYNC_STATE:-install}"
+                exit 0
+                ;;
+            *managedBy*)
+                exit "${STUB_SYNC_PLACE_RC:-0}"
+                ;;
+            *' design-systems show '*)
+                exit "${STUB_SYNC_SHOW_RC:-0}"
+                ;;
             *' mcp --daemon-url http://127.0.0.1:7456 '*)
                 if [ -n "${STUB_EXEC_SIGNAL:-}" ]; then
                     kill -"$STUB_EXEC_SIGNAL" "$$"
@@ -114,6 +146,13 @@ cat > "$STUB_BIN/curl" <<'STUB'
 case " $* " in
     *'/api/health '*) printf '{"status":"ok"}\n' ;;
     *'/api/version '*) printf '{"version":"0.21.1"}\n' ;;
+    *'/api/design-systems/install '*)
+        printf '{"designSystem":{"id":"user:assistant"}}\n'
+        exit "${STUB_INSTALL_RC:-0}"
+        ;;
+    *' -X DELETE '*)
+        exit "${STUB_DELETE_RC:-0}"
+        ;;
 esac
 STUB
 
@@ -314,5 +353,193 @@ if "$OD" import-design-system "$TMP_ROOT/missing" > "$TMP_ROOT/missing.out" 2> "
     fail 'missing-directory import succeeded'
 fi
 assert_empty "$TMP_ROOT/missing.out"
+
+# ── sync-package ────────────────────────────────────────────────────────────
+# The generic package bridge: stream a finished package into persistent
+# container storage, install it once through OpenDesign's own local-install
+# API, and update in place afterwards. It must never touch a design system it
+# did not install, and must leave the previous one in place when anything fails.
+
+pkg=$TMP_ROOT/'package with spaces'
+mkdir -p "$pkg"
+printf '{"schemaVersion":"od-design-system-project/v1","id":"assistant"}\n' > "$pkg/manifest.json"
+printf '# Fixture\n' > "$pkg/DESIGN.md"
+printf ':root { --bg: #fff; }\n' > "$pkg/tokens.css"
+
+# A directory that is not a package is rejected before the container is touched.
+for missing in manifest.json DESIGN.md tokens.css; do
+    reset_logs
+    mv "$pkg/$missing" "$pkg/$missing.away"
+    if "$OD" sync-package "$pkg" > "$TMP_ROOT/nopkg.out" 2> "$TMP_ROOT/nopkg.err"; then
+        fail "sync-package accepted a directory without $missing"
+    fi
+    assert_contains "$TMP_ROOT/nopkg.err" 'not a design-system package'
+    assert_empty "$DOCKER_LOG"
+    mv "$pkg/$missing.away" "$pkg/$missing"
+done
+
+# First install: stage, place, call the install API once, then verify.
+reset_logs
+STUB_SYNC_STATE=install "$OD" sync-package "$pkg" > "$TMP_ROOT/install.out" 2> "$TMP_ROOT/install.err"
+assert_contains "$TMP_ROOT/install.out" 'install user:assistant'
+assert_contains "$DOCKER_LOG" '<mktemp>\t<-d>\t</tmp/open-design-sync.XXXXXX>'
+assert_contains "$DOCKER_LOG" '<tar>\t<-xf>\t<->\t<-C>\t</tmp/open-design-sync.stub456>'
+assert_contains "$DOCKER_LOG" '<design-systems>\t<show>\t<user:assistant>'
+assert_contains "$TOOL_LOG" '<http://127.0.0.1:7456/api/design-systems/install>'
+assert_contains "$TOOL_LOG" '<{"source":"local","path":"/app/.od/design-system-sources/assistant"}>'
+# The host path never reaches the container, and nothing is mounted.
+assert_not_contains "$DOCKER_LOG" "$pkg"
+assert_not_contains "$DOCKER_LOG" '<--volume>'
+assert_not_contains "$DOCKER_LOG" '<-v>'
+
+# Update: the catalog symlink already points at our source, so the install API
+# is not called again.
+reset_logs
+STUB_SYNC_STATE=update "$OD" sync-package "$pkg" > "$TMP_ROOT/update.out" 2> "$TMP_ROOT/update.err"
+assert_contains "$TMP_ROOT/update.out" 'update user:assistant'
+assert_not_contains "$TOOL_LOG" '/api/design-systems/install'
+
+# Collisions with anything this command did not install are refused, and
+# nothing is placed.
+reset_logs
+if STUB_SYNC_STATE=foreign-source "$OD" sync-package "$pkg" > "$TMP_ROOT/fsrc.out" 2> "$TMP_ROOT/fsrc.err"; then
+    fail 'sync-package overwrote an unmanaged source directory'
+fi
+assert_contains "$TMP_ROOT/fsrc.err" 'not installed by this command'
+assert_not_contains "$DOCKER_LOG" 'managedBy'
+
+reset_logs
+if STUB_SYNC_STATE=foreign-link "$OD" sync-package "$pkg" > "$TMP_ROOT/flink.out" 2> "$TMP_ROOT/flink.err"; then
+    fail 'sync-package replaced an unrelated design system'
+fi
+assert_contains "$TMP_ROOT/flink.err" 'already installed'
+assert_not_contains "$DOCKER_LOG" 'managedBy'
+
+# A manifest the bridge does not understand stops before anything is placed.
+reset_logs
+if STUB_SYNC_SCHEMA=od-design-system-project/v2 "$OD" sync-package "$pkg" > "$TMP_ROOT/schema.out" 2> "$TMP_ROOT/schema.err"; then
+    fail 'sync-package accepted an unknown schemaVersion'
+fi
+assert_contains "$TMP_ROOT/schema.err" 'unsupported manifest schemaVersion'
+assert_contains "$DOCKER_LOG" '<rm>\t<-rf>\t</tmp/open-design-sync.stub456>'
+
+reset_logs
+if STUB_SYNC_ID='../escape' "$OD" sync-package "$pkg" > "$TMP_ROOT/badid.out" 2> "$TMP_ROOT/badid.err"; then
+    fail 'sync-package accepted an unsafe id'
+fi
+assert_contains "$TMP_ROOT/badid.err" 'unsafe design-system id'
+
+# A failed transfer, a failed placement, a refused install and a package that
+# does not validate all roll back and report failure.
+reset_logs
+set +e
+STUB_SYNC_TRANSFER_RC=24 "$OD" sync-package "$pkg" > "$TMP_ROOT/xfer.out" 2> "$TMP_ROOT/xfer.err"
+xfer_rc=$?
+set -e
+[ "$xfer_rc" -ne 0 ] || fail 'failed transfer returned success'
+assert_contains "$TMP_ROOT/xfer.err" 'failed to stream the package'
+assert_contains "$DOCKER_LOG" '<rm>\t<-rf>\t</tmp/open-design-sync.stub456>'
+
+reset_logs
+set +e
+STUB_SYNC_PLACE_RC=9 "$OD" sync-package "$pkg" > "$TMP_ROOT/place.out" 2> "$TMP_ROOT/place.err"
+place_rc=$?
+set -e
+[ "$place_rc" -ne 0 ] || fail 'failed placement returned success'
+assert_contains "$TMP_ROOT/place.err" 'failed to install the package'
+
+reset_logs
+set +e
+STUB_INSTALL_RC=22 STUB_SYNC_STATE=install "$OD" sync-package "$pkg" > "$TMP_ROOT/api.out" 2> "$TMP_ROOT/api.err"
+api_rc=$?
+set -e
+[ "$api_rc" -ne 0 ] || fail 'refused install returned success'
+assert_contains "$TMP_ROOT/api.err" 'refused to install'
+# Rollback restores the previous source directory.
+assert_contains "$DOCKER_LOG" '/app/.od/design-system-sources/.backup-assistant'
+
+reset_logs
+set +e
+STUB_SYNC_SHOW_RC=1 STUB_SYNC_STATE=update "$OD" sync-package "$pkg" > "$TMP_ROOT/show.out" 2> "$TMP_ROOT/show.err"
+show_rc=$?
+set -e
+[ "$show_rc" -ne 0 ] || fail 'unvalidated package returned success'
+assert_contains "$TMP_ROOT/show.err" 'previous state restored'
+assert_contains "$DOCKER_LOG" '/app/.od/design-system-sources/.backup-assistant'
+
+# Argument handling.
+if "$OD" sync-package > "$TMP_ROOT/noarg.out" 2> "$TMP_ROOT/noarg.err"; then
+    fail 'sync-package accepted no arguments'
+fi
+assert_contains "$TMP_ROOT/noarg.err" 'usage: open-design sync-package'
+
+if "$OD" sync-package "$pkg" extra > "$TMP_ROOT/extra.out" 2> "$TMP_ROOT/extra.err"; then
+    fail 'sync-package accepted extra arguments'
+fi
+assert_contains "$TMP_ROOT/extra.err" 'usage: open-design sync-package'
+
+if "$OD" sync-package / > "$TMP_ROOT/syncroot.out" 2> "$TMP_ROOT/syncroot.err"; then
+    fail 'sync-package accepted the filesystem root'
+fi
+
+if "$OD" sync-package "$TMP_ROOT/missing-package" > "$TMP_ROOT/syncmissing.out" 2> "$TMP_ROOT/syncmissing.err"; then
+    fail 'sync-package accepted a missing directory'
+fi
+
+# One writer per design system: the lock is taken before any state changes and
+# released on the way out, and a second run refuses instead of racing over the
+# same source directory, backup and catalog entry.
+reset_logs
+STUB_SYNC_STATE=update "$OD" sync-package "$pkg" > "$TMP_ROOT/lock.out" 2> "$TMP_ROOT/lock.err"
+assert_contains "$DOCKER_LOG" '<mkdir>\t</tmp/open-design-sync-lock.assistant>'
+assert_contains "$DOCKER_LOG" '<rm>\t<-rf>\t</tmp/open-design-sync-lock.assistant>'
+# The lock is taken before the package is placed.
+lock_line=$(grep -n 'open-design-sync-lock.assistant>' "$DOCKER_LOG" | head -1 | cut -d: -f1)
+place_line=$(grep -n 'managedBy' "$DOCKER_LOG" | head -1 | cut -d: -f1)
+[ "$lock_line" -lt "$place_line" ] || fail 'the lock is taken after the package is placed'
+
+reset_logs
+if STUB_LOCK_RC=1 "$OD" sync-package "$pkg" > "$TMP_ROOT/busy.out" 2> "$TMP_ROOT/busy.err"; then
+    fail 'a second concurrent sync-package run was allowed'
+fi
+assert_contains "$TMP_ROOT/busy.err" 'holds the lock'
+assert_not_contains "$DOCKER_LOG" 'managedBy'
+assert_not_contains "$DOCKER_LOG" 'foreign-source'
+# Losing the race must not delete the lock the winner holds.
+assert_not_contains "$DOCKER_LOG" '<rm>\t<-rf>\t</tmp/open-design-sync-lock.assistant>'
+
+# Rolling back a fresh install goes through the API, so the daemon also drops
+# the workspace binding; unlinking the catalog symlink directly would not.
+reset_logs
+set +e
+STUB_SYNC_SHOW_RC=1 STUB_SYNC_STATE=install "$OD" sync-package "$pkg" > "$TMP_ROOT/undo.out" 2> "$TMP_ROOT/undo.err"
+undo_rc=$?
+set -e
+[ "$undo_rc" -ne 0 ] || fail 'unvalidated fresh install returned success'
+assert_contains "$TOOL_LOG" '<-X>\t<DELETE>\t<http://127.0.0.1:7456/api/design-systems/user:assistant>'
+assert_not_contains "$DOCKER_LOG" '<rm>\t<-f>\t</app/.od/design-systems/assistant>'
+assert_contains "$DOCKER_LOG" '.backup-assistant-'
+
+# If the daemon will not drop the entry, the package stays installed and the
+# source is left alone rather than pulled out from under a live catalog entry.
+reset_logs
+set +e
+STUB_SYNC_SHOW_RC=1 STUB_DELETE_RC=7 STUB_SYNC_STATE=install "$OD" sync-package "$pkg" > "$TMP_ROOT/undo2.out" 2> "$TMP_ROOT/undo2.err"
+undo2_rc=$?
+set -e
+[ "$undo2_rc" -ne 0 ] || fail 'failed rollback returned success'
+assert_contains "$TMP_ROOT/undo2.err" 'leaving the installed package in place'
+# The restore step (its script is the only one that moves a backup back) must
+# not run: the catalog entry is still live and needs its source.
+# shellcheck disable=SC2016  # matching the container-side script text verbatim
+assert_not_contains "$DOCKER_LOG" 'if [ -d "$2" ]; then mv "$2" "$1"; fi'
+
+# Backups are named per run, so a crashed earlier run cannot leave one that a
+# later run would delete.
+reset_logs
+STUB_SYNC_STATE=update "$OD" sync-package "$pkg" > "$TMP_ROOT/backup.out" 2> "$TMP_ROOT/backup.err"
+backup_name=$(grep -o '\.backup-assistant-[A-Za-z0-9]*' "$DOCKER_LOG" | head -1)
+[ -n "$backup_name" ] || fail 'no per-run backup name was used'
+[ "$backup_name" != '.backup-assistant-' ] || fail 'the backup name carries no run suffix'
 
 printf 'PASS: OpenDesign dispatcher stub suite\n'
