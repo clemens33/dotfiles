@@ -15,6 +15,12 @@ cache=$(printf '%s' "$input" | jq -r '
   if .warm == true then "warm"
   elif .warm == false then "cold"
   else empty end')
+# rate_limits: Claude.ai Pro/Max, or a Claude apps gateway that sets a spend
+# limit, and only after the first API response. Each window is dropped once its
+# resets_at passes, so absence is handled per window rather than once. The
+# gateway-only spend_limit window is deliberately not rendered.
+five_h=$(printf '%s' "$input" | jq -r '.rate_limits.five_hour.used_percentage // empty | floor')
+seven_d=$(printf '%s' "$input" | jq -r '.rate_limits.seven_day.used_percentage // empty | floor')
 
 dir=$(basename "$cwd")
 branch=$(git -C "$cwd" rev-parse --abbrev-ref HEAD 2>/dev/null || true)
@@ -26,5 +32,7 @@ line="${line}  📁 ${dir}"
 [ -n "$context" ] && line="${line}  ctx ${context}%"
 [ -n "$cost" ] && line="${line}  $(LC_NUMERIC=C printf '$%.2f' "$cost")"
 [ -n "$cache" ] && line="${line}  cache ${cache}"
+[ -n "$five_h" ] && line="${line}  5h ${five_h}%"
+[ -n "$seven_d" ] && line="${line}  7d ${seven_d}%"
 
 printf '%s' "$line"

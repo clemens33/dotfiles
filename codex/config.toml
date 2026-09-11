@@ -619,6 +619,33 @@ env_http_headers = { "x-api-key" = "MIC_ASSISTANT_TEST_API_KEY" }
 "hide_gpt-5.1-codex-max_migration_prompt" = true
 hide_rate_limit_model_nudge = true
 
+# Status line (2026-09-11, verified against codex-cli 0.154.0): mirrors the
+# Claude Code footer in claude/statusline.sh — model, dir, branch, context used,
+# cost, usage limits — so both harnesses read the same left to right. The array
+# order is the render order.
+# /statusline edits these keys and REWRITES this file. ~/.codex/config.toml is a
+# symlink into this repo, so a picker change lands as a repo diff and drops
+# these comments — re-add them or revert the hunk.
+# Item ids are validated ONLY by the TUI, which prints "Ignored invalid status
+# line item: ..." at startup and drops the entry. codex doctor, features list
+# and debug models all accept a bogus id silently. These ids appear in the
+# binary's /statusline catalog but are REJECTED by 0.154.0: usage-limit,
+# secondary-usage-limit, daily-limit, monthly-limit, annual-limit.
+# estimated-thread-cost is Enterprise-workspace only, so the dollar segment
+# stays empty on a ChatGPT plan; five-hour-limit renders only while that window
+# is reported. Codex has NO cache warm/cold item — that segment of the footer is
+# Claude-Code-only (claude/statusline.sh reads .prompt_cache).
+[tui]
+status_line = [
+  "model-with-reasoning",
+  "current-dir",
+  "git-branch",
+  "context-used",
+  "estimated-thread-cost",
+  "five-hour-limit",
+  "weekly-limit",
+]
+
 [tui.model_availability_nux]
 "gpt-5.3-codex-spark" = 4
 "gpt-5.5" = 4
