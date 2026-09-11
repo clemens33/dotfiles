@@ -18,18 +18,47 @@ sandbox_mode = "danger-full-access"
 web_search = "live"
 suppress_unstable_features_warning = true
 tool_output_token_limit = 25000
-# Compact at 85 % of the CLI's EFFECTIVE window. codex debug models (0.153.4,
-# 2026-09-07): gpt-6-astra context_window 272000 x effective 95 % = 258,400
-# tokens (same numbers for gpt-5.6-sol/luna/terra). 220000 leaves ~38k headroom
-# so the compaction call never races the hard limit mid-turn (ruling
-# 2026-08-25: deliberate earlier compaction; unset falls back to codex's own
-# model-derived default). Do NOT raise this toward API-capacity figures: the
-# 1.05M Astra window is the API's, not the CLI's, and the catalog's
-# max_context_window (872000) is not the window this limit is measured
-# against either — 272k is (ruling 2026-09-07, sota-audit L1 #11).
+# Compact at 77 % of the CLI's EFFECTIVE window. codex debug models (0.154.0,
+# 2026-09-11): gpt-6-astra context_window 272000 x effective 95 % = 258,400
+# tokens (same numbers for gpt-5.6-sol/luna/terra). 200000 leaves ~58k headroom
+# so the compaction call never races the hard limit mid-turn and the summary is
+# written while the thread is still coherent (ruling 2026-09-11: moderately
+# earlier compaction for a lower steady-state context, replacing the 220000 /
+# ~38k of 2026-08-25; unset falls back to codex's own model-derived default).
+# Moderate cost/quota trade-off, not a guaranteed saving: compacting more often
+# also means more summaries. Roll back to 220000 if continuity regresses.
+# Do NOT raise this toward API-capacity figures: the 1.05M Astra window is the
+# API's, not the CLI's, and the catalog's max_context_window (872000) is not
+# the window this limit is measured against either — 272k is (ruling
+# 2026-09-07, sota-audit L1 #11).
 # Do NOT also set model_context_window — openai/codex#16068: it resets the
 # token counter and silently breaks auto-compaction.
-model_auto_compact_token_limit = 220000
+model_auto_compact_token_limit = 200000
+# Full override of the built-in compaction prompt (`compact_prompt`, codex
+# 0.154.0). Compacting earlier only pays off if the handoff survives it, so the
+# summary contract is explicit here. Same preservation/drop fields as the
+# `## Responses and compact instructions` section of shared/AGENTS.md, which
+# renders into ~/.codex/AGENTS.md.
+compact_prompt = '''
+Summarize this session as a handoff for a fresh context window. Be concise and
+structured; write a summary, not a transcript.
+
+Cover:
+- What was done, with the decisions taken and the reasoning behind them.
+- What is in progress, plus the constraints and preferences that still bind.
+- Which files changed or matter, by path, and the relevant git state.
+- Verification: commands run and what they reported, and what is unverified,
+  skipped or known broken.
+- What is next: the exact next step, pending work, blockers, owners, and any
+  request or ticket IDs.
+
+Drop raw logs and file dumps, repeated narration, and superseded hypotheses;
+keep the conclusion, not the bytes.
+
+Quote exactly where exactness matters: paths, commands, error text, identifiers,
+numbers. Do not invent facts, do not resolve open questions, and mark anything
+uncertain as uncertain.
+'''
 project_doc_fallback_filenames = ["CLAUDE.md"]
 service_tier = "default"
 

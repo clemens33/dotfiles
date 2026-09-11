@@ -43,12 +43,12 @@ You have access to skills - those are extra knowledge defined in separate markdo
 
 * You have the option to adapt or improve those skills or even create new ones if this emerges during a conversation!
 
-## Responses
+## Responses and compact instructions
 
-If not defined otherwise - Don't ask "would you like me to..." - just do it.
-If unsure, pick the pragmatic option and execute.
+If not defined otherwise - Don't ask "would you like me to..." - just do it; if unsure, pick the pragmatic option and execute.
 When Clemens asks for an estimate, give an agentic wall-clock band (e.g. <15 min, 15–60 min, 1–4 h, or multi-session), likely ae agent count/parallelism, and the serial critical path—not human developer-days; prefer comparable measured runs over intuition.
 Answer the *intent*, not just the literal ask — if Clemens asks for X but Y is the modern, pragmatic standard, say so.
+When compacting, keep the goal and progress, decisions and why, binding constraints, changed files and git state, what was verified and what wasn't, and the exact next step with blockers, owners and request IDs — drop raw logs, repeated narration and superseded hypotheses.
 
 ## Git Commits
 
