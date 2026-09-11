@@ -137,14 +137,17 @@
         //   wafer      HQ US  $0.30/$1.20  99%/99%  ctx 1,048,576  max_out 943k
         //              capability-first lead: widest parameter support of any
         //              healthy route, full tool_choice; live 200.
-        //   fireworks  HQ US  $0.22/$0.66  99%/99%  ctx 1,048,576  max_out 943k
-        //              cheaper operational fallback, full tool_choice, already
-        //              the pinned host for full GLM 5.3 above; returned an
-        //              upstream 429 during the 2026-09-11 probe (transient
-        //              capacity, not capability), so it sits second not first.
         //   modal      HQ US  $0.30/$1.20  96%/96%  ctx 1,048,576  max_out 943k
-        //              final backstop: full tool_choice and a live 200, but the
-        //              weakest uptime of the healthy routes.
+        //              live-200 fallback, full tool_choice. Weakest aggregate
+        //              uptime of the healthy routes, but it answered this
+        //              model on 2026-09-11 when fireworks did not.
+        //   fireworks  HQ US  $0.22/$0.66  99%/99%  ctx 1,048,576  max_out 943k
+        //              last: cheapest, full tool_choice, and the pinned host for
+        //              full GLM 5.3 above, but it returned an upstream 429 for
+        //              THIS model on 2026-09-11. Observed model-specific
+        //              behaviour outranks better aggregate uptime, same
+        //              precedent as the GLM order (fireworks kept last there
+        //              too, as the tested-but-last-resort host).
         // Excluded on purpose: novita (US, 100%/100% uptime, live 200) is the
         // best-uptime route and is still NOT listed — it advertises
         // tool_choice none/auto ONLY, same defect that keeps gmicloud out of
@@ -169,7 +172,7 @@
           "options": {
             "reasoningEffort": "high",
             "provider": {
-              "order": ["wafer", "fireworks", "modal"],
+              "order": ["wafer", "modal", "fireworks"],
               "allow_fallbacks": false,
               "require_parameters": true,
               "zdr": true
