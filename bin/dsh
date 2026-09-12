@@ -24,6 +24,11 @@
 #   dsh --help | --version     official launcher passthrough, verbatim
 #   anything else              concise usage on stderr, exit 2
 #
+# CREDENTIAL ADAPTATION is the wrapper's only other job, and it touches the
+# environment rather than the argv: it hands this one process the OpenRouter key
+# the OpenCode auth store already holds, so the composed route authenticates
+# without a second copy of the same secret. See the block above the exec.
+#
 # The Web surface is no longer the zero-argument default: plain `dsh` used to
 # boot it with --no-open and a pinned host/port, which is how a terminal-first
 # harness ended up opening a browser server nobody asked for. Web is now
@@ -115,6 +120,40 @@ else
         exit 2
         ;;
     esac
+fi
+
+# CREDENTIAL ADAPTATION. The composed route resolves `apiKeyEnv:
+# OPENROUTER_API_KEY` through the credentials plugin, whose first source is the
+# launching environment. This machine already holds an OpenRouter API key in
+# the OpenCode auth store, so the harness borrows that one instead of asking
+# for a second copy of the same secret in ~/.dsh/.credentials.yaml.
+#
+# An already-exported OPENROUTER_API_KEY WINS and is never touched. An explicit
+# export is a deliberate choice of account, and it is that account which gets
+# billed - so exporting a key from somewhere else silently moves the spend.
+#
+# The key is read at launch, handed to this one process, and to nothing else:
+# no file under $DSH_HOME, no log line, and never an argv word - argv is
+# world-readable in `ps`, which is why the PATH is the argument and the key
+# only ever travels back over stdout. A missing store, a store with no
+# `openrouter` record, a record that is not an API key, and a malformed file
+# all leave the variable unset, so DSH reports its own MISSING_CREDENTIAL
+# rather than this wrapper complaining about a file nobody configured.
+#
+# Cost is one stat when the store is absent. Where it exists, every surface
+# pays one short node run - node is already a hard requirement, since $bin is
+# itself a Node program.
+if [ -z "${OPENROUTER_API_KEY:-}" ]; then
+    opencode_auth=${OPENCODE_AUTH_FILE:-$HOME/.local/share/opencode/auth.json}
+    if [ -f "$opencode_auth" ] && command -v node >/dev/null 2>&1; then
+        dsh_key=$(node -e 'try{const r=JSON.parse(require("node:fs").readFileSync(process.argv[1],"utf8")).openrouter;if(r&&r.type==="api"&&typeof r.key==="string"&&r.key.trim()!=="")process.stdout.write(r.key.trim())}catch(e){}' "$opencode_auth" 2>/dev/null) || dsh_key=
+        if [ -n "$dsh_key" ]; then
+            OPENROUTER_API_KEY=$dsh_key
+            export OPENROUTER_API_KEY
+        fi
+        unset dsh_key
+    fi
+    unset opencode_auth
 fi
 
 exec "$bin" "$@"

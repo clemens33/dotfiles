@@ -46,6 +46,110 @@ Flags for the app go **after** the profile selection. The obvious-looking
 `dsh --profile web … web --no-open` is rejected with *"web takes none of parent
 --profile …"*.
 
+## Which model, and which key
+
+Every surface runs one model: `@preset/deepseek-v41-flash-us-zdr`, a DeepSeek
+V4.1 Flash preset reached through OpenRouter. The preset id — not the bare
+`deepseek/deepseek-v4.1-flash` — is what carries the provider preference order
+wafer → modal → fireworks with `allow_fallbacks:false`,
+`require_parameters:true` and `zdr:true`. The route has no field for
+OpenRouter's `provider` object, so the preset is the only place those
+constraints can live. If `dsh` ever cannot address a preset id, that is a stop
+and a report, never a fallback to the bare model.
+
+Two home-layer rows make that happen, and both are needed:
+
+| Row | Decides |
+|---|---|
+| `llm-pi-ai` | what the OpenRouter provider route **can reach** — one model, because a `models` list replaces the served catalog |
+| `agent-default-model` | what a freshly created agent **actually starts on** |
+
+They are separate services, and the pilot shipped for a day with only the first.
+Every profile composed the OpenRouter route, every fresh agent selected the
+shipped `deepseek-official` / `deepseek-flash` default anyway, and the first
+thing `dsh headless` said was that it wanted `DEEPSEEK_API_KEY`. A route nobody
+selects is invisible to file-shape checks, which is why the daily gate now
+counts the default as well as the route.
+
+`reasoningEffort` is deliberately absent from the default row: the plugin
+accepts only `provider` and `model`, by design — an effort in composition would
+be re-inherited after a saved selection cleared it. The route's `reasoning:
+high` is the daily default-effort source instead.
+
+The route also pins `compat.maxTokensField: max_tokens`. Headless supplies a
+bounded output budget, but pi-ai otherwise serializes that budget for an
+OpenRouter route as `max_completion_tokens`. OpenRouter's V4.1 Flash endpoint
+catalog advertises `max_tokens` — and not `max_completion_tokens` — for Wafer,
+Modal and Fireworks. With the preset's `require_parameters:true`, the inferred
+spelling filters out all three before inference. This compatibility override
+changes only the wire name; it does not relax the preset's routing constraints
+or change the budget value.
+
+Measured live baseline, 2026-09-12: a fresh headless canary with prompt
+`Reply exactly OK` finished with `stop` through Modal, position 2 in that
+preference order. OpenRouter record `gen-1789207616-cV6uHGP6Y78ch4A6R8lb`
+reported normalized prompt/completion tokens `16772/1`, native tokens
+`16050/4`, and cost `USD 0.0048198`. This is a point-in-time operating sample,
+not a guarantee that position 1 serves every request or that future cost stays
+the same.
+
+### Selection precedence
+
+The composed default is a **base**, not a lock. From weakest to strongest, for a
+newly created agent:
+
+1. `agent-default-model` in `~/.dsh/cordis.patch.yml` — the composed default,
+   the same on TUI, Web, headless, ACP and the SDK entry points.
+2. An `agent-default-model:` section saved in `~/.dsh/settings.yaml`. Once
+   written, that becomes the live source and every later agent reads it instead
+   of the composition. The Web Models page writes it.
+3. Terminal only: a successful `/model` pick, persisted as
+   `~/.dsh-tui/model.json`. The TUI creates that file lazily on the first pick,
+   so its absence before then is expected. It beats the harness default for
+   **new** TUI sessions.
+
+Sessions that already exist are not re-resolved: a resumed session continues on
+the route its own log recorded. So after a `/model` pick, a fresh `dsh` and an
+older resumed session can legitimately run different models.
+
+The community TUI keeps its preferences and history under `~/.dsh-tui`, separate
+from the harness state in `~/.dsh`. Its writers use mixed permission policies.
+On the live 2026-09-12 installation the directory is mode `0755`;
+`history.jsonl`, `session-index.json`, and `effect-ledger.jsonl` are `0600`,
+while `last-used.json`, `migrations.json`, and `resume.txt` are `0644`.
+`model.json` is written without an explicit mode, so the current `022` umask
+will create it as `0644` after the first successful `/model` pick. These are
+observed/current implementation facts, not a hardened runtime policy.
+
+### The credential
+
+The route resolves `apiKeyEnv: OPENROUTER_API_KEY` through the credentials
+plugin, whose first source is the launching environment. `bin/dsh` fills that
+variable from the OpenRouter key the OpenCode auth store already holds
+(`~/.local/share/opencode/auth.json`, or `$OPENCODE_AUTH_FILE`), so this machine
+keeps one copy of the secret rather than a second one in
+`~/.dsh/.credentials.yaml`.
+
+The key is read at launch, handed to that one process, and to nothing else: no
+file under `$DSH_HOME`, no log line, and never an argv word — argv is
+world-readable in `ps`. A missing store, a store with no `openrouter` record, an
+OAuth rather than API record, and a malformed file all leave the variable unset,
+so `dsh` reports its own `MISSING_CREDENTIAL` instead of the wrapper inventing
+an error about a file nobody configured.
+
+**An exported `OPENROUTER_API_KEY` wins, and it is never touched.** That is the
+escape hatch and the footgun in one: an explicit export is a deliberate choice
+of account, so a key exported from somewhere else silently moves both the model
+selection available to the route and the spend onto that other OpenRouter
+account. Unset the variable to go back to the OpenCode store.
+
+Tool children never see the credential either way. The subprocess seam scrubs
+ambient names matching `/KEY|PASSWORD|SECRET|TOKEN/i` and ambient `DSH_*` names
+before spawning, and MCP servers, the bash tool and terminal sessions all share
+that one definition. `tests/test-deepseek-harness.sh` composes the real bash
+tool over the real subprocess provider and reads the child's environment rather
+than trusting the prose.
+
 ## The terminal surface is community code
 
 `@deepseek-harness-tui/dsh-tui` is **not** a DeepSeek package. The official
@@ -125,7 +229,7 @@ customer code.** Re-check these rows whenever the pin moves.
 | `package.json` | The exact dependency `@deepseek-ai/dsh` at `0.1.5-rc.1`, plus the npm `allowScripts` policy |
 | `package-lock.json` | Pins the complete plugin graph and every published integrity hash |
 | `.npmrc` | Makes `strict-allow-scripts=true` project-local, so the guard does not depend on this machine |
-| `cordis.patch.yml` | Home-plane layer: the pilot's model route, applied to every profile that composes `dsh-base` (all but `sdk-minimal`) |
+| `cordis.patch.yml` | Home-plane layer: the pilot's model route **and** the default a fresh agent starts on, applied to every profile that composes `dsh-base` (all but `sdk-minimal`) |
 | `profiles/web/cordis.patch.yml` | Web's own layer: selects the managed preset on the `agent-presets` row |
 | `profiles/dsh-tui/cordis.patch.yml` | The terminal profile's layer: the same selection on the scoped `dsh-tui-agent-presets` row |
 | `profiles/dsh-tui/package.json` | The exact dependency `@deepseek-harness-tui/dsh-tui` at `0.10.1` and the bundle layer stack |
@@ -379,21 +483,29 @@ each runtime copy still matches its tracked source, whether the managed preset
 still matches the installed `standard`, and the per-server MCP status. It also
 fails on a single `@deepseek-ai` package in the TUI profile or the pnpm prefix.
 
-It then composes every shipped profile and checks what came out. The shared
-route must appear exactly once in `dsh-tui`, `web`, `headless`, `acp` and `sdk`,
-each with empty stderr. `sdk-minimal` is the deliberate exception: it is the one
-shipped template built without `dsh-base`, so it has no `llm-pi-ai` row for the
-home layer to target and emits exactly one warning —
+It then composes every shipped profile and checks what came out. Both home-layer
+rows must appear exactly once in `dsh-tui`, `web`, `headless`, `acp` and `sdk`,
+each with empty stderr: the OpenRouter route, and the preset default a fresh
+agent starts on. Counting only the route was not enough — the pilot shipped for
+a day with the route composed on all five surfaces and every fresh agent still
+selecting `deepseek-official`, which is a state every static check calls
+healthy.
+
+`sdk-minimal` is the deliberate exception: it is the one shipped template built
+without `dsh-base`, so it has neither row for the home layer to target and emits
+exactly two warnings —
 
 ```
 dsh: [~/.dsh/cordis.patch.yml] patch: entry "llm-pi-ai" not found
+dsh: [~/.dsh/cordis.patch.yml] patch: entry "agent-default-model" not found
 ```
 
-That single line is pinned by text. A *changed* single line is reported as
-DEGRADED with the text quoted; a second line, a missing one, or any warning on
-the other five profiles is a failure. The patch format has no optional target —
-a non-insert patch whose id matches nothing always warns — so this is pinned
-rather than engineered away.
+Both lines are pinned by text, each expected exactly once. *Changed* text across
+the same two lines is reported as DEGRADED with the lines quoted; a third line,
+a missing one, the same warning twice, an unexpected route or default count, or
+any warning on the other five profiles is a failure. The patch format has no
+optional target — a non-insert patch whose id matches nothing always warns — so
+this is pinned rather than engineered away.
 
 To bump deliberately: edit the version in `package.json`, run
 `npm install --package-lock-only` here, re-run `./install`, refresh the preset
@@ -423,3 +535,8 @@ keeping `~/.dsh` means those sessions will no longer resume. Remove
 because it holds sessions and credentials; once it is gone, the contract
 renderer reports the seventh target as skipped, which is the intended behaviour
 for an optional identity.
+
+Rollback and runtime uninstall also preserve `~/.dsh-tui`, including terminal
+history, the session index, and saved preferences. To remove that TUI state as
+well, stop the TUI and server, then explicitly remove `~/.dsh-tui`; this
+irreversibly deletes those local records.

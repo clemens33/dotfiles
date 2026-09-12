@@ -720,12 +720,21 @@ process_dsh() {
 
   # Composition gate. The home layer applies to EVERY profile, so a row it
   # targets must exist in every profile's tree or that profile logs an
-  # unmatched-row warning on every boot. `sdk-minimal` is the one shipped
-  # template without `dsh-base`, and `llm-pi-ai` is a dsh-base row, so its
-  # warning is expected and pinned here EXACTLY: a second warning line, or a
-  # different one, is a real regression. --dump-config composes without serving.
-  local composed dump_rc dump_err dump_out warn_n route_n prof expect_route
-  local sdk_minimal_warning='patch: entry "llm-pi-ai" not found'
+  # unmatched-row warning on every boot. The layer carries TWO such rows:
+  # `llm-pi-ai` decides what the OpenRouter provider can reach, and
+  # `agent-default-model` decides what a freshly created agent starts on. Both
+  # are dsh-base rows, and both must land exactly once on each of the five
+  # profiles that compose dsh-base - a route nobody selects is the failure this
+  # gate exists for, and it is invisible to every static check.
+  #
+  # `sdk-minimal` is the one shipped template without `dsh-base`, so it matches
+  # neither row and its TWO warnings are expected and pinned here EXACTLY: a
+  # third line, a missing one, or different text is a real regression.
+  # --dump-config composes without serving.
+  local composed dump_rc dump_err dump_out warn_n route_n default_n prof
+  local expect_route route_hits default_hits
+  local sdk_minimal_route_warning='patch: entry "llm-pi-ai" not found'
+  local sdk_minimal_default_warning='patch: entry "agent-default-model" not found'
   dump_out=$(mktemp "${TMPDIR:-/tmp}/dsh-dump.XXXXXX")
   for prof in dsh-tui web headless acp sdk sdk-minimal; do
     expect_route=1
@@ -745,27 +754,38 @@ process_dsh() {
       summary "dsh FAIL profile $prof carries $route_n OpenRouter route(s), expected $expect_route"
       issues=1
     fi
+    # The four-space indent is the `agent-default-model` config, not the
+    # route's own model list (which sits six levels deeper under `providers:`),
+    # so this counts the SELECTION and the line above counts the route.
+    default_n=$(printf '%s\n' "$composed" |
+      grep -c "^    model: '@preset/deepseek-v41-flash-us-zdr'$" || true)
+    if [ "$default_n" -ne "$expect_route" ]; then
+      summary "dsh FAIL profile $prof carries $default_n preset default(s), expected $expect_route"
+      issues=1
+    fi
     if [ "$prof" = sdk-minimal ]; then
-      # Exactly one warning line, and it must be the known one. A CHANGED single
-      # line is reported as DEGRADED with the text quoted, because that is a
-      # signal to read rather than a broken managed surface; anything more is a
-      # failure.
+      # Exactly two warning lines, and both must be the known ones. CHANGED
+      # text across the same two lines is reported as DEGRADED with the lines
+      # quoted, because that is a signal to read rather than a broken managed
+      # surface; a different COUNT is a failure.
       case $warn_n in
       0)
-        summary 'dsh FAIL sdk-minimal no longer emits its known unmatched-row warning - the pinned exception is stale'
+        summary 'dsh FAIL sdk-minimal no longer emits its known unmatched-row warnings - the pinned exception is stale'
         issues=1
         ;;
-      1)
-        case $dump_err in
-        *"$sdk_minimal_warning"*) : ;;
-        *)
-          summary "dsh DEGRADED sdk-minimal warning changed: $(printf '%s' "$dump_err" | tr '\n' ';')"
+      2)
+        # Each pinned text EXACTLY ONCE, counted separately. Two matches in
+        # bulk would also accept the same warning twice while the other one
+        # vanished, which is drift wearing the right line count.
+        route_hits=$(printf '%s\n' "$dump_err" | grep -c "$sdk_minimal_route_warning" || true)
+        default_hits=$(printf '%s\n' "$dump_err" | grep -c "$sdk_minimal_default_warning" || true)
+        if [ "$route_hits" -ne 1 ] || [ "$default_hits" -ne 1 ]; then
+          summary "dsh DEGRADED sdk-minimal warnings changed: $(printf '%s' "$dump_err" | tr '\n' ';')"
           degraded=1
-          ;;
-        esac
+        fi
         ;;
       *)
-        summary "dsh FAIL sdk-minimal emits more than the one pinned warning: $(printf '%s' "$dump_err" | tr '\n' ';')"
+        summary "dsh FAIL sdk-minimal does not emit exactly the two pinned warnings: $(printf '%s' "$dump_err" | tr '\n' ';')"
         issues=1
         ;;
       esac

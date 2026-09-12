@@ -128,6 +128,43 @@ check 'home patch carries the shared model route' grep -q '^- id: llm-pi-ai$' "$
 check 'home patch carries no roster row' \
     test "$(grep -c '^- id: .*agent-presets$' "$PATCH" || true)" = 0
 
+# Two rows, not one. `llm-pi-ai` decides what the OpenRouter provider CAN
+# reach; `agent-default-model` decides what a freshly created agent actually
+# starts on. With only the route composed, every surface still selected
+# deepseek-official/deepseek-flash and asked for DEEPSEEK_API_KEY - the route
+# was present and unreachable.
+check 'home patch carries the shared default-model override' \
+    grep -q '^- id: agent-default-model$' "$PATCH"
+equals 'the default-model override is defined exactly once' \
+    "$(grep -c '^- id: agent-default-model$' "$PATCH" || true)" "1"
+check 'the default-model override names the OpenRouter provider route' \
+    grep -q '^    provider: openrouter$' "$PATCH"
+
+# The two rows must name the SAME preset. A `models` list REPLACES the served
+# catalog, so a default naming anything else selects a model this route cannot
+# serve - and the failure surfaces only at the first request.
+route_model=$(awk '/^          - id: / { print $3; exit }' "$PATCH")
+default_model=$(awk '/^- id: agent-default-model$/ { f = 1 } f && /^    model: / { print $2; exit }' "$PATCH")
+check 'the route names a model at all' test -n "$route_model"
+equals 'the default selects exactly the model the route serves' \
+    "$default_model" "$route_model"
+equals 'the default names the pinned preset, never a bare model id' \
+    "$default_model" "'@preset/deepseek-v41-flash-us-zdr'"
+
+# `reasoningEffort` is a settings-layer field by the plugin's own design: a
+# composition value would be re-inherited after a saved selection cleared it,
+# so the config schema has no such field and the route's `reasoning: high`
+# stays the default-effort source.
+check 'the default-model override carries no reasoningEffort' \
+    test "$(grep -c '^    reasoningEffort:' "$PATCH" || true)" = 0
+
+# OpenRouter's strict preset filters on endpoint-advertised parameter names.
+# Every endpoint for V4.1 Flash advertises `max_tokens`; none advertises pi-ai's
+# inferred OpenRouter default, `max_completion_tokens`. Keep the route override
+# explicit so a pi-ai catalog change cannot silently restore the rejected name.
+check 'the route emits the endpoint-supported max_tokens spelling' \
+    grep -q '^          maxTokensField: max_tokens$' "$PATCH"
+
 # The roster id is NOT the same on both surfaces: dsh-web-app mounts it as
 # `agent-presets`, the dsh-tui bundle as its own scoped `dsh-tui-agent-presets`
 # and self-disables when an official row is present. Copying one file over the
@@ -146,6 +183,10 @@ check 'the two roster rows are not interchangeable' \
 for f in "$WEB_PATCH" "$TUI_PATCH"; do
     check "profile patch ${f##*/profiles/} carries no model route" \
         test "$(grep -c 'openrouter.ai' "$f" || true)" = 0
+    # The default belongs beside the route for the same reason: one copy, or
+    # five that drift apart.
+    check "profile patch ${f##*/profiles/} carries no default-model row" \
+        test "$(grep -c '^- id: agent-default-model$' "$f" || true)" = 0
 done
 
 # Both surfaces expose model-facing tools only from a preset, so an MCP row in
@@ -162,6 +203,170 @@ for f in "$PATCH" "$WEB_PATCH" "$TUI_PATCH"; do
     check "patch ${f##*/deepseek-harness/} is a non-empty entry list" \
         test -n "$(sed 's/#.*//' "$f" | tr -d '[:space:]')"
 done
+
+# ---------------------------------------------------------------------------
+# 3b. The composition itself, where a runtime exists to compose it
+# ---------------------------------------------------------------------------
+# Shape is not selection. The tracked layer can name the route and the default
+# perfectly and still lose - to a profile layer, to a shipped row applied
+# later, or to an id that moved between release candidates. Only a composed
+# profile answers what a fresh agent actually starts on.
+#
+# So this composes the TRACKED layer against the installed runtime and the real
+# profile trees. It runs in a throwaway home: the layer is copied in, the
+# profile trees (50-odd MB of installed node_modules) are linked and only ever
+# read, and the session and storage directories the composition creates land in
+# the temp home rather than the live ~/.dsh.
+comp_bin=${DSH_PREFIX:-$HOME/.local/share/dsh}/node_modules/.bin/dsh
+comp_profiles=${DSH_HOME:-$HOME/.dsh}/profiles
+if [ -x "$comp_bin" ] && [ -d "$comp_profiles" ]; then
+    comp_home=$TMP_ROOT/comphome
+    mkdir -p "$comp_home"
+    cp "$PATCH" "$comp_home/cordis.patch.yml"
+    ln -s "$comp_profiles" "$comp_home/profiles"
+    comp_err=$TMP_ROOT/comp.err
+
+    for prof in dsh-tui web headless acp sdk; do
+        rc=0
+        comp_out=$(DSH_HOME=$comp_home "$comp_bin" --profile "$prof" \
+            --dump-config 2>"$comp_err") || rc=$?
+        equals "profile $prof composes cleanly" "$rc" "0"
+        equals "profile $prof composes with no warning at all" \
+            "$(grep -c . "$comp_err" || true)" "0"
+        equals "profile $prof carries exactly one OpenRouter route" \
+            "$(printf '%s\n' "$comp_out" |
+                grep -c '^        baseURL: https://openrouter.ai/api/v1$' || true)" "1"
+        # THE REGRESSION THIS SECTION EXISTS FOR. Before the default-model
+        # override, this line read `deepseek-official deepseek-flash` on every
+        # one of these five profiles: the OpenRouter route composed, and no
+        # fresh agent ever selected it. Every static check above was green.
+        equals "profile $prof starts a fresh agent on the pinned preset" \
+            "$(printf '%s\n' "$comp_out" | awk '
+                /^- id: agent-default-model$/ { f = 1 }
+                f && /^    provider: / { p = $2 }
+                f && /^    model: / { print p " " $2; exit }')" \
+            "openrouter '@preset/deepseek-v41-flash-us-zdr'"
+        equals "profile $prof selects that default exactly once" \
+            "$(printf '%s\n' "$comp_out" | grep -c '^- id: agent-default-model$' || true)" "1"
+    done
+
+    # `sdk-minimal` is the pinned exception: no dsh-base, so NEITHER row has an
+    # id to target and both warn. Two lines, each exactly once.
+    rc=0
+    comp_out=$(DSH_HOME=$comp_home "$comp_bin" --profile sdk-minimal \
+        --dump-config 2>"$comp_err") || rc=$?
+    equals 'sdk-minimal composes cleanly' "$rc" "0"
+    equals 'sdk-minimal emits exactly two warning lines' "$(grep -c . "$comp_err" || true)" "2"
+    equals 'sdk-minimal names the unmatched route row once' \
+        "$(grep -c 'patch: entry "llm-pi-ai" not found' "$comp_err" || true)" "1"
+    equals 'sdk-minimal names the unmatched default-model row once' \
+        "$(grep -c 'patch: entry "agent-default-model" not found' "$comp_err" || true)" "1"
+    equals 'sdk-minimal carries no OpenRouter route' \
+        "$(printf '%s\n' "$comp_out" | grep -c 'openrouter.ai' || true)" "0"
+
+    # Config shape alone is not proof: the loader could accept maxTokensField
+    # and pi-ai could still ignore it. Aim a copied patch at a local recorder,
+    # run the REAL headless profile with a dummy key, and assert on the outbound
+    # JSON. No OpenRouter request or model inference occurs in this test.
+    wire_home=$TMP_ROOT/wire-home
+    wire_capture=$TMP_ROOT/wire-request.json
+    wire_port_file=$TMP_ROOT/wire-port
+    wire_recorder=$TMP_ROOT/wire-recorder.mjs
+    wire_out=$TMP_ROOT/wire.out
+    wire_err=$TMP_ROOT/wire.err
+    mkdir -p "$wire_home"
+    cp "$PATCH" "$wire_home/cordis.patch.yml"
+    ln -s "$comp_profiles" "$wire_home/profiles"
+    cat >"$wire_recorder" <<'RECORDER'
+import fs from 'node:fs'
+import http from 'node:http'
+
+const [capturePath, portPath] = process.argv.slice(2)
+const server = http.createServer((request, response) => {
+  let raw = ''
+  request.setEncoding('utf8')
+  request.on('data', (chunk) => { raw += chunk })
+  request.on('end', () => {
+    const body = JSON.parse(raw)
+    fs.writeFileSync(capturePath, JSON.stringify(body))
+    response.writeHead(200, { 'content-type': 'text/event-stream' })
+    const common = {
+      id: 'chatcmpl-loopback',
+      object: 'chat.completion.chunk',
+      created: 0,
+      model: body.model,
+    }
+    response.write(`data: ${JSON.stringify({
+      ...common,
+      choices: [{
+        index: 0,
+        delta: { role: 'assistant', content: 'loopback-ok' },
+        finish_reason: null,
+      }],
+    })}\n\n`)
+    response.write(`data: ${JSON.stringify({
+      ...common,
+      choices: [{ index: 0, delta: {}, finish_reason: 'stop' }],
+      usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+    })}\n\n`)
+    response.end('data: [DONE]\n\n')
+    clearTimeout(deadline)
+    setTimeout(() => server.close(), 25)
+  })
+})
+server.listen(0, '127.0.0.1', () => {
+  fs.writeFileSync(portPath, String(server.address().port))
+})
+const deadline = setTimeout(() => server.close(() => { process.exitCode = 124 }), 10000)
+RECORDER
+
+    node "$wire_recorder" "$wire_capture" "$wire_port_file" &
+    wire_recorder_pid=$!
+    wire_wait=0
+    while [ ! -s "$wire_port_file" ] && [ "$wire_wait" -lt 200 ]; do
+        sleep 0.025
+        wire_wait=$((wire_wait + 1))
+    done
+    if [ ! -s "$wire_port_file" ]; then
+        bad 'the loopback recorder starts'
+        kill "$wire_recorder_pid" 2>/dev/null || true
+        wait "$wire_recorder_pid" 2>/dev/null || true
+    else
+        wire_port=$(cat "$wire_port_file")
+        sed "s#baseURL: https://openrouter.ai/api/v1#baseURL: http://127.0.0.1:$wire_port/v1#" \
+            "$PATCH" >"$wire_home/cordis.patch.yml"
+        rc=0
+        DSH_HOME=$wire_home OPENROUTER_API_KEY=dummy-loopback-key \
+            "$comp_bin" --profile headless 'return the word loopback-ok' \
+            >"$wire_out" 2>"$wire_err" || rc=$?
+        equals 'the real headless profile completes against loopback' "$rc" "0"
+        if [ -s "$wire_capture" ]; then
+            wire_fields=$(node -e '
+              const fs = require("node:fs")
+              const body = JSON.parse(fs.readFileSync(process.argv[1], "utf8"))
+              const present = (key) => Object.hasOwn(body, key) ? "present" : "missing"
+              process.stdout.write([
+                `model=${body.model}`,
+                `max_tokens=${present("max_tokens")}`,
+                `max_completion_tokens=${present("max_completion_tokens")}`,
+              ].join(" "))
+            ' "$wire_capture")
+            equals 'headless emits the supported token-limit parameter on the wire' \
+                "$wire_fields" \
+                "model=@preset/deepseek-v41-flash-us-zdr max_tokens=present max_completion_tokens=missing"
+        else
+            bad 'the real headless profile reaches the loopback recorder'
+        fi
+        kill "$wire_recorder_pid" 2>/dev/null || true
+        wait "$wire_recorder_pid" 2>/dev/null || true
+    fi
+
+    # The link into the live profile trees has done its job; drop it here
+    # rather than leaving a 50MB target reachable through the temp tree.
+    rm -f "$comp_home/profiles"
+else
+    ok 'composition cases skipped (runtime or profile trees not provisioned)'
+fi
 
 # ---------------------------------------------------------------------------
 # 4. The managed preset carries exactly the four servers, shaped correctly
@@ -447,6 +652,236 @@ check 'the helper tracks no executable of its own' \
     test -z "$(find "$PNPM" -type f -perm -u+x -print 2>/dev/null | head -n 1)"
 check 'the pnpm shim is generated by the installer' \
     grep -q 'node_modules/pnpm/bin/pnpm.mjs' "$ROOT/install.conf.yaml"
+
+# ---------------------------------------------------------------------------
+# 5e. The credential adapter: the OpenCode key, this process, and nothing else
+# ---------------------------------------------------------------------------
+# The composed route resolves `apiKeyEnv: OPENROUTER_API_KEY`, and the
+# credentials plugin reads the launching environment before anything else. The
+# wrapper fills that variable from the OpenRouter key the OpenCode auth store
+# already holds, so this machine keeps one copy of the secret instead of two.
+#
+# Every case runs against an isolated fake home, a fixture store and a stub
+# launcher that echoes what it received. The real store is never read: the
+# fixture path is handed over through OPENCODE_AUTH_FILE.
+#
+# Cleared once, deliberately: the case below that must see NO ambient key is
+# the default, and a key exported into the test runner's own environment would
+# silently make every one of them pass for the wrong reason.
+unset OPENROUTER_API_KEY
+
+cred_prefix=$TMP_ROOT/credprefix
+cred_home=$TMP_ROOT/credhome
+AUTH=$TMP_ROOT/opencode-auth.json
+mkdir -p "$cred_prefix/node_modules/.bin" "$cred_home/.dsh"
+cat >"$cred_prefix/node_modules/.bin/dsh" <<'CREDSTUB'
+#!/bin/sh
+# Reports the credential as the exec'd launcher sees it, and its own argv, so
+# one line proves both halves: present in the ENVIRONMENT, absent from argv.
+printf 'key=%s argv=%s\n' "${OPENROUTER_API_KEY:-UNSET}" "$*"
+CREDSTUB
+chmod +x "$cred_prefix/node_modules/.bin/dsh"
+
+cred() { # cred -> the stub's line, with no ambient credential
+    DSH_PREFIX=$cred_prefix HOME=$cred_home OPENCODE_AUTH_FILE=$AUTH \
+        sh "$WRAPPER" --version
+}
+cred_key() { # cred_key -> just the credential the child saw
+    cred | sed 's/^key=//; s/ argv=.*//'
+}
+
+STORE_KEY=sk-or-v1-fixture-store-key
+ENV_KEY=sk-or-v1-fixture-env-key
+
+# The shape the store actually has, verified against the installed OpenCode
+# auth file: a per-provider record with `type` and, for an API credential, a
+# `key` string.
+printf '%s\n' '{"openrouter":{"type":"api","key":"'"$STORE_KEY"'"}}' >"$AUTH"
+equals 'an API record in the store supplies the child' "$(cred_key)" "$STORE_KEY"
+
+# An explicit export is a deliberate choice of ACCOUNT, and that account is the
+# one billed. The store never overrides it.
+equals 'an exported key wins over the store' \
+    "$(OPENROUTER_API_KEY=$ENV_KEY DSH_PREFIX=$cred_prefix HOME=$cred_home \
+        OPENCODE_AUTH_FILE=$AUTH sh "$WRAPPER" --version | sed 's/^key=//; s/ argv=.*//')" \
+    "$ENV_KEY"
+# Exported-but-empty is not a choice of account; it is an unset variable with
+# extra steps, so the store still answers.
+equals 'an exported but empty key falls back to the store' \
+    "$(OPENROUTER_API_KEY='' DSH_PREFIX=$cred_prefix HOME=$cred_home \
+        OPENCODE_AUTH_FILE=$AUTH sh "$WRAPPER" --version | sed 's/^key=//; s/ argv=.*//')" \
+    "$STORE_KEY"
+
+# Surrounding whitespace is the store's, not the credential's.
+printf '%s\n' '{"openrouter":{"type":"api","key":"  '"$STORE_KEY"'  "}}' >"$AUTH"
+equals 'a padded key is trimmed, not forwarded with its padding' \
+    "$(cred_key)" "$STORE_KEY"
+
+# Every shape that is not an API credential leaves the variable UNSET, so DSH
+# reports its own MISSING_CREDENTIAL instead of the wrapper inventing an error
+# about a file the user never configured. A wrapper that guessed here would
+# hand the gateway a refresh token and call the result a credential problem.
+for case in \
+    'oauth record:{"openrouter":{"type":"oauth","access":"'"$STORE_KEY"'","refresh":"r"}}' \
+    'empty key:{"openrouter":{"type":"api","key":""}}' \
+    'whitespace-only key:{"openrouter":{"type":"api","key":"   "}}' \
+    'non-string key:{"openrouter":{"type":"api","key":12345}}' \
+    'scalar record:{"openrouter":"just-a-string"}' \
+    'null record:{"openrouter":null}' \
+    'array document:[{"openrouter":{"type":"api","key":"x"}}]' \
+    'no openrouter record:{"github-copilot":{"type":"oauth","access":"a"}}'; do
+    lbl=${case%%:*}
+    printf '%s\n' "${case#*:}" >"$AUTH"
+    equals "a $lbl leaves the credential unset" "$(cred_key)" "UNSET"
+done
+
+printf 'not json at all {\n' >"$AUTH"
+equals 'a malformed store leaves the credential unset' "$(cred_key)" "UNSET"
+rc=0
+cred >/dev/null 2>&1 || rc=$?
+equals 'a malformed store does not fail the launch' "$rc" "0"
+
+: >"$AUTH"
+equals 'an empty store file leaves the credential unset' "$(cred_key)" "UNSET"
+rm -f "$AUTH"
+equals 'a missing store leaves the credential unset' "$(cred_key)" "UNSET"
+rc=0
+cred >/dev/null 2>&1 || rc=$?
+equals 'a missing store does not fail the launch' "$rc" "0"
+
+# A directory where the store belongs is neither readable JSON nor a crash.
+mkdir -p "$AUTH"
+equals 'a directory where the store belongs leaves the credential unset' \
+    "$(cred_key)" "UNSET"
+rmdir "$AUTH"
+
+# --- the key reaches the child and nothing else ----------------------------
+printf '%s\n' '{"openrouter":{"type":"api","key":"'"$STORE_KEY"'"}}' >"$AUTH"
+
+# argv is world-readable in `ps`, so the credential must never become a word of
+# it - not the launcher's, and not the wrapper's own reader's.
+check 'the credential never appears in the launched argv' \
+    test -z "$(cred | sed 's/^.* argv=//' | awk -v k="$STORE_KEY" 'index($0, k)')"
+check 'the wrapper hands its reader a path, never the credential' \
+    grep -q 'node -e .* "$opencode_auth"' "$WRAPPER"
+
+# The wrapper itself says nothing. A silent stub makes the wrapper the only
+# possible author of any remaining output.
+cat >"$cred_prefix/node_modules/.bin/dsh" <<'SILENTSTUB'
+#!/bin/sh
+exit 0
+SILENTSTUB
+chmod +x "$cred_prefix/node_modules/.bin/dsh"
+quiet=$(DSH_PREFIX=$cred_prefix HOME=$cred_home OPENCODE_AUTH_FILE=$AUTH \
+    sh "$WRAPPER" --version 2>&1)
+equals 'the wrapper prints nothing at all while adapting a credential' "$quiet" ""
+
+# Restore the echoing stub, then prove nothing was persisted. DSH_HOME defaults
+# to $HOME/.dsh here, which is the one directory a careless implementation
+# would cache a key into.
+cat >"$cred_prefix/node_modules/.bin/dsh" <<'CREDSTUB2'
+#!/bin/sh
+printf 'key=%s argv=%s\n' "${OPENROUTER_API_KEY:-UNSET}" "$*"
+CREDSTUB2
+chmod +x "$cred_prefix/node_modules/.bin/dsh"
+cred >/dev/null 2>&1
+check 'the credential is never written under $DSH_HOME' \
+    test -z "$(grep -rl "$STORE_KEY" "$cred_home" 2>/dev/null | head -n 1)"
+check 'the adapter leaves no file behind at all' \
+    test -z "$(find "$cred_home/.dsh" -type f -print 2>/dev/null | head -n 1)"
+
+# The adapter must not disturb the dispatch contract it sits behind.
+equals 'the adapter leaves the dispatch contract intact' \
+    "$(DSH_PREFIX=$cred_prefix HOME=$cred_home OPENCODE_AUTH_FILE=$AUTH \
+        sh "$WRAPPER" tui --resume abc | sed 's/^key=[^ ]* //')" \
+    "argv=--profile dsh-tui --resume abc"
+
+# --- the store path is configurable, and defaults where OpenCode puts it ---
+check 'the wrapper defaults to the documented OpenCode store path' \
+    grep -q 'OPENCODE_AUTH_FILE:-\$HOME/\.local/share/opencode/auth\.json' "$WRAPPER"
+mkdir -p "$cred_home/.local/share/opencode"
+printf '%s\n' '{"openrouter":{"type":"api","key":"'"$STORE_KEY"'"}}' \
+    >"$cred_home/.local/share/opencode/auth.json"
+equals 'with no override the wrapper reads the default store path' \
+    "$(DSH_PREFIX=$cred_prefix HOME=$cred_home sh "$WRAPPER" --version |
+        sed 's/^key=//; s/ argv=.*//')" \
+    "$STORE_KEY"
+rm -rf "$cred_home/.local"
+
+# --- the harness scrubs the credential back out of every tool child --------
+# Three installed READMEs describe ONE scrub, applied at the subprocess seam:
+#   @deepseek-ai/dsh-subprocess    "Children never inherit the harness's
+#                                   ambient secrets"
+#   @deepseek-ai/dsh-mcp-client    "ambient names matching
+#                                   /KEY|PASSWORD|SECRET|TOKEN/i ... are dropped"
+#   @deepseek-ai/dsh-bash-local    "the subprocess service scrubs ambient
+#                                   credentials ... independently"
+# (@deepseek-ai/dsh-terminal-bash says the same for terminal sessions.)
+# Reading the prose is not the test: the case below composes the REAL bash
+# tool over the REAL subprocess provider and reads the child's environment.
+# `RUNTIME` and `real_node` belong to later sections; this one resolves its own
+# so the ordering of the file is not load-bearing.
+cred_runtime=${DSH_PREFIX:-$HOME/.local/share/dsh}
+cred_node=$(command -v node || true)
+SCRUB_R=$cred_runtime/node_modules/@deepseek-ai
+for pkg_doc in dsh-subprocess dsh-mcp-client dsh-bash-local dsh-terminal-bash; do
+    if [ -f "$SCRUB_R/$pkg_doc/README.md" ]; then
+        check "the installed $pkg_doc README documents the credential scrub" \
+            grep -qi 'scrub' "$SCRUB_R/$pkg_doc/README.md"
+    else
+        ok "$pkg_doc README check skipped (runtime not provisioned)"
+    fi
+done
+if [ -f "$SCRUB_R/dsh-mcp-client/README.md" ]; then
+    check 'the MCP README names the exact scrubbed name class' \
+        grep -q 'KEY|PASSWORD|SECRET|TOKEN' "$SCRUB_R/dsh-mcp-client/README.md"
+fi
+
+if [ -n "$cred_node" ] && [ -d "$SCRUB_R/dsh-bash-local" ] &&
+    [ -d "$SCRUB_R/dsh-subprocess-local" ]; then
+    canary=$TMP_ROOT/bash-tool-canary.mjs
+    cat >"$canary" <<'CANARY'
+// The composed bash tool, not a stand-in: the local subprocess provider under
+// the bash executor, the pair every profile composes. Proves a credential in
+// the LAUNCHING environment never reaches a tool child.
+import { createRequire } from 'node:module'
+import { pathToFileURL } from 'node:url'
+// The dummy the caller exports as OPENROUTER_API_KEY. Held here rather than
+// read from a second variable: that variable would itself survive the scrub
+// and report as a leak that never happened.
+const SENTINEL = 'sk-or-v1-0000canary0000'
+const require = createRequire(process.argv[2] + '/package.json')
+const load = async (spec) => (await import(pathToFileURL(require.resolve(spec)).href)).default
+const { Context } = await import(pathToFileURL(require.resolve('@deepseek-ai/cordis')).href)
+const ctx = new Context()
+ctx.plugin(await load('@deepseek-ai/dsh-subprocess-local'))
+ctx.plugin(await load('@deepseek-ai/dsh-bash-local'), { cwd: process.cwd() })
+await ctx.start?.()
+// Plugins mount asynchronously; wait for the service rather than sleeping.
+let shell
+for (let i = 0; i < 200 && shell?.run === undefined; i++) {
+  shell = ctx.get('shell')
+  if (shell?.run === undefined) await new Promise((r) => setTimeout(r, 25))
+}
+if (shell?.run === undefined) throw new Error('bash-local never registered a shell service')
+const out = await shell.run(shell.resolve({ command: 'env', timeoutMs: 20000 }))
+const text = out.stdout?.text ?? String(out.stdout ?? '')
+process.stdout.write([
+  'value=' + (text.includes(SENTINEL) ? 'LEAKED' : 'absent'),
+  'name=' + (/^OPENROUTER_API_KEY=/m.test(text) ? 'LEAKED' : 'absent'),
+  'harmless=' + (/^CANARY_HARMLESS=kept$/m.test(text) ? 'kept' : 'lost'),
+].join(' '))
+await ctx.stop?.()
+CANARY
+    # CANARY_HARMLESS carries no DSH_ prefix on purpose: ambient DSH_* names
+    # are scrubbed too, so a DSH_-prefixed control would prove nothing.
+    scrubbed=$(OPENROUTER_API_KEY=sk-or-v1-0000canary0000 CANARY_HARMLESS=kept \
+        "$cred_node" "$canary" "$cred_runtime" 2>/dev/null || true)
+    equals 'a composed bash tool child sees neither the name nor the value' \
+        "$scrubbed" "value=absent name=absent harmless=kept"
+else
+    ok 'composed bash-tool scrub case skipped (runtime not provisioned)'
+fi
 
 # ---------------------------------------------------------------------------
 # 6. Install ordering, which is the part that silently breaks
@@ -835,18 +1270,31 @@ if [ "\$dump" -eq 0 ]; then
     exit 0
 fi
 if [ "\$profile" = sdk-minimal ]; then
-    # FAKE_SDK_WARN lets a test choose which of the four shapes the composition
-    # gate has to tell apart: the pinned line, a changed one, two of them, none.
+    # FAKE_SDK_WARN lets a test choose which shape the composition gate has to
+    # tell apart. TWO pinned lines are the expected state now - sdk-minimal
+    # matches neither the route row nor the default-model row - so the gate has
+    # to separate: both pinned, both present but one reworded, a third line, a
+    # missing one, and silence.
     case \${FAKE_SDK_WARN:-pinned} in
     pinned)
         printf 'dsh: [%s] patch: entry "llm-pi-ai" not found\n' "\$HOME/.dsh/cordis.patch.yml" >&2
+        printf 'dsh: [%s] patch: entry "agent-default-model" not found\n' "\$HOME/.dsh/cordis.patch.yml" >&2
         ;;
     changed)
         printf 'dsh: [%s] patch: entry "llm-pi-ai" skipped\n' "\$HOME/.dsh/cordis.patch.yml" >&2
+        printf 'dsh: [%s] patch: entry "agent-default-model" not found\n' "\$HOME/.dsh/cordis.patch.yml" >&2
         ;;
-    double)
+    repeated)
         printf 'dsh: [%s] patch: entry "llm-pi-ai" not found\n' "\$HOME/.dsh/cordis.patch.yml" >&2
+        printf 'dsh: [%s] patch: entry "llm-pi-ai" not found\n' "\$HOME/.dsh/cordis.patch.yml" >&2
+        ;;
+    triple)
+        printf 'dsh: [%s] patch: entry "llm-pi-ai" not found\n' "\$HOME/.dsh/cordis.patch.yml" >&2
+        printf 'dsh: [%s] patch: entry "agent-default-model" not found\n' "\$HOME/.dsh/cordis.patch.yml" >&2
         printf 'dsh: [%s] patch: entry "something-else" not found\n' "\$HOME/.dsh/cordis.patch.yml" >&2
+        ;;
+    single)
+        printf 'dsh: [%s] patch: entry "llm-pi-ai" not found\n' "\$HOME/.dsh/cordis.patch.yml" >&2
         ;;
     none) ;;
     esac
@@ -856,6 +1304,30 @@ fi
 printf -- '- id: llm-pi-ai\n'
 printf '  config:\n    providers:\n      openrouter:\n'
 printf '        baseURL: https://openrouter.ai/api/v1\n'
+# The default selection is a SEPARATE row from the route, and the gate counts
+# it separately. FAKE_DEFAULT drops or duplicates it so the count assertion is
+# exercised rather than assumed.
+case \${FAKE_DEFAULT:-one} in
+one)
+    printf -- '- id: agent-default-model\n'
+    printf '  config:\n    provider: openrouter\n'
+    printf "    model: '@preset/deepseek-v41-flash-us-zdr'\n"
+    ;;
+double)
+    printf -- '- id: agent-default-model\n'
+    printf '  config:\n    provider: openrouter\n'
+    printf "    model: '@preset/deepseek-v41-flash-us-zdr'\n"
+    printf -- '- id: agent-default-model\n'
+    printf '  config:\n    provider: openrouter\n'
+    printf "    model: '@preset/deepseek-v41-flash-us-zdr'\n"
+    ;;
+missing) ;;
+unrouted)
+    printf -- '- id: agent-default-model\n'
+    printf '  config:\n    provider: deepseek-official\n'
+    printf '    model: deepseek-flash\n'
+    ;;
+esac
 exit 0
 STUBDSH
     chmod +x "$up_prefix/node_modules/.bin/dsh"
@@ -1077,19 +1549,20 @@ mcp open-design OK 22 tool(s) in 1ms'
     equals 'the restored installed TUI passes again' "$rc" "0"
 
     # --- the pinned sdk-minimal exception, and its DEGRADED path -----------
-    # One unmatched-row warning on sdk-minimal is expected and must stay
-    # invisible. A CHANGED single line is a signal to read, not a broken
-    # surface: exit 0, but never an OK line over it.
-    check 'the pinned sdk-minimal warning is not itself reported' \
+    # TWO unmatched-row warnings on sdk-minimal are expected - it matches
+    # neither the route row nor the default-model row - and both must stay
+    # invisible. CHANGED text across the same two lines is a signal to read,
+    # not a broken surface: exit 0, but never an OK line over it.
+    check 'the pinned sdk-minimal warnings are not themselves reported' \
         test -z "$(printf '%s' "$out" | awk '/sdk-minimal/')"
 
     FAKE_SDK_WARN=changed
     export FAKE_SDK_WARN
     rc=0
     out=$(run_updater "$all_ok" 0) || rc=$?
-    equals 'a changed single sdk-minimal warning stays nonfatal' "$rc" "0"
-    check 'the changed sdk-minimal warning is reported as degraded' \
-        test -n "$(printf '%s' "$out" | awk '/^dsh DEGRADED sdk-minimal warning changed/')"
+    equals 'changed text across the same two warnings stays nonfatal' "$rc" "0"
+    check 'the changed sdk-minimal warnings are reported as degraded' \
+        test -n "$(printf '%s' "$out" | awk '/^dsh DEGRADED sdk-minimal warnings changed/')"
     check 'the changed warning text is quoted so it can be read' \
         test -n "$(printf '%s' "$out" | awk 'index($0, "skipped")')"
     check 'a degraded sdk-minimal never also prints OK' \
@@ -1097,27 +1570,85 @@ mcp open-design OK 22 tool(s) in 1ms'
     check 'a degraded run still ends in a single verdict line' \
         test -n "$(printf '%s' "$out" | awk '/^dsh DEGRADED see the dsh lines above/')"
 
-    # A SECOND warning line is a failure, not a signal.
-    FAKE_SDK_WARN=double
+    # Two lines of the RIGHT COUNT but the wrong composition: the same warning
+    # twice is not the pinned pair, and a gate that counted matches in bulk
+    # would have called this healthy.
+    FAKE_SDK_WARN=repeated
     rc=0
     out=$(run_updater "$all_ok" 0) || rc=$?
-    check 'a second sdk-minimal warning fails the step' test "$rc" != "0"
+    equals 'one warning emitted twice stays nonfatal but is not silent' "$rc" "0"
+    check 'one warning emitted twice is reported as degraded' \
+        test -n "$(printf '%s' "$out" | awk '/^dsh DEGRADED sdk-minimal warnings changed/')"
+
+    # A THIRD warning line is a failure, not a signal.
+    FAKE_SDK_WARN=triple
+    rc=0
+    out=$(run_updater "$all_ok" 0) || rc=$?
+    check 'a third sdk-minimal warning fails the step' test "$rc" != "0"
     check 'the extra sdk-minimal warning is named' \
-        test -n "$(printf '%s' "$out" | awk '/^dsh FAIL sdk-minimal emits more than the one pinned warning/')"
+        test -n "$(printf '%s' "$out" | awk '/^dsh FAIL sdk-minimal does not emit exactly the two pinned warnings/')"
+
+    # So is a MISSING one: half the exception is not the exception.
+    FAKE_SDK_WARN=single
+    rc=0
+    out=$(run_updater "$all_ok" 0) || rc=$?
+    check 'only one of the two sdk-minimal warnings fails the step' test "$rc" != "0"
+    check 'the missing sdk-minimal warning is named' \
+        test -n "$(printf '%s' "$out" | awk '/^dsh FAIL sdk-minimal does not emit exactly the two pinned warnings/')"
 
     # No warning at all means the pinned exception has gone stale.
     FAKE_SDK_WARN=none
     rc=0
     out=$(run_updater "$all_ok" 0) || rc=$?
-    check 'a vanished sdk-minimal warning fails the step' test "$rc" != "0"
+    check 'vanished sdk-minimal warnings fail the step' test "$rc" != "0"
     check 'the stale pinned exception is named' \
-        test -n "$(printf '%s' "$out" | awk '/^dsh FAIL sdk-minimal no longer emits its known unmatched-row warning/')"
+        test -n "$(printf '%s' "$out" | awk '/^dsh FAIL sdk-minimal no longer emits its known unmatched-row warnings/')"
 
     FAKE_SDK_WARN=pinned
     rc=0
     out=$(run_updater "$all_ok" 0) || rc=$?
-    equals 'the pinned sdk-minimal warning passes again' "$rc" "0"
+    equals 'the pinned sdk-minimal warnings pass again' "$rc" "0"
     unset FAKE_SDK_WARN
+
+    # --- the default selection is counted, not assumed ---------------------
+    # The bug this whole row exists for was a composed route nobody selected:
+    # every profile carried the OpenRouter provider and every fresh agent still
+    # started on deepseek-official. A gate that counted only the route was
+    # green throughout, so the count below is the one that would have caught it.
+    export FAKE_DEFAULT
+    FAKE_DEFAULT=missing
+    rc=0
+    out=$(run_updater "$all_ok" 0) || rc=$?
+    check 'a profile composing the route but no preset default fails the step' \
+        test "$rc" != "0"
+    check 'the missing preset default is named with its count' \
+        test -n "$(printf '%s' "$out" | awk '/^dsh FAIL profile dsh-tui carries 0 preset default\(s\), expected 1/')"
+    check 'a missing preset default never prints OK' \
+        test -z "$(printf '%s' "$out" | awk '/^dsh OK /')"
+
+    # A default pointing somewhere else is exactly the RED state, and it must
+    # read as a missing preset default rather than as a healthy profile.
+    FAKE_DEFAULT=unrouted
+    rc=0
+    out=$(run_updater "$all_ok" 0) || rc=$?
+    check 'a default selecting the vendor API fails the step' test "$rc" != "0"
+    check 'the unrouted default is named' \
+        test -n "$(printf '%s' "$out" | awk '/^dsh FAIL profile dsh-tui carries 0 preset default\(s\), expected 1/')"
+
+    # Two copies is drift in the other direction: a duplicated row means the
+    # home layer and a profile layer both own the default.
+    FAKE_DEFAULT=double
+    rc=0
+    out=$(run_updater "$all_ok" 0) || rc=$?
+    check 'a duplicated preset default fails the step' test "$rc" != "0"
+    check 'the duplicated preset default is named with its count' \
+        test -n "$(printf '%s' "$out" | awk '/^dsh FAIL profile dsh-tui carries 2 preset default\(s\), expected 1/')"
+
+    FAKE_DEFAULT=one
+    rc=0
+    out=$(run_updater "$all_ok" 0) || rc=$?
+    equals 'the single preset default passes again' "$rc" "0"
+    unset FAKE_DEFAULT
 
     # The plane gate, on both prefixes it protects.
     mkdir -p "$up_home/.dsh/profiles/dsh-tui/node_modules/@deepseek-ai/dsh-llm"

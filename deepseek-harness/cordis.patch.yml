@@ -29,14 +29,15 @@
 # composition, and `llm-pi-ai` is a dsh-base row.
 #
 # ONE shipped template is not covered: `sdk-minimal` is the only DSH template
-# that composes without `dsh-base`, so it has no `llm-pi-ai` to patch and logs
-# exactly one `patch: entry "llm-pi-ai" not found` line on every boot. That
-# warning is a pinned, asserted exception rather than a defect - a profile that
-# builds its own plane has no model route to configure, and duplicating this row
-# into the other profiles' layers to avoid one warning would trade a harmless
-# log line for five copies to keep in sync. tests/test-deepseek-harness.sh pins
-# the exact text, and scripts/harness-update.sh fails on a second line or a
-# missing one.
+# that composes without `dsh-base`, so it has neither `llm-pi-ai` nor
+# `agent-default-model` to patch and logs exactly two
+# `patch: entry "<id>" not found` lines on every boot, one per id below. Those
+# warnings are a pinned, asserted exception rather than a defect - a profile
+# that builds its own plane has no model route and no agent entry point to
+# configure, and duplicating these rows into the other profiles' layers to
+# avoid two log lines would trade them for ten copies to keep in sync.
+# tests/test-deepseek-harness.sh pins the exact texts, and
+# scripts/harness-update.sh fails on a third line or a missing one.
 #
 # Tracked deliberately. `apiKeyEnv` is a credential REFERENCE, not a secret —
 # the catalog defines it as the "Credential reference (environment-variable
@@ -65,6 +66,11 @@
           thinkingFormat: openrouter
           supportsDeveloperRole: false
           requiresReasoningContentOnAssistantMessages: true
+          # pi-ai otherwise infers `max_completion_tokens` for OpenRouter.
+          # V4.1 Flash endpoints advertise only `max_tokens`, so the preset's
+          # `require_parameters:true` rejects every allowed provider before
+          # inference unless this wire spelling is explicit.
+          maxTokensField: max_tokens
         models:
           # The OpenRouter PRESET id, not the bare model id. The preset is what
           # enforces provider order wafer -> modal -> fireworks with
@@ -108,3 +114,33 @@
 # Sampling is deliberately NOT set: temperature 1.0 / top_p 0.95 are the
 # vendor's eval-harness values, and OpenRouter plus DSH own the transport
 # defaults.
+
+# The pilot's DEFAULT model selection, beside the route that serves it.
+#
+# `llm-pi-ai` decides what the OpenRouter provider can reach; it does not decide
+# what a freshly created agent starts on. That is `agent-default-model`, a
+# separate dsh-base row whose shipped config is `deepseek-official` /
+# `deepseek-flash`. Without this override a fresh agent selects the vendor's
+# direct API, asks for DEEPSEEK_API_KEY, and never touches the composed
+# OpenRouter route at all - which is exactly the failure this row fixes.
+#
+# Home plane, once, like the route: the plugin's own README calls the default
+# "the transport-independent default for Agents created by entry points", so one
+# row covers TUI, Web, headless, ACP and the SDK entry points alike.
+#
+# `reasoningEffort` is deliberately ABSENT: the plugin accepts only `provider`
+# and `model` (its README: "`reasoningEffort` is deliberately not a config
+# field: it belongs to the settings layer, so a complete saved selection can
+# clear an effort when the next selected model has none"). The route above
+# remains the default-effort source with `reasoning: high`.
+#
+# PRECEDENCE, so a surprise later is a lookup rather than a bisect. This row is
+# only the BASE. A saved selection in `~/.dsh/settings.yaml` under
+# `agent-default-model:` becomes the live source for later agents and wins over
+# composition; the terminal surface additionally records a `/model` pick in
+# `~/.dsh-tui/model.json`, which beats this default for NEW TUI sessions.
+# Sessions already recorded keep the route they were created with.
+- id: agent-default-model
+  config:
+    provider: openrouter
+    model: '@preset/deepseek-v41-flash-us-zdr'
