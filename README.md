@@ -55,6 +55,7 @@ The wrapper install script detects the overlay submodule and runs its Dotbot pas
 | OpenCode | `opencode/config.json` | `~/.config/opencode/config.json` |
 | Antigravity CLI (`agy`) | `antigravity/settings.json` | `~/.gemini/antigravity-cli/settings.json` |
 | OpenDesign | `open-design/compose.yaml`, `open-design/Dockerfile`, `bin/open-design` | `~/.config/open-design/compose.yaml`, `~/.config/open-design/Dockerfile`, `~/.local/bin/open-design{,-mcp}` |
+| DeepSeek Harness (`dsh`, pilot) | `deepseek-harness/` | `~/.local/bin/dsh`; the patch layers, the `dsh-tui` profile and the agent preset are managed **copies** under `~/.dsh`, not links |
 | AI skills | `skills/<name>/` | `~/.claude/skills/<name>/`, `~/.agents/skills/<name>/` |
 
 The AI contract is the one exception: it is **rendered**, not symlinked. See
@@ -78,13 +79,16 @@ writes the result as a **regular file** into every harness identity:
 ~/.claude/CLAUDE.md                                ~/.codex/AGENTS.md
 ~/.claude2/CLAUDE.md                               ~/.config/opencode/AGENTS.md
 ~/.claude-mic/CLAUDE.md                            ~/.gemini/config/plugins/dotfiles/rules/AGENTS.md
+~/.dsh/AGENTS.md
 ```
 
 `./install` runs the renderer; nothing links to `shared/AGENTS.md` any more. The
 renderer creates no identity of its own — it skips any whose directory is
 missing. `./install` is what provisions them: the public pass creates
-`~/.claude2`, the private overlay's pass creates `~/.claude-mic`. So a
-public-only clone has no `~/.claude-mic`, and the renderer simply skips it.
+`~/.claude2` and `~/.dsh`, the private overlay's pass creates `~/.claude-mic`. So
+a public-only clone has no `~/.claude-mic`, and the renderer simply skips it —
+as it does for `~/.dsh` on a machine where the DeepSeek Harness pilot has been
+rolled back.
 
 Concatenation rather than a second file, because it is the only portable
 option. Measured 2026-09-09: of the five harnesses, only Claude Code reads an
@@ -264,10 +268,44 @@ rerunning `./install` alone cannot retire an old server. Sign out in the UI
 before retiring the Vela volume, then keep or explicitly remove each named
 volume according to the data-retention choice above.
 
+## DeepSeek Harness pilot
+
+A pinned, local-only pilot of DeepSeek Harness (`dsh`), kept deliberately
+separate from the daily toolchain: OpenCode with GLM 5.3 Flash stays the
+default, and the pilot has no ae profile and no autostart.
+
+```bash
+dsh                      # interactive terminal harness
+dsh headless "run the tests"
+dsh web                  # browser surface, only when named
+```
+
+Plain `dsh` enters the managed terminal profile. `dsh web` is the browser
+surface and is never selected implicitly; every official launcher form
+(`--profile`, `plugin`, `--help`, `--version`) passes through untouched, and an
+unrecognised first token fails with usage rather than guessing a surface.
+
+The terminal surface is **community code**: the official release ships no
+first-party TUI, so `@deepseek-harness-tui/dsh-tui` is composed over the
+official runtime at an exact pinned version. It holds full agent-host authority,
+and the standing boundary is that it never points at MIC or customer code.
+
+It is a developer preview that promises breaking changes, so the release
+candidate is pinned by `deepseek-harness/package-lock.json` and
+`scripts/harness-update.sh` only ever reports on it. The four shared MCP servers
+reach it through a managed agent preset rather than a profile patch, because
+both surfaces expose model-facing tools only from a preset. The preset, the
+three patch layers, and the terminal profile are installed as copies rather than
+symlinks, so nothing the harness writes can reach back into this repo. Setup,
+why the profile installer is a separately pinned pnpm, the lifecycle-script
+policy, the copied-preset drift check, and rollback are all in
+[`deepseek-harness/README.md`](deepseek-harness/README.md).
+
 ## Automatic harness updates
 
 `scripts/harness-update.sh` updates installed Claude Code, Codex, Antigravity
-(`agy`), Grok, and OpenCode CLIs. Each tool is isolated: one failed update does
+(`agy`), Grok, and OpenCode CLIs, and reports on the pinned DeepSeek Harness
+pilot without ever upgrading it. Each tool is isolated: one failed update does
 not skip the rest. It runs daily at 06:30 local time and writes dated logs to
 `~/.local/state/harness-update/` (last 14 retained).
 
@@ -281,6 +319,9 @@ scripts/harness-update.sh --only codex
 
 # Report instruction files that drifted from the rendered contract
 scripts/harness-update.sh --only contract
+
+# Report the pinned DeepSeek Harness pilot: version, lock, preset drift, MCP
+scripts/harness-update.sh --only dsh --check
 ```
 
 `contract` is a step, not a CLI: it runs `render-contract.sh --check` and names

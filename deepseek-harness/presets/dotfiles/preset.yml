@@ -1,0 +1,7 @@
+name: dotfiles
+description: >-
+  Copy of the shipped `standard` coding agent plus the four repo-managed MCP
+  servers (Serena, Context7, Chrome DevTools, OpenDesign). Snapshot of
+  @deepseek-ai/dsh-agent-presets 0.1.5-rc.2 `standard`; refresh deliberately
+  with a DSH version bump.
+order: 0

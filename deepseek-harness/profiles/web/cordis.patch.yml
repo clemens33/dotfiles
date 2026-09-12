@@ -1,0 +1,27 @@
+# Profile patch layer for the DeepSeek Harness `web` profile.
+#
+# Installed as ~/.dsh/profiles/web/cordis.patch.yml, which is the file DSH
+# itself nominates for local edits ("Edit cordis.patch.yml, not this file" in
+# the generated ~/.dsh/profiles/web/cordis.yml). Because this IS the profile's
+# user layer, no --patch flag is needed at launch.
+#
+# SCOPE: rows that exist in THIS profile's composition and nowhere else. The
+# shared model route lives one layer up, in ../../cordis.patch.yml, which the
+# launcher applies to every profile after this one.
+
+# Make the managed `dotfiles` preset the default composition for NEW sessions.
+# Running sessions keep the preset they were composed from, and a per-user
+# settings document (`agent-presets: {default: <id>}`) still layers over this.
+#
+# Replacing `config` wholesale is safe here: `includeShippedRoot` and
+# `includeUserRoot` are declared with defaults of true, so the shipped preset
+# set and the writable ~/.dsh/.agent-presets root both survive this override.
+# The shipped root is scanned first and wins duplicate ids, which is why the
+# managed preset carries its own id rather than shadowing `standard`.
+#
+# The id is profile-specific. `dsh-web-app` mounts the roster under the plain
+# `agent-presets` id; the `dsh-tui` bundle mounts its own under the scoped
+# `dsh-tui-agent-presets` id. See profiles/dsh-tui/cordis.patch.yml.
+- id: agent-presets
+  config:
+    default: dotfiles

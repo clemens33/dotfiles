@@ -20,6 +20,18 @@
     # agy's real global customization root (~/.gemini/antigravity-cli/ is the
     # vendor state dir, not a discovery path).
     - ~/.gemini/config
+    # DeepSeek Harness pilot home. Created HERE, before the contract render,
+    # because the renderer skips any identity directory that does not exist and
+    # ~/.dsh/AGENTS.md is its seventh target. DSH fills this directory itself on
+    # first run (profiles/, storages/, .credentials.yaml); removing it is how the
+    # pilot is rolled back.
+    - ~/.dsh
+    # Scan root for locally authored agent presets. DSH does NOT create this one
+    # (only its copy-a-preset API does); it creates profiles/web and nothing
+    # else under ~/.dsh that this repo depends on. It owns no tree inside the
+    # scan root either - it just reads the subdirectories - so creating it here
+    # is safe, and required before the managed preset can be copied in.
+    - ~/.dsh/.agent-presets
 
 # Shell / editor / git / terminal links (portable: WSL + macOS)
 - link:
@@ -47,6 +59,10 @@
     ~/.config/open-design/Dockerfile: open-design/Dockerfile
     ~/.local/bin/open-design: bin/open-design
     ~/.local/bin/open-design-mcp: bin/open-design
+    # DeepSeek Harness launcher; resolves the pinned runtime prefix provisioned
+    # by the npm ci step below. Safe to link before that step runs: the wrapper
+    # reports a clear 'not installed' error instead of failing obscurely.
+    ~/.local/bin/dsh: bin/dsh
     # Karabiner (macOS only; the dir simply stays unused elsewhere). NOTE: this
     # links the importable RULE SET, not karabiner.json — Karabiner rewrites
     # karabiner.json itself on device connect, so symlinking it would fight the
@@ -291,6 +307,351 @@
 
 # Periodic harness updater. Platform checks keep launchd off Linux and skip
 # systemd user units on WSL installations without systemd.
+# --- DeepSeek Harness pilot (developer preview, local only) ----------------
+# Provision the pinned runtime, then let DSH build its own tree, then link the
+# managed files into it. The order below is binding and each step explains why.
+- shell:
+    - command: |
+        set -eu
+        prefix="$HOME/.local/share/dsh"
+        if ! command -v npm >/dev/null 2>&1; then
+          echo "dsh: npm not found - skipping the DeepSeek Harness pilot" >&2
+          exit 0
+        fi
+        mkdir -p "$prefix"
+        # COPIED, not linked. npm writes into its project directory, and a
+        # symlink here would let it write through into this repo. Same reason
+        # grok/config.toml is copied. The diff is shown so a drifted runtime
+        # copy is visible at install time rather than silently overwritten.
+        for f in .npmrc package.json package-lock.json; do
+          if ! cmp -s "deepseek-harness/$f" "$prefix/$f"; then
+            diff -u "$prefix/$f" "deepseek-harness/$f" || true
+            cp "deepseek-harness/$f" "$prefix/$f"
+          fi
+        done
+        # Fingerprint of the inputs this runtime was LAST SUCCESSFULLY built
+        # from. "inputs changed or node_modules missing" is not enough: a failed
+        # `npm ci` leaves a partial node_modules behind, and the next install
+        # would then see equal inputs plus a present directory and skip the
+        # repair forever. The stamp is cleared before the attempt and written
+        # only after it succeeds, so an interrupted or failed install always
+        # retries.
+        stamp="$prefix/.npm-ci-ok"
+        if command -v shasum >/dev/null 2>&1; then
+          want=$(cat deepseek-harness/.npmrc deepseek-harness/package.json \
+            deepseek-harness/package-lock.json | shasum -a 256 | cut -d' ' -f1)
+        else
+          want=$(cat deepseek-harness/.npmrc deepseek-harness/package.json \
+            deepseek-harness/package-lock.json | sha256sum | cut -d' ' -f1)
+        fi
+        have=$(cat "$stamp" 2>/dev/null || true)
+        # `npm ci` installs exactly the locked graph, refuses a package.json
+        # that disagrees with the lock, and never rewrites the lock. The
+        # lifecycle guard comes from the copied .npmrc, so it does not depend
+        # on this machine's ~/.npmrc; the allow/deny decisions come from the
+        # copied package.json, which is the only layer where a DENY exists.
+        if [ "$have" != "$want" ] || [ ! -d "$prefix/node_modules" ]; then
+          rm -f "$stamp"
+          (cd "$prefix" && npm ci)
+          printf '%s\n' "$want" >"$stamp"
+        fi
+      description: Installing the pinned DeepSeek Harness runtime
+      stdout: true
+      stderr: true
+    - command: |
+        set -eu
+        prefix="$HOME/.local/share/dsh-pnpm"
+        command -v npm >/dev/null 2>&1 || exit 0
+        # A SEPARATE prefix on purpose. `dsh plugin` shells out to pnpm, and a
+        # profile-local install is the only shape that keeps one @deepseek-ai
+        # plane: npm resolves the TUI's optional peers against the tree and
+        # pulls a second, older plane into the profile, while pnpm with the
+        # shipped `autoInstallPeers: false` pulls none. So pnpm is a hard
+        # prerequisite, and it is pinned here rather than added to the official
+        # runtime project, whose package/lock/lifecycle set must stay
+        # byte-identical to the evidence it was gated against.
+        mkdir -p "$prefix"
+        for f in .npmrc package.json package-lock.json; do
+          if ! cmp -s "deepseek-harness/pnpm/$f" "$prefix/$f"; then
+            diff -u "$prefix/$f" "deepseek-harness/pnpm/$f" || true
+            cp "deepseek-harness/pnpm/$f" "$prefix/$f"
+          fi
+        done
+        stamp="$prefix/.npm-ci-ok"
+        if command -v shasum >/dev/null 2>&1; then
+          want=$(cat deepseek-harness/pnpm/.npmrc deepseek-harness/pnpm/package.json \
+            deepseek-harness/pnpm/package-lock.json | shasum -a 256 | cut -d' ' -f1)
+        else
+          want=$(cat deepseek-harness/pnpm/.npmrc deepseek-harness/pnpm/package.json \
+            deepseek-harness/pnpm/package-lock.json | sha256sum | cut -d' ' -f1)
+        fi
+        have=$(cat "$stamp" 2>/dev/null || true)
+        # pnpm's own lifecycle scripts are DENIED in the tracked package.json.
+        # They exist to swap the shipped shebang-less placeholder for the native
+        # binary; pnpm's install.js documents that when scripts are blocked the
+        # placeholder stays and `bin/pnpm.mjs` runs the same native binary, which
+        # arrives as the locked optional dependency rather than a download. That
+        # is the entry point Corepack uses for the same reason, so nothing is
+        # lost by denying them.
+        if [ "$have" != "$want" ] || [ ! -d "$prefix/node_modules" ]; then
+          rm -f "$stamp"
+          (cd "$prefix" && npm ci)
+          printf '%s\n' "$want" >"$stamp"
+        fi
+        # Denying the lifecycle scripts also means npm creates no
+        # node_modules/.bin/pnpm, so this generated shim is what `dsh plugin`
+        # finds when bin/dsh puts this one directory on PATH for that single
+        # invocation. Generated rather than tracked: it carries no version or
+        # integrity of its own, it is pure indirection onto the entry point of
+        # whatever the lock resolved, and an executable in the repo that ends up
+        # on PATH is a thing to avoid when it buys nothing.
+        # Written with printf, not a heredoc: a heredoc body would have to sit
+        # at column 0 to keep the shebang there, and column 0 ends this YAML
+        # block scalar.
+        mkdir -p "$prefix/bin"
+        # Every $-expression below is the SHIM's, resolved when the shim runs,
+        # so it has to reach the file literally.
+        # shellcheck disable=SC2016
+        {
+          printf '#!/bin/sh\n'
+          printf '# Generated by ./install - see install.conf.yaml. Not tracked.\n'
+          printf '#\n'
+          printf '# bin/pnpm.mjs is the entry point pnpm documents for installs whose\n'
+          printf '# lifecycle scripts were blocked (Corepack uses the same one); it runs\n'
+          printf '# the native binary that arrived as a locked optional dependency, so the\n'
+          printf '# exact pnpm here is the one deepseek-harness/pnpm/package-lock.json\n'
+          printf '# pins and hashes.\n'
+          printf 'set -eu\n'
+          printf 'here=$(CDPATH=%s cd -- "$(dirname -- "$0")" && pwd -P)\n' "''"
+          printf 'exec node "$here/../node_modules/pnpm/bin/pnpm.mjs" "$@"\n'
+        } >"$prefix/bin/pnpm"
+        chmod +x "$prefix/bin/pnpm"
+      description: Installing the pinned pnpm the DSH profile installer needs
+      stdout: true
+      stderr: true
+    - command: |
+        set -eu
+        bin="$HOME/.local/share/dsh/node_modules/.bin/dsh"
+        [ -x "$bin" ] || exit 0
+        # First run materializes ~/.dsh/profiles/web. Copying into it before
+        # this point would create a plain directory where DSH needs its own
+        # tree. --dump-config composes the profile without serving anything.
+        DSH_HOME="$HOME/.dsh" "$bin" --profile web --dump-config >/dev/null
+        if [ ! -d "$HOME/.dsh/profiles/web" ]; then
+          echo "dsh: ~/.dsh/profiles/web was not created - refusing to write into it" >&2
+          exit 1
+        fi
+      description: Initializing the DeepSeek Harness web profile
+      stderr: true
+    - command: |
+        set -eu
+        pnpm_entry="$HOME/.local/share/dsh-pnpm/node_modules/pnpm/bin/pnpm.mjs"
+        profile="$HOME/.dsh/profiles/dsh-tui"
+        tracked=deepseek-harness/profiles/dsh-tui
+        [ -x "$HOME/.local/share/dsh/node_modules/.bin/dsh" ] || exit 0
+        if [ ! -f "$pnpm_entry" ]; then
+          echo "dsh: pinned pnpm missing - skipping the dsh-tui profile" >&2
+          exit 0
+        fi
+        # `dsh-tui` is NOT a shipped profile template, so nothing materializes
+        # it the way --dump-config materializes `web`. It is provisioned here
+        # from its three tracked install inputs and then installed from its own
+        # lock. COPIED, never linked: pnpm writes into this directory.
+        mkdir -p "$profile"
+        for f in package.json pnpm-workspace.yaml pnpm-lock.yaml; do
+          if ! cmp -s "$tracked/$f" "$profile/$f"; then
+            diff -u "$profile/$f" "$tracked/$f" || true
+            cp "$tracked/$f" "$profile/$f"
+          fi
+        done
+        stamp="$profile/.pnpm-install-ok"
+        if command -v shasum >/dev/null 2>&1; then
+          want=$(cat "$tracked/package.json" "$tracked/pnpm-workspace.yaml" \
+            "$tracked/pnpm-lock.yaml" | shasum -a 256 | cut -d' ' -f1)
+        else
+          want=$(cat "$tracked/package.json" "$tracked/pnpm-workspace.yaml" \
+            "$tracked/pnpm-lock.yaml" | sha256sum | cut -d' ' -f1)
+        fi
+        have=$(cat "$stamp" 2>/dev/null || true)
+        # --frozen-lockfile is the pnpm equivalent of `npm ci`: it installs
+        # exactly the locked graph and fails rather than rewriting the lock.
+        # `autoInstallPeers: false` from the tracked pnpm-workspace.yaml is what
+        # keeps the TUI's unsatisfiable @deepseek-ai peer ranges from pulling a
+        # second plane in here; never relax it to silence a peer warning.
+        # The pinned pnpm is reached by absolute path, so it never joins PATH.
+        if [ "$have" != "$want" ] || [ ! -d "$profile/node_modules" ]; then
+          rm -f "$stamp"
+          (cd "$profile" && node "$pnpm_entry" install --frozen-lockfile)
+          printf '%s\n' "$want" >"$stamp"
+        fi
+        # The whole point of the profile-local install. A single @deepseek-ai
+        # package here is a split singleton: two Cordis/plugin class identities
+        # in one process, double registration, and failures that look like
+        # anything but a packaging problem.
+        if [ -n "$(find "$profile/node_modules" -type d -name '@deepseek-ai' -print 2>/dev/null | head -n 1)" ]; then
+          echo "dsh: $profile/node_modules contains @deepseek-ai packages - second plane, refusing" >&2
+          exit 1
+        fi
+      description: Provisioning the managed DeepSeek Harness dsh-tui profile
+      stdout: true
+      stderr: true
+    - command: |
+        set -eu
+        profile="$HOME/.dsh/profiles/web"
+        preset="$HOME/.dsh/.agent-presets/dotfiles"
+        tracked="deepseek-harness/presets/dotfiles"
+        # The runtime prefix is where the pinned js-yaml lives; the patch-layer
+        # check below parses with the loader's own parser, not a lookalike.
+        prefix="$HOME/.local/share/dsh"
+        [ -d "$profile" ] || exit 0
+
+        # Managed COPIES, never symlinks — the same rule the npm inputs follow.
+        # A symlink here aims the harness at this working tree, so anything that
+        # writes through it (the Web UI's own edit surfaces, a future
+        # copy-a-preset call, a half-written file) lands in the repo. `cp` onto
+        # a symlink writes THROUGH it, which is why an existing link is removed
+        # rather than overwritten. Drift is shown before it is replaced, so a
+        # hand-edited runtime copy is visible at install time instead of
+        # vanishing silently.
+        #
+        # The write is atomic: a temp file in the SAME directory, then mv, so
+        # the rename is a single filesystem operation. `patchReload: live` means
+        # DSH watches these patch files and recomposes the running tree when one
+        # changes, so a plain `cp` can hand the watcher a half-written YAML
+        # document. Same-directory is what makes mv a rename rather than a
+        # copy-and-truncate.
+        install_copy() {
+          if [ -L "$2" ]; then
+            echo "dsh: replacing the symlink at $2 with a managed copy" >&2
+            rm -f "$2"
+          elif [ -e "$2" ] && [ ! -f "$2" ]; then
+            # A directory (or fifo, or device) where a file belongs. `mv` would
+            # move the temp file INSIDE a directory and report success, leaving
+            # the managed file uninstalled and the installer claiming it worked.
+            echo "dsh: $2 exists and is not a regular file - remove it and re-run ./install" >&2
+            exit 1
+          elif [ -f "$2" ] && cmp -s "$1" "$2"; then
+            # Already correct. Return WITHOUT writing: patchReload is live, so
+            # replacing an identical file still makes DSH recompose a running
+            # tree, and ./install would do that on every single run.
+            return 0
+          elif [ -f "$2" ]; then
+            diff -u "$2" "$1" || true
+          fi
+          case $2 in
+          */*) tmp="${2%/*}/.dsh-install.$$.tmp" ;;
+          *) tmp="./.dsh-install.$$.tmp" ;;
+          esac
+          cp "$1" "$tmp"
+          mv -f "$tmp" "$2"
+        }
+
+        # The model route is one file for every profile. `composeProfile` loads
+        # $DSH_HOME/cordis.patch.yml for each profile it boots and applies it
+        # after that profile's own layer, so `web`, `dsh-tui` and `headless` all
+        # get the route from here and nothing has to be kept in sync.
+        #
+        # A patch layer must PARSE as a top-level YAML sequence. Anything else
+        # is silently wrong rather than loudly broken: a comment-only or
+        # truncated file parses as null and the loader treats the layer as
+        # absent, so every profile boots unrouted with no error, and a scalar or
+        # a map would reroute or break composition instead. Text inspection
+        # cannot tell any of those apart, so parse with the loader's OWN parser
+        # and its OWN dialect before replacing a working file:
+        # cordis-plugin-include exports `entryListSchema` for exactly this, so
+        # this check accepts and rejects precisely what a boot would. Rebuilding
+        # the schema by hand would be a lookalike - the dialect is JSON_SCHEMA
+        # plus one scalar `!!js` tag, which is stricter than js-yaml's default.
+        #
+        # An empty sequence is allowed because it can only be written as the
+        # literal `[]`; that is a deliberate "no rows", not an accident.
+        #
+        # The parser comes from the installed runtime, so a machine that has no
+        # runtime yet has no parser either. That is a SKIP with a visible line,
+        # not a failure: there is no harness on such a machine to protect, the
+        # tracked files' shape is asserted offline by
+        # tests/test-deepseek-harness.sh, and failing here would make ./install
+        # depend on an install step that may have been skipped.
+        check_patch_layer() {
+          node -e '
+            const { createRequire } = require("node:module")
+            const fs = require("node:fs")
+            let yaml, schema
+            try {
+              const req = createRequire(process.argv[1] + "/package.json")
+              yaml = req("js-yaml")
+              schema = req("@deepseek-ai/cordis-plugin-include").entryListSchema
+              if (!schema) throw new Error("entryListSchema is not exported")
+            } catch {
+              console.error("dsh: no installed runtime at " + process.argv[1] + " -")
+              console.error("dsh: skipping the patch-layer parse check for " + process.argv[2])
+              process.exit(0)
+            }
+            let doc
+            try {
+              doc = yaml.load(fs.readFileSync(process.argv[2], "utf8"), { schema })
+            } catch (error) {
+              console.error("dsh: " + process.argv[2] + " is not valid YAML: " + error.message)
+              process.exit(1)
+            }
+            if (Array.isArray(doc)) process.exit(0)
+            const got = doc === null || doc === undefined ? "no entries"
+              : typeof doc === "object" ? "a map" : "a " + typeof doc
+            console.error("dsh: " + process.argv[2] + " must be a top-level list of patch entries, got " + got)
+            console.error("dsh: a deliberately empty layer must be the literal []")
+            process.exit(1)
+          ' "$prefix" "$1"
+        }
+
+        home_patch=deepseek-harness/cordis.patch.yml
+        for f in "$home_patch" deepseek-harness/profiles/web/cordis.patch.yml \
+          deepseek-harness/profiles/dsh-tui/cordis.patch.yml; do
+          check_patch_layer "$f"
+        done
+
+        install_copy "$home_patch" "$HOME/.dsh/cordis.patch.yml"
+
+        # Per-profile layers carry only what that profile's composition
+        # actually has a row for. The preset roster id differs between the two
+        # surfaces, which is why this is not one shared file.
+        install_copy deepseek-harness/profiles/web/cordis.patch.yml \
+          "$profile/cordis.patch.yml"
+
+        # The terminal profile's own layer. Its roster row carries the bundle's
+        # scoped `dsh-tui-agent-presets` id, not `agent-presets`, so the two
+        # files are not interchangeable. Provisioned by the previous step; if
+        # that skipped, there is nothing to patch.
+        if [ -d "$HOME/.dsh/profiles/dsh-tui" ]; then
+          install_copy deepseek-harness/profiles/dsh-tui/cordis.patch.yml \
+            "$HOME/.dsh/profiles/dsh-tui/cordis.patch.yml"
+        fi
+
+        if [ -L "$preset" ]; then
+          echo "dsh: replacing the symlink at $preset with a managed copy" >&2
+          rm -f "$preset"
+        fi
+        mkdir -p "$preset"
+        # The copier is deliberately flat, so say so instead of silently
+        # flattening a preset that grows a subdirectory.
+        if [ -n "$(find "$tracked" -mindepth 1 -type d -print 2>/dev/null | head -n 1)" ]; then
+          echo "dsh: $tracked has a subdirectory - this copier is flat" >&2
+          exit 1
+        fi
+        # A preset is a composition DSH scans whole, so a leftover file from an
+        # older revision is not inert: mirror it, do not merely add to it.
+        find "$tracked" -type f | while IFS= read -r src; do
+          install_copy "$src" "$preset/${src##*/}"
+        done
+        find "$preset" -type f | while IFS= read -r dst; do
+          if [ ! -f "$tracked/${dst##*/}" ]; then
+            echo "dsh: removing $dst - no longer part of the managed preset" >&2
+            rm -f "$dst"
+          fi
+        done
+      description: Installing the managed DeepSeek Harness patch and preset
+      stdout: true
+      stderr: true
+
 - create:
     - ~/.local/state/harness-update
 - link:

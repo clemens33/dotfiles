@@ -1,0 +1,110 @@
+# Home-plane patch layer for every DeepSeek Harness profile.
+#
+# Installed as ~/.dsh/cordis.patch.yml. `composeProfile` in the dsh launcher
+# loads this file for EVERY profile it boots and applies it after that
+# profile's own cordis.patch.yml, so one copy of the model route serves `web`,
+# `dsh-tui` and `headless` alike. That is why the route is not duplicated into
+# the per-profile layers: there is nothing to keep in sync and no drift check
+# to rot.
+#
+# A top-level YAML array of loader patch entries: id-targeted config overrides,
+# disables, and insert lists.
+#
+# SCOPE: rows that exist in essentially every profile's composition. A row
+# targeting an id that one profile does not carry logs
+# `patch: entry "<id>" not found` on that profile's every boot, so anything
+# profile-specific belongs in profiles/<name>/cordis.patch.yml instead. The
+# preset roster is exactly such a row: `web` carries `agent-presets`, `dsh-tui`
+# carries the bundle's scoped `dsh-tui-agent-presets`, and neither carries the
+# other's.
+#
+# SCOPE: host plane only. Model-facing rows - instructions, skills, shell and
+# filesystem tools, and the MCP clients - do NOT belong here. Both surfaces
+# disable those on the host and mount a per-session agent preset instead, so a
+# tool row here would load without ever reaching the model. Those rows live in
+# presets/dotfiles/agent.cordis.yml.
+
+# The pilot's model route. Host plane on purpose: both surfaces move tools and
+# prompt sections behind agent presets but keep the model route in the host
+# composition, and `llm-pi-ai` is a dsh-base row.
+#
+# ONE shipped template is not covered: `sdk-minimal` is the only DSH template
+# that composes without `dsh-base`, so it has no `llm-pi-ai` to patch and logs
+# exactly one `patch: entry "llm-pi-ai" not found` line on every boot. That
+# warning is a pinned, asserted exception rather than a defect - a profile that
+# builds its own plane has no model route to configure, and duplicating this row
+# into the other profiles' layers to avoid one warning would trade a harmless
+# log line for five copies to keep in sync. tests/test-deepseek-harness.sh pins
+# the exact text, and scripts/harness-update.sh fails on a second line or a
+# missing one.
+#
+# Tracked deliberately. `apiKeyEnv` is a credential REFERENCE, not a secret —
+# the catalog defines it as the "Credential reference (environment-variable
+# name) resolved per request through `ctx.credentials`" — so the string names a
+# lookup. The value it resolves to lives in ~/.dsh/.credentials.yaml, which DSH
+# creates and this repo never touches.
+#
+# Replacing `config` wholesale is safe: the base composition loads `llm-pi-ai`
+# with no config at all.
+- id: llm-pi-ai
+  config:
+    providers:
+      openrouter:
+        displayName: OpenRouter
+        # Resolved through the credentials plugin, never read from this file.
+        apiKeyEnv: OPENROUTER_API_KEY
+        api: openai-completions
+        baseURL: https://openrouter.ai/api/v1
+        # Wire behaviour for a DeepSeek model reached THROUGH OpenRouter, taken
+        # from the installed pi-ai catalog rather than guessed: every one of the
+        # 16 deepseek/* entries sets thinkingFormat `openrouter` and
+        # supportsDeveloperRole false, and the whole V4 family also sets
+        # requiresReasoningContentOnAssistantMessages. The format is the
+        # gateway's, not the vendor's direct API's.
+        compat:
+          thinkingFormat: openrouter
+          supportsDeveloperRole: false
+          requiresReasoningContentOnAssistantMessages: true
+        models:
+          # The OpenRouter PRESET id, not the bare model id. The preset is what
+          # enforces provider order wafer -> modal -> fireworks with
+          # allow_fallbacks:false, require_parameters:true and zdr:true, because
+          # the route has no field for OpenRouter's `provider` object: pi-ai's
+          # `openRouterRouting` compat switch exists but this layer withholds it
+          # ("not configurable here … name that provider as the route instead").
+          #
+          # A `models` list REPLACES the served catalog for this route, so this
+          # is the only model the pilot can reach. That is the point: there is
+          # no unrestricted fallback to another OpenRouter model or provider.
+          # If a live canary shows DSH cannot address a preset id, STOP and
+          # report rather than relaxing the route.
+          - id: '@preset/deepseek-v41-flash-us-zdr'
+            name: DeepSeek V4.1 Flash (US, ZDR)
+            # Minimum effective context advertised by all three routes in the
+            # preset, queried 2026-09-12: wafer, modal and fireworks each report
+            # context_length 1,048,576. Deliberately not the vendor headline.
+            # The installed catalog carries the same number for the V4 flash
+            # 0731 entry.
+            contextWindow: 1048576
+            # maxTokens deliberately OMITTED. A configured maxTokens becomes
+            # this model's PER-REQUEST DEFAULT (it is passed on as
+            # `defaultMaxTokens`), while an inherited or fallback capacity stays
+            # a capability only. Setting the advertised 943,718 would put a 943k
+            # output budget on every call. The route fallback of 32,768 is the
+            # right pilot default; raise it per task, or set a bounded default
+            # here with a reason.
+            input: [text, image]
+            # Offered thinking levels and their wire spellings. Mirrors the
+            # installed catalog's map for the entire DeepSeek V4 family on
+            # OpenRouter; undeclared levels are pinned unsupported. V4.1 Flash
+            # is newer than this catalog, so a Phase-4 canary should confirm
+            # the vocabulary before anyone relies on `xhigh`.
+            reasoningEfforts:
+              'off': none
+              high: high
+              xhigh: xhigh
+        # Daily default. Reach further per task, not here.
+        reasoning: high
+# Sampling is deliberately NOT set: temperature 1.0 / top_p 0.95 are the
+# vendor's eval-harness values, and OpenRouter plus DSH own the transport
+# defaults.

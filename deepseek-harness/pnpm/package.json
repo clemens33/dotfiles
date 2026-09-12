@@ -1,0 +1,13 @@
+{
+  "name": "dotfiles-deepseek-harness-pnpm",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Tool-only project pinning the pnpm the DeepSeek Harness profile installer needs.",
+  "license": "MIT",
+  "dependencies": {
+    "pnpm": "12.4.1"
+  },
+  "allowScripts": {
+    "pnpm@12.4.1": false
+  }
+}

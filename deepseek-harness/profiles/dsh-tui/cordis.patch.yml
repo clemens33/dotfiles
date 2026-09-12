@@ -1,0 +1,31 @@
+# Profile patch layer for the managed DeepSeek Harness `dsh-tui` profile.
+#
+# Installed as ~/.dsh/profiles/dsh-tui/cordis.patch.yml, which is the file DSH
+# itself nominates for local edits. Because this IS the profile's user layer,
+# no --patch flag is needed at launch.
+#
+# SCOPE: rows that exist in THIS profile's composition and nowhere else. The
+# shared model route lives one layer up, in ../../cordis.patch.yml, which the
+# launcher applies to every profile after this one.
+
+# Make the managed `dotfiles` preset the default composition for NEW sessions,
+# exactly as the `web` profile does.
+#
+# The id is NOT `agent-presets`. The dsh-tui bundle mounts the roster under its
+# own scoped `dsh-tui-agent-presets` id, and self-disables that row when an
+# enabled official `agent-presets` row is already in the tree (it is not, in a
+# dsh-base + dsh-tui composition). Verified against the composed tree: this
+# profile carries no `agent-presets` row at all, so the web profile's row
+# copied verbatim would log `patch: entry "agent-presets" not found` on every
+# boot and the managed preset would never be selected.
+#
+# Replacing `config` wholesale is safe. The bundle declares this row's config
+# as an expression that returns `{default: standard}` whenever the installed
+# @deepseek-ai/dsh-agent-presets ships its own `presets/` directory - 0.1.5-rc.2
+# does - and only falls back to an explicit `roots` list for older package
+# generations that do not. Overriding a two-key object with a two-key object
+# loses nothing on this plane; a DSH downgrade past that generation would need
+# this row revisited.
+- id: dsh-tui-agent-presets
+  config:
+    default: dotfiles

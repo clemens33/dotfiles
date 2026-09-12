@@ -1,0 +1,120 @@
+#!/bin/sh
+# DeepSeek Harness launcher for the lockfile-backed runtime prefix.
+#
+# `npm ci` installs the pinned developer-preview harness into
+# ~/.local/share/dsh (see deepseek-harness/ and install.conf.yaml); this wrapper
+# is what ~/.local/bin/dsh points at, so the harness is on PATH without a
+# floating global install and without exporting a prefix into every shell.
+#
+# Developer preview: DSH promises compatibility-breaking changes between release
+# candidates. The exact RC is pinned in deepseek-harness/package-lock.json and
+# is only bumped deliberately - never by this wrapper.
+#
+# DISPATCH CONTRACT. This wrapper owns exactly one token: the first one. It
+# rewrites a surface NAME into the `--profile <name>` the official launcher
+# wants, and forwards everything else untouched. It never merges defaults into
+# an argv the caller supplied, and it never guesses a surface.
+#
+#   dsh                        interactive managed TUI profile
+#   dsh tui [args...]          interactive managed TUI profile; arguments kept
+#   dsh headless <task...>     official one-shot headless profile
+#   dsh web [args...]          official Web alias, verbatim; never implicit
+#   dsh --profile <name> ...   official launcher passthrough, verbatim
+#   dsh plugin ...             official launcher passthrough, verbatim
+#   dsh --help | --version     official launcher passthrough, verbatim
+#   anything else              concise usage on stderr, exit 2
+#
+# The Web surface is no longer the zero-argument default: plain `dsh` used to
+# boot it with --no-open and a pinned host/port, which is how a terminal-first
+# harness ended up opening a browser server nobody asked for. Web is now
+# reachable only by naming it, which is also why `dsh web` is forwarded
+# verbatim rather than with an injected --no-open - an explicit request for the
+# browser surface is the one case where opening a browser is the point.
+set -eu
+
+DSH_PREFIX=${DSH_PREFIX:-$HOME/.local/share/dsh}
+# Respect an already-exported DSH_HOME (the isolated-spike pattern), otherwise
+# use the harness's own default so ~/.dsh/AGENTS.md, ~/.dsh/cordis.patch.yml and
+# ~/.dsh/.agent-presets resolve exactly as the vendor documents them.
+DSH_HOME=${DSH_HOME:-$HOME/.dsh}
+export DSH_HOME
+
+# The managed terminal profile. Provisioned by ./install from the tracked
+# deepseek-harness/profiles/dsh-tui/ inputs; it is not a shipped DSH template.
+DSH_TUI_PROFILE=dsh-tui
+
+# The pinned pnpm the profile installer needs, in its own prefix so the official
+# runtime graph stays exactly what it was gated against. Only `dsh plugin` ever
+# sees it.
+DSH_PNPM_PREFIX=${DSH_PNPM_PREFIX:-$HOME/.local/share/dsh-pnpm}
+
+bin=$DSH_PREFIX/node_modules/.bin/dsh
+if [ ! -x "$bin" ]; then
+    printf 'dsh: not installed at %s\n' "$bin" >&2
+    printf 'dsh: run ./install from the dotfiles checkout to provision it\n' >&2
+    exit 127
+fi
+
+usage() {
+    printf 'dsh: unrecognized surface or option %s\n' "$1" >&2
+    printf '\n' >&2
+    printf 'usage: dsh                      interactive terminal harness (default)\n' >&2
+    printf '       dsh tui [args...]        the same, with arguments\n' >&2
+    printf '       dsh headless <task...>   answer one task and exit\n' >&2
+    printf '       dsh web [args...]        browser surface\n' >&2
+    printf '\n' >&2
+    printf 'Every official launcher form is forwarded untouched:\n' >&2
+    printf '       dsh --profile <name> [args...]\n' >&2
+    printf '       dsh plugin --profile <name> <args...>\n' >&2
+    printf '       dsh --help | --version\n' >&2
+}
+
+if [ "$#" -eq 0 ]; then
+    # Plain `dsh`, no arguments at all, enters the managed terminal harness.
+    set -- --profile "$DSH_TUI_PROFILE"
+else
+    case $1 in
+    tui)
+        shift
+        set -- --profile "$DSH_TUI_PROFILE" ${1+"$@"}
+        ;;
+    headless)
+        # The task itself is the app's argument; an empty one is the app's
+        # error to report, not this wrapper's to invent.
+        shift
+        set -- --profile headless ${1+"$@"}
+        ;;
+    plugin)
+        # `dsh plugin` forwards to a `pnpm` it looks up on PATH. It must find
+        # the pinned one: npm resolves this profile's optional peers against
+        # the tree and drags in a second, older @deepseek-ai plane, while pnpm
+        # with the profile's `autoInstallPeers: false` pulls none. Two plugin
+        # class identities in one process is double registration, and it fails
+        # in ways that look like anything but a packaging problem.
+        #
+        # Scoped to this one invocation: exported for the exec'd launcher, never
+        # written to a shell profile, and no other dispatch row touches PATH.
+        pnpm_bin=$DSH_PNPM_PREFIX/bin
+        if [ ! -x "$pnpm_bin/pnpm" ]; then
+            printf 'dsh: pinned pnpm not installed at %s\n' "$pnpm_bin/pnpm" >&2
+            printf 'dsh: run ./install from the dotfiles checkout to provision it\n' >&2
+            exit 127
+        fi
+        PATH=$pnpm_bin:$PATH
+        export PATH
+        ;;
+    web | --profile | --help | -h | --version | -V)
+        # Official launcher surfaces. Forwarded verbatim, defaults and all.
+        :
+        ;;
+    *)
+        # Includes bare launcher flags such as --patch and --dump-config, which
+        # the official launcher rejects without a --profile anyway. Naming the
+        # surface first is the fix, so say that instead of picking one.
+        usage "$1"
+        exit 2
+        ;;
+    esac
+fi
+
+exec "$bin" "$@"

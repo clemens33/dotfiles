@@ -33,10 +33,41 @@ if [ -L "$HOME/.claude/agents" ]; then
 fi
 
 # ---------------------------------------------------------------------------
+# The shell Dotbot runs `shell:` commands with
+# ---------------------------------------------------------------------------
+
+# Dotbot passes os.environ['SHELL'] to subprocess as `executable`
+# (dotbot/dotbot/util/common.py), so every `shell:` command runs under the
+# USER'S LOGIN SHELL, not /bin/sh. On this machine that is fish, which has no
+# POSIX variable assignment: the first `set -eu` or `prefix=...` in a block
+# fails with `fish: Unsupported use of =`, and Dotbot reports the step as
+# failed with the block half-executed.
+#
+# Every `shell:` block in both configs is written as POSIX sh, so pin the
+# interpreter to match. This is a command-scoped assignment on the two Dotbot
+# invocations, NOT an export: THIS script's own environment, and the login
+# shell that invoked it, are unchanged.
+#
+# Dotbot and everything it starts - the blocks, and any process a block starts
+# - do inherit SHELL=/bin/sh, which is the point: the blocks have to run under
+# it. It is inert beyond that because no block reads $SHELL (the suite asserts
+# this), so nothing downstream changes behaviour because of the pin. A block
+# that later needs the user's real login shell must read it from a source that
+# is not $SHELL, such as `getent passwd` or `dscl`.
+#
+# /bin/sh rather than /bin/bash because the blocks need nothing beyond POSIX
+# and /bin/sh exists on both supported platforms (dash on Ubuntu/WSL, bash in
+# POSIX mode on macOS). tests/test-deepseek-harness.sh checks every block in
+# both configs against `dash -n` and shellcheck's sh dialect, so a bashism
+# added later fails the suite instead of failing an install on Ubuntu only.
+DOTBOT_SHELL="/bin/sh"
+
+# ---------------------------------------------------------------------------
 # Public layer install
 # ---------------------------------------------------------------------------
 
-"${BASEDIR}/${DOTBOT_DIR}/${DOTBOT_BIN}" -d "${BASEDIR}" -c "${CONFIG}" "${@}"
+SHELL="${DOTBOT_SHELL}" \
+    "${BASEDIR}/${DOTBOT_DIR}/${DOTBOT_BIN}" -d "${BASEDIR}" -c "${CONFIG}" "${@}"
 
 # ---------------------------------------------------------------------------
 # Private overlay (optional submodule)
@@ -44,7 +75,8 @@ fi
 
 if [ -e "${BASEDIR}/dotfiles-mic/.git" ] && [ -f "${BASEDIR}/dotfiles-mic/install.conf.yaml" ]; then
     echo "→ Installing private overlay (dotfiles-mic)..."
-    "${BASEDIR}/${DOTBOT_DIR}/${DOTBOT_BIN}" \
+    SHELL="${DOTBOT_SHELL}" \
+        "${BASEDIR}/${DOTBOT_DIR}/${DOTBOT_BIN}" \
         -d "${BASEDIR}/dotfiles-mic" \
         -c "${BASEDIR}/dotfiles-mic/install.conf.yaml" \
         "${@}"
