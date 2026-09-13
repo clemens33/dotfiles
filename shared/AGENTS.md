@@ -148,10 +148,10 @@ Field knowledge (September 2026 SOTA, source-tiered references): `~/projects/cle
 
 | File | Role | Visibility |
 |---|---|---|
-| `shared/AGENTS.md` (this file) | Contract — rules to never break | Rendered, not linked: `scripts/render-contract.sh` concatenates this file with the private overlay's `AGENTS-MIC.md` into the global instruction file of Claude Code / Codex / OpenCode / Antigravity. Grok via its own short pointer + Claude compatibility; Muse reads project `AGENTS.md`, global path unverified |
+| `shared/AGENTS.md` (this file) | Contract — rules to never break | Rendered, not linked: `scripts/render-contract.sh` concatenates this file with the private overlay's `AGENTS-MIC.md` into the global instruction file of Claude Code / Codex / OpenCode / Antigravity. Grok via its own short pointer + Claude compatibility; Muse imports `~/.claude/CLAUDE.md` with project → Claude Code → Codex precedence |
 | `WORKFLOW.md` | Doctrine — how to approach a task | Read on demand by any tool via absolute path above |
 | `KNOWLEDGE.md` | Field knowledge — what's true in September 2026 | Read on demand by any tool via absolute path above |
-| `skills/large-feature/SKILL.md` | Full-rigor L playbook | Claude Code / OpenCode via `~/.claude/skills/`; Codex via `~/.agents/skills/` per-skill links; Grok / Muse read `~/.claude/skills/` natively; Antigravity via `~/.gemini/config/skills` → `~/.claude/skills` |
+| `skills/large-feature/SKILL.md` | Full-rigor L playbook | Claude Code / OpenCode via `~/.claude/skills/`; Codex and Muse via `~/.agents/skills/` per-skill links; Grok reads `~/.claude/skills/` natively; Antigravity via `~/.gemini/config/skills` → `~/.claude/skills` |
 | `skills/diagnose/SKILL.md` | Bug-shaped task loop | Same visibility as above |
 | `skills/*/SKILL.md` (many skills) | Operational recipes + doctrine-shaped playbooks | Same discovery paths as above; all public/overlay skills linked per-skill for Claude Code and Codex via their Dotbot manifests; Codex-managed `~/.codex/skills/.system` stays separate |
 | `agents/*.md` | Claude Code-specific subagent definitions (domain-specific, typically supplied by a private overlay) | Claude Code only via `~/.claude/agents/` symlink; not available to Codex / OpenCode / Antigravity without explicit per-tool support (Grok reads ~/.claude/agents/ natively) |

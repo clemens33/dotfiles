@@ -417,11 +417,21 @@ GPT-5.5 in Codex requires ChatGPT auth, not API-key auth, at launch. API-key use
 
 ### Muse Code (pilot)
 
-> Discovery and CLI flags verified locally on Muse Code 1.0.3, 2026-09-07.
+> Configuration, discovery, authentication, and served model verified locally on
+> Muse Code 1.2.1 (R2847.1), 2026-09-13. Applied main-turn effort remains a gap.
 
-- Reads project `AGENTS.md`; auto-discovers `~/.claude/skills` without an import step. User-level rules path and `~/.claude.json` MCP discovery remain **unverified**.
+- Installation: self-updating `muse-stable` bash launcher at `~/.local/bin/muse`, plus a pinned `~/.local/bin/muse-bin-<version>` binary.
+- Config root: `~/.config/muse/` (`settings.json`, `auth.json`, `trust.json`). State root: `~/.local/share/muse/` (`sessions/`, `model-catalog/`, `feature-config/`, `skills/bundled/`, `session-index.db`). `XDG_CONFIG_HOME` and `XDG_DATA_HOME` override both roots.
+- Authentication uses an OAuth device code against `https://auth.meta.com` (client id embedded in the launcher) and API base `https://api.meta.ai/v1`. The token is in the macOS keychain; mode-0600 `auth.json` contains only non-secret metadata.
+- The provider catalog is cached at `~/.local/share/muse/model-catalog/6d657461__p746268.json`. Its four visible models are `muse-spark-1.3`, `muse-spark-1.3-contributor` (`is_default: true`), `muse-spark-1.2`, and `muse-spark-1.2-contributor`; all advertise a 1,007,997-token context limit and 128,000-token output limit.
+- **Contributor tier trains on prompts, retains data for 30 days, and is not ZDR.** The contributor variant remains the vendor default, so an unpinned install silently lands on the training tier. A subscription grants entitlement to the clean `muse-spark-1.3` model but does not change that default; pin the model explicitly.
+- Effort ladder: `none|minimal|low|medium|high|xhigh|max|ultra`; CLI default is `high`, while the 1.3 catalog ceiling is `max`. The tracked pin is therefore `reasoning_effort: max`.
+- User-scope skills resolve from **`$HOME/.agents/skills/<name>/SKILL.md`**, alongside about 22 bundled `built-in` skills. The binary separately names `~/.claude/skills` and `~/.codex/skills` as import sources; that import mechanism is not the active discovery path measured here.
+- User rules load from **`~/.claude/CLAUDE.md`** as a `rules_file` context message tagged `written-for="Claude Code"`; precedence is project → Claude Code → Codex. The Codex fallback is `$CODEX_HOME/AGENTS.md` (default `~/.codex/AGENTS.md`).
+- MCP servers live under the camelCase `settings.json` key **`mcpServers`** and use Claude-style stdio entries. Never leave snake_case `mcp_servers` beside it: the collision makes Muse drop the entire MCP member and silently disables every server.
 - Sandbox and approvals are on by default. Read-only reviewer form: `muse --disable-write --disable-shell`; route through ae when in a session, as for every provider.
-- **Contributor tier trains on prompts, retains data for 30 days, and is not ZDR**: non-sensitive work only. Login and default served model remain unverified; this is a pilot, not an approved provider seat.
+- **Verification gap:** `reasoning_effort: max` is verified as configured and accepted, not as applied to the main turn. `session.jsonl` records effort only for reminder sub-agents (for example `skill-reminder: low`), and `muse trace inspect` exposes no main-turn effort field.
+- A first live attempt returned HTTP 429 `rate_limited`; Muse retried transparently (`attempt 2/10`, 5000 ms backoff, maximum 10 attempts). This retry ladder is real and normal.
 
 ---
 

@@ -228,6 +228,11 @@
       description: Purge legacy codex shell snapshots
     - command: scripts/mcp-merge.sh "$HOME/.claude.json" claude/mcpServers.json
       description: Merging Claude Code MCP servers
+    # Muse rewrites settings.json itself (/model, /effort, and TUI state), so
+    # this must stay a merge into a real file. Repo keys win; unknown runtime
+    # keys survive; the shared Claude-style MCP source is installed verbatim.
+    - command: scripts/muse-settings-merge.sh "$HOME/.config/muse/settings.json" muse/settings.json claude/mcpServers.json
+      description: Merging Muse settings and MCP servers
     # Migration (2026-09-07): Codex user skills moved to ~/.agents/skills. The
     # legacy root still exists on hosts installed before this change, Codex
     # scans both, and a link there wins — so a skill deleted or renamed here
