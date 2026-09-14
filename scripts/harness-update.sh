@@ -16,6 +16,7 @@ ONLY_TOOL=""
 LOG_DIR="$HOME/.local/state/harness-update"
 LOG_FILE="$LOG_DIR/$(date +%F).log"
 STEP_TIMEOUT=${HARNESS_UPDATE_TIMEOUT_SECONDS:-300}
+RETRY_ATTEMPTS=3
 
 usage() {
   cat <<'EOF'
@@ -111,8 +112,19 @@ printf '\n[%s] harness update start check=%s only=%s include_ae=%s\n' \
   "$(date '+%Y-%m-%dT%H:%M:%S%z')" "$CHECK_ONLY" "${ONLY_TOOL:-all}" "$INCLUDE_AE" >>"$LOG_FILE"
 
 summary() {
-  printf '%s\n' "$1"
-  printf '%s\n' "$1" >>"$LOG_FILE"
+  local message=$1
+  local failed_prefix
+  if [ -n "${RETRY_TOOL:-}" ] &&
+    [ "${RETRY_ATTEMPT:-0}" -lt "${RETRY_ATTEMPTS:-0}" ]; then
+    failed_prefix="$RETRY_TOOL FAIL"
+    case "$message" in
+      "$failed_prefix"*)
+        message="$RETRY_TOOL ATTEMPT $RETRY_ATTEMPT/$RETRY_ATTEMPTS failed${message#"$failed_prefix"}"
+        ;;
+    esac
+  fi
+  printf '%s\n' "$message"
+  printf '%s\n' "$message" >>"$LOG_FILE"
 }
 
 selected() {
@@ -156,11 +168,47 @@ with_timeout() {
   fi
 }
 
+run_with_retry() {
+  local tool=$1
+  local attempt=1
+  local result backoff
+  while [ "$attempt" -le "$RETRY_ATTEMPTS" ]; do
+    RETRY_TOOL=$tool
+    RETRY_ATTEMPT=$attempt
+    export RETRY_TOOL RETRY_ATTEMPT
+    if [ "$attempt" -gt 1 ]; then
+      summary "$tool ATTEMPT $attempt/$RETRY_ATTEMPTS"
+    fi
+    "process_$tool"
+    result=$?
+    if [ "$result" -eq 0 ]; then
+      return 0
+    fi
+    if [ "$attempt" -eq "$RETRY_ATTEMPTS" ]; then
+      return "$result"
+    fi
+    case "$attempt" in
+      1) backoff=5 ;;
+      *) backoff=20 ;;
+    esac
+    summary "$tool RETRY after attempt $attempt/$RETRY_ATTEMPTS; backoff=${backoff}s"
+    sleep "$backoff"
+    attempt=$((attempt + 1))
+  done
+}
+
 run_step() {
   local result
   # Expand the positional argument in the child, not the supervising shell.
   # shellcheck disable=SC2016
-  with_timeout bash -c 'set -uo pipefail; "process_$1"' bash "$1"
+  case "$1" in
+    dsh|contract)
+      with_timeout bash -c 'set -uo pipefail; "process_$1"' bash "$1"
+      ;;
+    *)
+      with_timeout bash -c 'set -uo pipefail; run_with_retry "$1"' bash "$1"
+      ;;
+  esac
   result=$?
   if [ "$result" -eq 124 ] || [ "$result" -eq 137 ]; then
     summary "$1 FAIL timed out after ${STEP_TIMEOUT}s"
@@ -872,8 +920,8 @@ process_contract() {
 }
 
 # Export existing step functions so timeout can supervise a separate Bash process.
-export CHECK_ONLY INCLUDE_AE LOG_FILE REPO_ROOT
-export -f summary log_run npm_mode nvm_exec npm_latest npm_install_latest \
+export CHECK_ONLY INCLUDE_AE LOG_FILE REPO_ROOT RETRY_ATTEMPTS
+export -f summary run_with_retry log_run npm_mode nvm_exec npm_latest npm_install_latest \
   opencode_available run_opencode installed_version agy_latest grok_latest \
   check_with_npm update_native install_muse process_claude process_codex \
   process_agy process_grok process_opencode process_muse process_ae \
