@@ -330,6 +330,62 @@ grok_latest() {
   printf '%s\n' "$check" | sed -n 's/.*"latestVersion":"\([^"]*\)".*/\1/p'
 }
 
+# Latest version published on the Muse release channel. Mirrors the vendor
+# launcher's resolution: same channel URL, same MUSE_CHANNEL_URL override, same
+# version pattern. Prints "<version>\t<reason>" so the caller can report why a
+# lookup failed without a second call. Never authenticates: the channel
+# manifest is public, so no credential file is read and no token is sent.
+muse_latest() {
+  local channel_url result status document version
+  channel_url="${MUSE_CHANNEL_URL:-https://api.meta.ai/muse-code/channels/muse-stable}"
+  if ! command -v curl >/dev/null 2>&1; then
+    printf '\tno curl available\n'
+    return 0
+  fi
+  result=$(curl \
+    --silent \
+    --show-error \
+    --location \
+    --max-redirs 3 \
+    --proto '=https' \
+    --proto-redir '=https' \
+    --tlsv1.2 \
+    --connect-timeout 5 \
+    --max-time 15 \
+    --header 'Accept: application/json' \
+    --write-out '\n%{http_code}' \
+    "$channel_url" 2>>"$LOG_FILE") || result=""
+  status=${result##*$'\n'}
+  if [ "$status" = "$result" ]; then
+    document=$result
+    status=""
+  else
+    document=${result%$'\n'*}
+  fi
+  case "$status" in
+    401|403)
+      printf '\tchannel requires auth\n'
+      return 0
+      ;;
+    2??) ;;
+    '')
+      printf '\tchannel unreachable\n'
+      return 0
+      ;;
+    *)
+      printf '\tchannel returned HTTP %s\n' "$status"
+      return 0
+      ;;
+  esac
+  version=$(printf '%s\n' "$document" |
+    sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1)
+  if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+-R[0-9]+(\.[0-9]+)?$ ]]; then
+    printf '\tinvalid channel manifest\n'
+    return 0
+  fi
+  printf '%s\tok\n' "$version"
+}
+
 check_with_npm() {
   local tool="$1"
   local package="$2"
@@ -525,7 +581,15 @@ process_muse() {
     return 1
   fi
   if [ "$CHECK_ONLY" -eq 1 ]; then
-    summary "muse CHECK current=$before latest=unknown (installer has no version lookup)"
+    local lookup latest reason
+    lookup=$(muse_latest)
+    latest=${lookup%%$'\t'*}
+    reason=${lookup#*$'\t'}
+    if [ -n "$latest" ]; then
+      summary "muse CHECK current=$before latest=$latest"
+    else
+      summary "muse CHECK current=$before latest=unknown ($reason)"
+    fi
     return 0
   fi
   if ! log_run install_muse; then
@@ -922,7 +986,7 @@ process_contract() {
 # Export existing step functions so timeout can supervise a separate Bash process.
 export CHECK_ONLY INCLUDE_AE LOG_FILE REPO_ROOT RETRY_ATTEMPTS
 export -f summary run_with_retry log_run npm_mode nvm_exec npm_latest npm_install_latest \
-  opencode_available run_opencode installed_version agy_latest grok_latest \
+  opencode_available run_opencode installed_version agy_latest grok_latest muse_latest \
   check_with_npm update_native install_muse process_claude process_codex \
   process_agy process_grok process_opencode process_muse process_ae \
   process_dsh process_contract
