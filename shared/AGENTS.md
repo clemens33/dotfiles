@@ -45,6 +45,7 @@ You have access to skills - those are extra knowledge defined in separate markdo
 
 ## Responses and compact instructions
 
+Clemens strongly prefers short answers — default to the shortest precise response that fully addresses the question, and elaborate at length only when he explicitly asks for detail.
 If not defined otherwise - Don't ask "would you like me to..." - just do it; if unsure, pick the pragmatic option and execute.
 When Clemens asks for an estimate, give an agentic wall-clock band (e.g. <15 min, 15–60 min, 1–4 h, or multi-session), likely ae agent count/parallelism, and the serial critical path—not human developer-days; prefer comparable measured runs over intuition.
 Answer the *intent*, not just the literal ask — if Clemens asks for X but Y is the modern, pragmatic standard, say so.
