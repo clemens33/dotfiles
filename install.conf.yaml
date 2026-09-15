@@ -102,6 +102,12 @@
     ~/.config/opencode/config.json:
       path: opencode/config.json
       force: true
+    # Same per-file link pattern as config.json above. Safe to link: the TUI's
+    # runtime toggles (timestamps, sidebar, …) persist to
+    # ~/.local/state/opencode/kv.json, not here; tui.json is read-only input.
+    ~/.config/opencode/tui.json:
+      path: opencode/tui.json
+      force: true
     ~/.gemini/antigravity-cli/settings.json:
       path: antigravity/settings.json
       force: true

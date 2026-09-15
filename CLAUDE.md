@@ -14,7 +14,9 @@ Personal dotfiles for Ubuntu WSL (Windows host) and macOS (Apple Silicon), fish 
 # Install/update all dotfiles (creates symlinks to home directory)
 ./install
 
-# Test dotbot config without applying
+# Test dotbot config without applying. Needs a dotbot with --dry-run support:
+# added in v1.23 (its CHANGELOG). This submodule pins v1.17.1, which rejects the
+# flag; the private overlay's vendored copy (dotfiles-mic/dotbot) supports it.
 ./dotbot/bin/dotbot -d . -c install.conf.yaml --dry-run
 
 # macOS only: install/update the host toolchain

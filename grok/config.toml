@@ -122,3 +122,6 @@ max_thoughts_width = 120
 fork_secondary_model = "grok-4.6"
 yolo = false
 compact_mode = false
+# Clock time next to each message (vendor config reference); `/timestamps`
+# toggles it at runtime.
+show_timestamps = true
