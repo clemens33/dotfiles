@@ -395,7 +395,7 @@ GPT-5.5 in Codex requires ChatGPT auth, not API-key auth, at launch. API-key use
 > live `-p` probes incl. quota-free `/skills` JSON) plus vendor docs (CLI reference,
 > modes page, Terms — all fetched 2026-09-14).
 
-- Rules/skills root: **`~/.gemini/config/`**, containing `config.json`, `mcp_config.json`, `plugins/`, `projects/`, and `skills` → `~/.claude/skills` (2026-09-14). `hooks.json` (present 2026-09-07) was absent on 2026-09-14; hooks remain a documented feature (`/hooks`, vendor hooks docs) — relocation unverified. The never-read `AGENTS.md` under `~/.gemini/antigravity-cli/` (recorded 2026-09-07) is gone.
+- Rules/skills root: **`~/.gemini/config/`**, containing `config.json`, `mcp_config.json`, `plugins/`, `projects/`, and `skills` → `~/.claude/skills` (2026-09-14). `hooks.json` is on-demand config, not a shipped default — absence means unconfigured, not removed (re-verified on 1.2.3, 2026-09-15); it is read from `~/.gemini/config/hooks.json`, `<workspace>/.agents/hooks.json` (trust-gated via `trustedWorkspaces`), and `plugins/<name>/hooks.json`, and 1.2.3's changelog fixes `/hooks` having written to the legacy `~/.gemini/antigravity-cli/hooks.json`. The never-read `AGENTS.md` under `~/.gemini/antigravity-cli/` (recorded 2026-09-07) is gone.
 - Settings and runtime state remain under **`~/.gemini/antigravity-cli/`** (`settings.json`, `annotations/`, `brain/`, `cache/`). Dotbot links `antigravity/settings.json` to `~/.gemini/antigravity-cli/settings.json`; keys include `model` (display-name string), `trustedWorkspaces` (path list), `mcpServers` (Claude-style JSON), and `permissions.allow/deny` (grant strings like `command(*)`; an `ask` list also exists — cli.log 2026-09-14).
 - Rules: project `GEMINI.md` / `AGENTS.md` discovery, or plugin rules. Dotbot installs the shared contract at **`~/.gemini/config/plugins/dotfiles/rules/AGENTS.md`** with `plugin.json` (verified on disk 2026-09-14).
 - Skills: **`~/.gemini/config/skills` → `~/.claude/skills`**; project skills under `.agents/skills/`. The same skill files serve both harnesses.
@@ -437,6 +437,25 @@ GPT-5.5 in Codex requires ChatGPT auth, not API-key auth, at launch. API-key use
 - Sandbox and approvals are on by default. Read-only reviewer form: `muse --disable-write --disable-shell`; route through ae when in a session, as for every provider.
 - **Verification gap:** `reasoning_effort: max` is verified as configured and accepted, not as applied to the main turn. `session.jsonl` records effort only for reminder sub-agents (for example `skill-reminder: low`), and `muse trace inspect` exposes no main-turn effort field.
 - A first live attempt returned HTTP 429 `rate_limited`; Muse retried transparently (`attempt 2/10`, 5000 ms backoff, maximum 10 attempts). This retry ladder is real and normal.
+
+### Hook support across harnesses
+
+> All six harnesses have hooks; matrix verified 2026-09-15 on Claude Code 2.1.272, Codex 0.154.0, Grok 1.0.30, Muse 1.3.0-R3057.1, agy 1.2.3, OpenCode 1.18.31 (evidence: `.local/hooks-*.md`, `.local/tune/doctrine/hooks.md`).
+
+| Harness | Events | Block / modify | Trust gate | Maturity |
+|---|---|---|---|---|
+| Claude Code | 30+, session→turn→tool + async | full: block, `updatedInput`, context inject | workspace-trust dialog; `-p`/SDK bypasses it for settings-file hooks, subagent frontmatter stricter | reference impl, versioned, managed-policy tier |
+| Codex | 12 lifecycle + legacy `notify` | full per-event; `async` hooks observe-only | per-hook sha256 `trusted_hash` | strong: committed schemas, fixture tests |
+| Grok | 15, session→turn→tool | full: deny/ask, silent rewrite, output replace | folder trust (`trusted_folders.toml`) | mature, documented, TUI-managed |
+| Muse | 13 user-facing | block/modify/inject; no built-in tool-output replace (MCP unverified) | project-folder trust | documented, strict validator, young ergonomics |
+| agy | 5 (`Pre/PostToolUse`, `Pre/PostInvocation`, `Stop`) | block + shallow arg merge + inject; `PostToolUse` observe-only | workspace trust via `trustedWorkspaces` | documented, maintained, narrow |
+| OpenCode | plugin system IS the hooks (~20 points + bus) | full incl prompt/history rewrite; throw-to-block documented for tool hooks only | none found — **unverified negative** | moderate; half the power is `experimental.*` |
+
+- Codex `PreToolUse` fails open on malformed output: non-JSON or an unknown field leaves `should_block` false and the tool proceeds — a typo silently stops blocking.
+- Codex `async = true` hooks are observe-only; blocking fields are ignored silently, as is a hook whose `trusted_hash` no longer matches.
+- OpenCode's plugin system has no trust gate found — a project or npm plugin is arbitrary code at startup (**unverified as a negative**: schema-and-docs silence, not proof).
+- Hooks run at user privilege, outside any harness sandbox, on Claude Code, Codex, Muse, and OpenCode (Muse says so outright: outside sandbox and approvals, cleared env with small allowlist); Grok and agy hook-sandbox status not separately verified.
+- Open gaps: Muse exit-code/timeout semantics, `.musehooks.json`'s role, whether agy's proto-level `SessionStart` is user-reachable, Grok's missing schema version string, Codex TUI trust-approval UX (how `trusted_hash` gets recorded), Grok/agy hook-sandbox status.
 
 ---
 
