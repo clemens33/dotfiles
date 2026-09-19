@@ -10,14 +10,24 @@
 	helper = cache --timeout=86400
 [init]
 	defaultBranch = main
-[includeIf "gitdir:~/projects/mic/"]
-    path = ~/.gitconfig-mic
 [credential "https://github.com"]
 	helper =
-	helper = !gh auth git-credential
+	helper = !/opt/homebrew/bin/gh auth git-credential
 [credential "https://gist.github.com"]
 	helper =
-	helper = !gh auth git-credential
+	helper = !/opt/homebrew/bin/gh auth git-credential
+# The work includes MUST stay below the credential blocks above. `helper =` with an empty
+# value resets the helper chain, so an include placed earlier has its helper silently
+# wiped by line 30 and every mic-cust push falls back to the active gh account.
+[includeIf "gitdir:~/projects/mic/"]
+    path = ~/.gitconfig-mic
+# A mic-cust clone outside ~/projects/mic/ (e.g. ~/.gitleaks, the pre-push hook's config
+# repo) is not covered by the gitdir rule above, so match on the remote instead and give
+# it the same work identity and account-pinned credential helper. Needs git >= 2.36.
+[includeIf "hasconfig:remote.*.url:https://github.com/mic-cust/**"]
+    path = ~/.gitconfig-mic-github
+[includeIf "hasconfig:remote.*.url:https://github.com/mic-cust-copilot/**"]
+    path = ~/.gitconfig-mic-github
 [interactive]
 	diffFilter = delta --color-only
 [delta]
