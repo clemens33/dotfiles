@@ -57,6 +57,8 @@ When compacting, keep the goal and progress, decisions and why, binding constrai
 
 Commit and push your completed, verified work as you go unless the user says not to; leave nothing of yours uncommitted without saying why. NEVER mention the AI tool, model, or co-author attribution in commit messages, trailers, or any part of the commit metadata. NEVER commit significant changes without running a cross-model review first (see Cross-Model Collaboration section). `main` is treated as shippable but flexible.
 
+GitHub CLI supports multiple accounts: check `gh auth status`, then select the account for the target repository with `gh auth switch --hostname github.com --user <username>`. If access fails unexpectedly, check the active account before assuming permissions are missing. Switching changes the active account for that host across local `gh` commands; coordinate with concurrent agents.
+
 ## Security
 
 Pragmatic rules that prevent real bugs. Follow these while writing code.
