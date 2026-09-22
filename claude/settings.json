@@ -12,7 +12,7 @@
     "//deny": "No Read() deny rules on purpose (2026-09-03): with ANY Read() deny configured, Claude Code 2.1.259 forces a user prompt for every compound `cd X && grep|cat|head|sed <relative path>` because it cannot resolve the file statically — in every mode, bypass included. The .env guard it bought was weak anyway (only recognized readers, cwd-anchored, subprocesses unaffected). Want it back: sandbox.filesystem.denyRead, validated separately.",
     "//defaultMode": "bypassPermissions for bare `claude` launches (ae aliases pass --permission-mode bypassPermissions, which wins). auto was the 2026-08-14 rollout default; the classifier only adds friction in this trusted-local workflow."
   },
-  "model": "claude-fable-5-1[1m]",
+  "model": "opus[1m]",
   "enableAllProjectMcpServers": true,
   "hooks": {
     "MessageDisplay": [
@@ -46,11 +46,14 @@
   "switchModelsOnFlag": false,
   "agentPushNotifEnabled": true,
   "//hooks": "MessageDisplay prepends [HH:MM] to each assistant message — display-only (screen), zero tokens, transcript untouched.",
-  "//switchModelsOnFlag": "false = do NOT auto-switch on a flagged Fable 5.1 request (biology -> Opus 5, cyber -> Opus 4.8; category-based since 2.1.219). Pause with choice (switch, or edit+retry on Fable) instead of silent switch. Same as /config -> Model & output -> 'Switch models when a message is flagged' off.",
-  "//model": "fable[1m] = alias `fable` -> latest Fable = Fable 5.1 (`claude-fable-5-1`) since CC 2.1.255 (was Fable 5); pin the full ID if determinism matters. 1M native on Anthropic API — `[1m]` redundant but documented; CLI migrates saved Fable IDs to this form. Credit-billed $10/$50 (cache read $0.25); `-p` bills with no consent prompt. Not the account default on any plan — explicit choice. Opus 5 (subscription-included, ~Fable-5 class at half price) via `/model opus` when credits matter. Requires CC >= 2.1.255. Verified 2026-09-02.",
-  "//effort": "`high` = Fable 5.1 vendor default in API and Claude Code (Tier A: start high; lower effort incl. low often exceeds the xhigh/max of previous models; launch page: similar-or-better than Fable 5 at lower cost, medium roughly matches Fable 5; xhigh/max for the most capability-sensitive work; higher effort over-deliberates on routine work). Previous global xhigh was an Opus 4.7/4.8-era opt-up; on credit-billed Fable it is paid over-deliberation. Escalate per task: `/effort xhigh`, `claude --effort xhigh`, `ultrathink`; `max` is session-only unless `CLAUDE_CODE_EFFORT_LEVEL`. Per-model override exists: `modelSettings.<id>.effortLevel`. No effort hold on Fable 5.1, so this key applies directly. fastMode deliberately UNSET: fast mode is Opus 5/4.8-only and `/fast` on a Fable session switches the model to Opus 5. `alwaysThinkingEnabled` is inert on Fable 5.1 (thinking always on) — kept for Opus 4.8 fallback sessions.",
+  "//switchModelsOnFlag": "false = do NOT auto-switch on a flagged request. Pause with choice (switch, or edit+retry) instead of silent switch. Same as /config -> Model & output -> 'Switch models when a message is flagged' off. (Fable-5.1-era routing was biology -> Opus 5, cyber -> Opus 4.8; Opus-5.5-era targets unverified 2026-09-22).",
+  "//model": "opus[1m] = alias `opus` -> latest Opus = Opus 5.5 (`claude-opus-5-5`) since CC 2.1.280 (was Opus 5); pin the full ID if determinism matters. 1M native, 128K max output — `[1m]` redundant but documented; CLI wrote this form on /model opus (observed 2026-09-22). $4/$20 (cache read $0.20). Default Opus model on current CC — explicit choice of the tier. Fable 5.1 (credit-billed $10/$50) via `/model fable` when max capability matters. Requires CC >= 2.1.280. Verified 2026-09-22 (Anthropic Opus 5.5 overview + CC CHANGELOG).",
+  "//effort": "`high` = unchanged interactive policy (Opus 5.5 vendor default is medium; Tier A: 'The default effort is `medium`... Set `effort` explicitly and re-run your sweep', 'Start at medium, the default' — no coding-specific level prescribed, so high stands; note 5.5 thinks more per turn than 5 at the same setting). Escalate per task: `/effort xhigh`, `claude --effort xhigh`, `ultrathink`; `max` is session-only unless `CLAUDE_CODE_EFFORT_LEVEL`. Per-model override: `modelSettings.<id>.effortLevel`. fastMode deliberately UNSET: 5.5 fast mode is a Claude-API-only research preview (`speed: \"fast\"`, `fast-mode-2026-02-01`); CC `/fast` behavior on a 5.5 session unverified 2026-09-22. `alwaysThinkingEnabled` inert here (thinking always on, non-disablable on Opus 5.5) — kept for Opus 4.8 fallback sessions.",
   "modelSettings": {
     "claude-fable-5-1": {
+      "effortLevel": "high"
+    },
+    "claude-opus-5-5": {
       "effortLevel": "high"
     }
   }

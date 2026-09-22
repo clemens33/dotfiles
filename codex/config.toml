@@ -1,15 +1,17 @@
-model = "gpt-6-astra"
+model = "gpt-6-sol"
 personality = "pragmatic"
-# GPT-6 Astra (codex debug models, 0.153.4, 2026-09-07): context_window
+# GPT-6 Sol (codex debug models, 0.155.1, 2026-09-22): context_window
 # 272000, effective 95 % (258,400), default_reasoning_level medium. Efforts:
 # low/medium/high/xhigh/max/ultra (ultra = auto subagent delegation). Vendor
-# defaults per model: Astra medium, Luna medium, Terra medium, Sol low.
+# defaults per model: GPT-6 Sol/Luna/Astra medium; GPT-5.6 Sol low, Luna/Terra medium.
 # xhigh below is NOT a vendor default: it is Clemens's judgment-seat policy for
 # this interactive config. ae worker profiles set their own effort per seat
 # via `-c model_reasoning_effort=...` (~/.ae/config) and do not inherit this.
-# One effort per thread: flipping effort mid-thread busts the prompt-prefix
-# cache (CX-42996). Drop to high/medium via /effort to conserve quota;
-# max/ultra stay as per-task escalation.
+# Effort switches preserve the prompt-prefix cache on GPT-6 models (OpenAI
+# 2026-09-22: "Adjust reasoning effort ... without breaking cache"). The
+# one-effort-per-thread rule (CX-42996) was observed pre-GPT-6 (GPT-5.6-era).
+# Drop to high/medium via /effort to conserve quota; max/ultra stay as
+# per-task escalation.
 model_reasoning_effort = "xhigh"
 # Plan mode benefits from deeper reasoning than execution.
 plan_mode_reasoning_effort = "xhigh"
@@ -18,9 +20,9 @@ sandbox_mode = "danger-full-access"
 web_search = "live"
 suppress_unstable_features_warning = true
 tool_output_token_limit = 25000
-# Compact at 77 % of the CLI's EFFECTIVE window. codex debug models (0.154.0,
-# 2026-09-11): gpt-6-astra context_window 272000 x effective 95 % = 258,400
-# tokens (same numbers for gpt-5.6-sol/luna/terra). 200000 leaves ~58k headroom
+# Compact at 77 % of the CLI's EFFECTIVE window. codex debug models (0.155.1,
+# 2026-09-22): gpt-6-sol context_window 272000 x effective 95 % = 258,400
+# tokens (same numbers for gpt-6-luna/astra). 200000 leaves ~58k headroom
 # so the compaction call never races the hard limit mid-turn and the summary is
 # written while the thread is still coherent (ruling 2026-09-11: moderately
 # earlier compaction for a lower steady-state context, replacing the 220000 /
@@ -647,6 +649,9 @@ env_http_headers = { "x-api-key" = "MIC_ASSISTANT_TEST_API_KEY" }
 [notice]
 "hide_gpt-5.1-codex-max_migration_prompt" = true
 hide_rate_limit_model_nudge = true
+
+[notice.model_migrations]
+"gpt-5.6-sol" = "gpt-6-sol"
 
 # Status line (2026-09-11, verified against codex-cli 0.154.0): mirrors the
 # Claude Code footer in claude/statusline.sh — model, dir, branch, context used,
