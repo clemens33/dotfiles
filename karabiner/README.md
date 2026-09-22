@@ -6,8 +6,8 @@ survive side by side.
 
 ## What is versioned here
 
-`assets/complex_modifications/windows-layout.json` — the rule set (6 rules,
-52 manipulators), in Karabiner's importable asset format.
+`assets/complex_modifications/windows-layout.json` — the rule set (7 rules,
+54 manipulators), in Karabiner's importable asset format.
 
 **Not** `karabiner.json`. Karabiner rewrites that file itself (device entries
 change as keyboards connect), so symlinking it into a repo fights the app and
@@ -67,11 +67,13 @@ claim something untrue. Vendor 1133 is every Logitech device on the desk.
 | AltGr (right Option) + `q 7 8 9 0 ß < +` | `@ { [ ] } \ | ~` — German positions |
 | `Win+Shift+S` | `⌘⌃⇧4` — select area, **to clipboard** (same key as Windows) |
 | `Win+H` | Dictation (same key as Windows) |
+| `Win+Ctrl+←/→` | `Ctrl+←/→` — switch desktop / Space (same key as Windows) |
 
-**These two use the physical Windows key, not Ctrl** — matching Windows
-exactly, where the snip is `Win+Shift+S` and dictation is `Win+H`. A PC
-keyboard's Win key arrives on macOS as `command`, so the rules read
-`mandatory: [command, shift]` and `mandatory: [command]`.
+**These three use the physical Windows key, not Ctrl** — matching Windows
+exactly, where the snip is `Win+Shift+S`, dictation is `Win+H`, and desktop
+switching is `Win+Ctrl+←/→`. A PC keyboard's Win key arrives on macOS as
+`command`, so the rules read `mandatory: [command, shift]`, `mandatory:
+[command]`, and `mandatory: [command, control]`.
 
 Using the Win key rather than Ctrl buys two things:
 
@@ -83,10 +85,11 @@ Using the Win key rather than Ctrl buys two things:
   feature here: `Ctrl+H/M/Q` are deliberately unmapped below precisely because
   hide/minimise/quit make windows vanish irrecoverably for a Windows user.
 
-Neither rule carries a terminal exclusion — screenshotting or dictating into a
-terminal is a normal thing to want, and neither combo has a shell meaning. To
-save a screenshot *file* instead of copying to the clipboard, drop `control`
-from the screenshot rule's `to` modifiers (`⌘⇧4`).
+None of the three carries a terminal exclusion — screenshotting, dictating, or
+switching desktops from a terminal is a normal thing to want, and none of the
+combos has a shell meaning. To save a screenshot *file* instead of copying to
+the clipboard, drop `control` from the screenshot rule's `to` modifiers
+(`⌘⇧4`).
 
 **Why dictation needs a rule at all.** macOS triggers dictation from the
 dedicated mic key that lives on `F5` of *Apple* keyboards, which emits the
