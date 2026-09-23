@@ -5,6 +5,20 @@ set -g fish_greeting
 # autoUpdatesChannel in settings keeps channel choice.
 set -gx DISABLE_AUTOUPDATER 1
 
+# Agent temp dir — inside the ae tmux server ONLY: agent test runs churn
+# $TMPDIR heavily and Microsoft Defender scans it; ~/projects is Defender-
+# excluded, so keep agent temp files there. Shells outside ae keep the
+# macOS default TMPDIR. No cleanup daemon: pytest keeps 3 basetemps,
+# cargo-mutants deletes its dir.
+if set -q TMUX
+    set -l _tmux_sock (string split -m 1 , -- $TMUX)[1]
+    if test (basename $_tmux_sock) = ae
+        set -l _agent_tmp $HOME/projects/.tmp
+        test -d $_agent_tmp; or mkdir -p $_agent_tmp
+        set -gx TMPDIR $_agent_tmp/
+    end
+end
+
 # Homebrew (macOS, Apple Silicon) — early, so brew-installed tools resolve
 # before anything below. No-op on Linux/WSL where the path doesn't exist.
 # Explicit `fish` arg: shellenv's auto-detection can emit POSIX syntax.
