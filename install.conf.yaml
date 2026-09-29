@@ -142,6 +142,7 @@
     ~/.claude/skills/adr: skills/adr
     ~/.claude/skills/arch-docs: skills/arch-docs
     ~/.claude/skills/caveman: skills/caveman
+    ~/.claude/skills/catch-up: skills/catch-up
     ~/.claude/skills/code-review: skills/code-review
     ~/.claude/skills/collab: skills/collab
     ~/.claude/skills/cross-model-review: skills/cross-model-review
@@ -176,6 +177,7 @@
     ~/.agents/skills/adr: skills/adr
     ~/.agents/skills/arch-docs: skills/arch-docs
     ~/.agents/skills/caveman: skills/caveman
+    ~/.agents/skills/catch-up: skills/catch-up
     ~/.agents/skills/code-review: skills/code-review
     ~/.agents/skills/collab: skills/collab
     ~/.agents/skills/cross-model-review: skills/cross-model-review

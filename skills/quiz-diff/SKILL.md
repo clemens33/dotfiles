@@ -155,6 +155,7 @@ when their fingerprint no longer matches. Do not
 store the user's raw answers. On a later run in the same repo, glance at prior
 gaps — if one resurfaces as a fresh miss, say so (recurring gap = highest-value
 teaching target). No spaced-repetition claims in v1.
+(The `catch-up` skill appends compatible entries with null git fields; entries carry a `skill` key.)
 
 ## Output shape (after teaching)
 
