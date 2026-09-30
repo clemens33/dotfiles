@@ -56,6 +56,7 @@ The wrapper install script detects the overlay submodule and runs its Dotbot pas
 | Antigravity CLI (`agy`) | `antigravity/settings.json` | `~/.gemini/antigravity-cli/settings.json` |
 | OpenDesign | `open-design/compose.yaml`, `open-design/Dockerfile`, `bin/open-design` | `~/.config/open-design/compose.yaml`, `~/.config/open-design/Dockerfile`, `~/.local/bin/open-design{,-mcp}` |
 | DeepSeek Harness (`dsh`, pilot) | `deepseek-harness/` | `~/.local/bin/dsh`; the patch layers, the `dsh-tui` profile and the agent preset are managed **copies** under `~/.dsh`, not links |
+| `jobs-budget` | `bin/jobs-budget` | `~/.local/bin/jobs-budget` — prints how many parallel jobs a test/build run should use from the CPU free right now (`pytest -n "$(jobs-budget)"`); all cores on an idle machine |
 | AI skills | `skills/<name>/` | `~/.claude/skills/<name>/`, `~/.agents/skills/<name>/` |
 
 The AI contract is the one exception: it is **rendered**, not symlinked. See

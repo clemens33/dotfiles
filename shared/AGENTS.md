@@ -39,6 +39,8 @@ Ubuntu WSL2 (Windows host) or macOS (Apple Silicon) — check `uname` when it ma
 
 Git worktrees: do not pre-populate or copy `node_modules`, `.venv`, `target` or similar generated trees by default; create them only when the assigned work needs them, using the repo's setup commands and package-manager caches. Avoid recursive copies, including filesystem clones: they still create file entries and can burden endpoint security. Reuse another checkout's `node_modules` only after verifying the installed dependencies, source resolution and isolation from concurrent installs or generated/cache writes; otherwise install locally, and never install through a shared link. Matching manifests and lockfiles alone are insufficient. Keep Python environments worktree-local; recreate rather than copy them, using the repo's tool (`uv sync` for uv-managed projects), because scripts and editable installs can retain source/interpreter paths. Missing dependencies are setup failures, not evidence of code regressions; complete required setup or report the verification gap.
 
+Size parallel test/build/lint runs with `jobs-budget` (a job count from the CPU free right now; a lone session gets every core) instead of `auto`/all cores, because several agent sessions share one machine: `pytest -n "$(jobs-budget)"`, `make -j"$(jobs-budget)"`, `CARGO_BUILD_JOBS=$(jobs-budget)`. Prefer one heavy run per session at a time. If `jobs-budget` is not on PATH, run as before; never block on it.
+
 ## Skills
 
 You have access to skills - those are extra knowledge defined in separate markdown files. Typically you know where to find them or load them - please  use them frequently!

@@ -63,6 +63,9 @@
     # by the npm ci step below. Safe to link before that step runs: the wrapper
     # reports a clear 'not installed' error instead of failing obscurely.
     ~/.local/bin/dsh: bin/dsh
+    # Machine-aware job count for parallel test/build runs: prints how many jobs
+    # fit in the CPU that is free right now (all cores on an idle machine).
+    ~/.local/bin/jobs-budget: bin/jobs-budget
     # Karabiner (macOS only; the dir simply stays unused elsewhere). NOTE: this
     # links the importable RULE SET, not karabiner.json — Karabiner rewrites
     # karabiner.json itself on device connect, so symlinking it would fight the

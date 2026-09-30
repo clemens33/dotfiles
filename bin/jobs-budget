@@ -1,0 +1,194 @@
+#!/bin/sh
+# Print how many parallel jobs a heavy test/build/lint run should use right now.
+#
+#   pytest -n "$(jobs-budget)"    make -j"$(jobs-budget)"    CARGO_BUILD_JOBS=$(jobs-budget) cargo build
+#
+# Several agent sessions share one machine, and every tool sizes itself to ALL
+# cores without knowing about the others. This helper answers "how many cores are
+# free right now" so concurrent heavy runs share the machine instead of piling up.
+#
+# CONTRACT
+#   stdout   exactly one positive integer and a newline; diagnostics go to stderr
+#   exit     always 0; the helper must never break the run that called it
+#   alone    an idle machine yields ncpu. A lone session re-running tests seconds
+#            after its own previous run gets every core again: the measurement is
+#            CPU idle over a fresh 1 s sample taken AFTER the call, not the 1-minute
+#            load average, which keeps remembering a run that ended a minute ago.
+#   busy     N = ceil(ncpu * idle fraction), clamped to [min(2, ncpu), ncpu].
+#            Ceiling, not rounding: the few percent that idle daemons always use
+#            must never cost a lone session a core. A saturated or oversubscribed
+#            machine yields 2.
+#   unknown  any probe failure, unknown OS or implausible output prints ncpu, and
+#            4 if even the CPU count is unknown. A probe that reports failure is
+#            distrusted even when it printed plausible numbers.
+#
+# PROBES (one sample, about 1 s wall, no sudo, two process spawns)
+#   Darwin   `iostat -n 0 -c 2 -w 1`: two `us sy id` rows, the 1st since boot
+#            (ignored) and the 2nd the last second, in whole percent. Exactly two
+#            rows, each column numeric and us+sy+id within rounding of 100 (99-101),
+#            or the reading is rejected. `top -l 2` was measured at 5 s wall and
+#            3.6 s of CPU on a loaded M-series Mac: too costly for a helper that runs
+#            before every heavy command.
+#   Linux    the first line of /proc/stat read twice around `sleep 1`, with shell
+#            builtins only: all eight counters must be present, numeric and
+#            non-decreasing, with time elapsed. iowait counts as idle, steal as
+#            busy. Test seam: JOBS_BUDGET_PROC_STAT replaces /proc/stat.
+#
+# Every number read from a probe is normalised (leading zeros stripped, at most 15
+# digits) before any shell arithmetic: `$((08))` is an octal error that would abort
+# the script, and a run must never break on a garbled probe.
+#
+# KNOWN LIMIT. There is no lock, queue or state file (v1). Two sessions that call
+# this in the same second both see an idle machine and both take every core; the
+# window is the ramp-up of the first job, not a minute. The next call sees it.
+set -eu
+set -f
+unset IFS
+LC_ALL=C
+export LC_ALL
+
+DEFAULT_NCPU=4
+MIN_JOBS=2
+MAX_NCPU=65535
+MAX_TICKS=999999999 # ticks that can elapse in one sample of ~1 s; more is garbage
+PROC_STAT=${JOBS_BUDGET_PROC_STAT:-/proc/stat}
+
+warn() {
+    printf 'jobs-budget: %s\n' "$*" >&2
+}
+
+# is_digits <text>: non-empty, digits only.
+is_digits() {
+    case ${1:-} in
+    '' | *[!0-9]*) return 1 ;;
+    esac
+}
+
+# to_uint <text>: sets UINT to the decimal form without leading zeros, or fails
+# when the text is not digits or has more than 15 of them.
+to_uint() {
+    is_digits "${1:-}" || return 1
+    UINT=$1
+    while :; do
+        case $UINT in
+        0?*) UINT=${UINT#0} ;;
+        *) break ;;
+        esac
+    done
+    [ "${#UINT}" -le 15 ]
+}
+
+valid_ncpu() {
+    to_uint "${1:-}" && [ "$UINT" -gt 0 ] && [ "$UINT" -le "$MAX_NCPU" ]
+}
+
+# The CPU count seeds every fallback, so it is resolved first and never fails.
+detect_ncpu() {
+    c=
+    if [ "$os" = Darwin ]; then
+        c=$(sysctl -n hw.ncpu 2>/dev/null) || c=
+    fi
+    if ! valid_ncpu "$c"; then
+        c=$(nproc 2>/dev/null) || c=
+    fi
+    if ! valid_ncpu "$c"; then
+        c=$(getconf _NPROCESSORS_ONLN 2>/dev/null) || c=
+    fi
+    if ! valid_ncpu "$c"; then
+        c=$(sysctl -n hw.ncpu 2>/dev/null) || c=
+    fi
+    if valid_ncpu "$c"; then
+        printf '%s\n' "$UINT"
+    else
+        warn "cannot determine CPU count; assuming $DEFAULT_NCPU"
+        printf '%s\n' "$DEFAULT_NCPU"
+    fi
+}
+
+# Sets idle_num/idle_den (idle fraction of the last second) or returns 1.
+sample_darwin() {
+    out=$(iostat -n 0 -c 2 -w 1 2>/dev/null) || return 1
+    rows=0
+    while read -r line; do
+        # shellcheck disable=SC2086 # splitting the row into columns is the point
+        set -- $line
+        [ "$#" -ge 3 ] || continue
+        if ! is_digits "$1" || ! is_digits "$2" || ! is_digits "$3"; then
+            continue
+        fi
+        to_uint "$1" || return 1
+        us=$UINT
+        to_uint "$2" || return 1
+        sy=$UINT
+        to_uint "$3" || return 1
+        id=$UINT
+        rows=$((rows + 1))
+    done <<EOF
+$out
+EOF
+    [ "$rows" -eq 2 ] || return 1
+    [ "$us" -le 100 ] && [ "$sy" -le 100 ] && [ "$id" -le 100 ] || return 1
+    total=$((us + sy + id))
+    [ "$total" -ge 99 ] && [ "$total" -le 101 ] || return 1
+    idle_num=$id
+    idle_den=100
+}
+
+# Sets cpu_fields (u n s i w q sq st, normalised) or returns 1.
+read_proc_stat() {
+    read -r label u n s i w q sq st rest <"$PROC_STAT" 2>/dev/null || return 1
+    [ "$label" = cpu ] || return 1
+    cpu_fields=
+    for v in "$u" "$n" "$s" "$i" "$w" "$q" "$sq" "$st"; do
+        to_uint "$v" || return 1
+        cpu_fields="$cpu_fields $UINT"
+    done
+}
+
+# Sets idle_num/idle_den (idle fraction of the last second) or returns 1.
+sample_linux() {
+    read_proc_stat || return 1
+    before=$cpu_fields
+    sleep 1 2>/dev/null || return 1
+    read_proc_stat || return 1
+    # shellcheck disable=SC2086 # the counters are space-separated integers
+    set -- $before
+    d_total=0
+    for cur in $cpu_fields; do
+        [ "$cur" -ge "$1" ] || return 1
+        d_total=$((d_total + cur - $1))
+        [ "$d_total" -le "$MAX_TICKS" ] || return 1
+        shift
+    done
+    [ "$d_total" -gt 0 ] || return 1
+    # shellcheck disable=SC2086
+    set -- $before
+    b_idle=$(($4 + $5))
+    # shellcheck disable=SC2086
+    set -- $cpu_fields
+    idle_num=$(($4 + $5 - b_idle))
+    idle_den=$d_total
+}
+
+os=$(uname -s 2>/dev/null) || os=
+ncpu=$(detect_ncpu)
+
+idle_num=
+idle_den=
+case $os in
+Darwin) sample_darwin || warn "iostat probe failed or implausible; using all $ncpu CPUs" ;;
+Linux) sample_linux || warn "/proc/stat probe failed or implausible; using all $ncpu CPUs" ;;
+*) warn "unsupported OS '${os:-unknown}'; using all $ncpu CPUs" ;;
+esac
+
+if ! is_digits "$idle_num" || ! is_digits "$idle_den" || [ "$idle_den" -eq 0 ] || [ "$idle_num" -gt "$idle_den" ]; then
+    printf '%s\n' "$ncpu"
+    exit 0
+fi
+
+jobs=$(((ncpu * idle_num + idle_den - 1) / idle_den))
+floor=$MIN_JOBS
+[ "$floor" -le "$ncpu" ] || floor=$ncpu
+[ "$jobs" -ge "$floor" ] || jobs=$floor
+[ "$jobs" -le "$ncpu" ] || jobs=$ncpu
+printf '%s\n' "$jobs"
