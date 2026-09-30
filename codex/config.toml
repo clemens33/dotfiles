@@ -7,15 +7,16 @@ personality = "pragmatic"
 # Vendor defaults per model: GPT-6.1 Sol low; GPT-6 Sol/Luna/Astra medium;
 # GPT-5.6 Sol low, Luna/Terra medium. OpenAI claims near-Astra performance at
 # a lower cost ($2/$10 per MTok, cached input $0.10).
-# xhigh below is NOT a vendor default: it is Clemens's judgment-seat policy for
-# this interactive config. ae worker profiles set their own effort per seat
-# via `-c model_reasoning_effort=...` (~/.ae/config) and do not inherit this.
+# high below is NOT a vendor default: it is Clemens's choice for this
+# interactive config (2026-09-30; xhigh before). ae profiles, judgment seats
+# included, set their own effort per seat via
+# `-c model_reasoning_effort=...` (~/.ae/config) and do not inherit this.
 # Effort switches preserve the prompt-prefix cache on GPT-6 models (OpenAI
 # 2026-09-22: "Adjust reasoning effort ... without breaking cache"). The
 # one-effort-per-thread rule (CX-42996) was observed pre-GPT-6 (GPT-5.6-era).
-# Drop to high/medium via /effort to conserve quota; max/ultra stay as
-# per-task escalation.
-model_reasoning_effort = "xhigh"
+# Raise to xhigh via /effort for judgment-heavy work, drop to medium to
+# conserve quota; max/ultra stay as per-task escalation.
+model_reasoning_effort = "high"
 # Plan mode benefits from deeper reasoning than execution.
 plan_mode_reasoning_effort = "xhigh"
 approval_policy = "never"
