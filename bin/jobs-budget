@@ -18,21 +18,27 @@
 #            Ceiling, not rounding: the few percent that idle daemons always use
 #            must never cost a lone session a core. A saturated or oversubscribed
 #            machine yields 2.
-#   unknown  any probe failure, unknown OS or implausible output prints ncpu, and
-#            4 if even the CPU count is unknown. A probe that reports failure is
-#            distrusted even when it printed plausible numbers.
+#   unknown  any probe failure, unknown OS or implausible output prints ncpu. If
+#            even the CPU count is unknown it prints 4 at once, without sampling.
+#            A probe that reports failure is distrusted even when it printed
+#            plausible numbers.
 #
-# PROBES (one sample, about 1 s wall, no sudo, two process spawns)
+# PROBES (one sample, about 1 s wall, no sudo, three process spawns: uname, the
+# CPU count, and the sampler)
 #   Darwin   `iostat -n 0 -c 2 -w 1`: two `us sy id` rows, the 1st since boot
 #            (ignored) and the 2nd the last second, in whole percent. Exactly two
-#            rows, each column numeric and us+sy+id within rounding of 100 (99-101),
-#            or the reading is rejected. `top -l 2` was measured at 5 s wall and
-#            3.6 s of CPU on a loaded M-series Mac: too costly for a helper that runs
-#            before every heavy command.
+#            rows, each column numeric and us+sy+id within rounding of 100 (99-101)
+#            in EVERY row, or the reading is rejected. `top -l 2` was measured at
+#            5 s wall and 3.6 s of CPU on a loaded M-series Mac: too costly for a
+#            helper that runs before every heavy command.
 #   Linux    the first line of /proc/stat read twice around `sleep 1`, with shell
 #            builtins only: all eight counters must be present, numeric and
 #            non-decreasing, with time elapsed. iowait counts as idle, steal as
 #            busy. Test seam: JOBS_BUDGET_PROC_STAT replaces /proc/stat.
+#
+# `nproc` honours OMP_NUM_THREADS and OMP_THREAD_LIMIT (GNU coreutils), which would
+# make the CPU count follow whatever the caller exported for its own runtime; both
+# are unset here. Affinity and cgroup limits still apply, `--all` is not used.
 #
 # Every number read from a probe is normalised (leading zeros stripped, at most 15
 # digits) before any shell arithmetic: `$((08))` is an octal error that would abort
@@ -44,6 +50,7 @@
 set -eu
 set -f
 unset IFS
+unset OMP_NUM_THREADS OMP_THREAD_LIMIT
 LC_ALL=C
 export LC_ALL
 
@@ -82,7 +89,8 @@ valid_ncpu() {
     to_uint "${1:-}" && [ "$UINT" -gt 0 ] && [ "$UINT" -le "$MAX_NCPU" ]
 }
 
-# The CPU count seeds every fallback, so it is resolved first and never fails.
+# The CPU count seeds every fallback, so it is resolved first. Prints it, or
+# fails when no source gives a plausible number.
 detect_ncpu() {
     c=
     if [ "$os" = Darwin ]; then
@@ -97,12 +105,8 @@ detect_ncpu() {
     if ! valid_ncpu "$c"; then
         c=$(sysctl -n hw.ncpu 2>/dev/null) || c=
     fi
-    if valid_ncpu "$c"; then
-        printf '%s\n' "$UINT"
-    else
-        warn "cannot determine CPU count; assuming $DEFAULT_NCPU"
-        printf '%s\n' "$DEFAULT_NCPU"
-    fi
+    valid_ncpu "$c" || return 1
+    printf '%s\n' "$UINT"
 }
 
 # Sets idle_num/idle_den (idle fraction of the last second) or returns 1.
@@ -122,14 +126,14 @@ sample_darwin() {
         sy=$UINT
         to_uint "$3" || return 1
         id=$UINT
+        [ "$us" -le 100 ] && [ "$sy" -le 100 ] && [ "$id" -le 100 ] || return 1
+        total=$((us + sy + id))
+        [ "$total" -ge 99 ] && [ "$total" -le 101 ] || return 1
         rows=$((rows + 1))
     done <<EOF
 $out
 EOF
     [ "$rows" -eq 2 ] || return 1
-    [ "$us" -le 100 ] && [ "$sy" -le 100 ] && [ "$id" -le 100 ] || return 1
-    total=$((us + sy + id))
-    [ "$total" -ge 99 ] && [ "$total" -le 101 ] || return 1
     idle_num=$id
     idle_den=100
 }
@@ -171,7 +175,11 @@ sample_linux() {
 }
 
 os=$(uname -s 2>/dev/null) || os=
-ncpu=$(detect_ncpu)
+if ! ncpu=$(detect_ncpu); then
+    warn "cannot determine CPU count; assuming $DEFAULT_NCPU"
+    printf '%s\n' "$DEFAULT_NCPU"
+    exit 0
+fi
 
 idle_num=
 idle_den=

@@ -102,8 +102,12 @@ is_int_line() {
     esac
 }
 
+# out_is <n>: exit 0 and stdout is byte-for-byte "<n>\n". $OUT alone cannot show
+# that: command substitution strips trailing newlines.
 out_is() {
-    [ "$OUT" = "$1" ] && [ "$RC" -eq 0 ]
+    [ "$OUT" = "$1" ] && [ "$RC" -eq 0 ] &&
+        [ "$(wc -c <"$TMP_ROOT/out" | tr -d ' ')" -eq $((${#OUT} + 1)) ] &&
+        [ "$(wc -l <"$TMP_ROOT/out" | tr -d ' ')" -eq 1 ]
 }
 
 err_has() {
@@ -229,6 +233,22 @@ darwin_case mac-sum-98 18 '30 30 38  9.00 9.00 9.00'
 check "us+sy+id = 98 is rejected: prints ncpu" out_is 18
 darwin_case mac-sum-102 18 '30 30 42  9.00 9.00 9.00'
 check "us+sy+id = 102 is rejected: prints ncpu" out_is 18
+# The since-boot row is validated like the interval row: a garbage first row with
+# a plausible (saturated, would give 2) second row must not be trusted.
+garbage1_dir=$(stub_dir mac-garbage-first-row)
+stub "$garbage1_dir" uname 'echo Darwin'
+stub "$garbage1_dir" sysctl 'echo 18'
+stub "$garbage1_dir" iostat "printf ' us sy id\n 200 300 999\n 65 35 0\n'"
+run "$garbage1_dir"
+check "garbage first (since-boot) row with a valid busy interval: prints ncpu" out_is 18
+check "garbage first row: diagnostic on stderr" err_has 'iostat probe failed'
+garbage1b_dir=$(stub_dir mac-first-row-sum)
+stub "$garbage1b_dir" uname 'echo Darwin'
+stub "$garbage1b_dir" sysctl 'echo 18'
+stub "$garbage1b_dir" iostat "printf ' us sy id\n 10 10 5\n 65 35 0\n'"
+run "$garbage1b_dir"
+check "first row with an inconsistent sum, busy interval: prints ncpu" out_is 18
+
 darwin_case mac-negative 18 ' 1  1 -5  9.00 9.00 9.00'
 check "non-numeric idle column: prints ncpu" out_is 18
 
@@ -320,6 +340,21 @@ check "linux: 30-digit counters: prints ncpu, exit 0" out_is 16
 linux_case lin-huge-delta 16 "$BASE" "$(stat_line 1000 0 500 8000000000 0 0 0 0)"
 check "linux: more ticks than one second can hold: prints ncpu" out_is 16
 
+# GNU nproc lets OMP_THREAD_LIMIT / OMP_NUM_THREADS cap or replace its answer. The
+# stub reproduces that, so an exported value must not reach it through the helper.
+omp_dir=$(stub_dir omp)
+printf '%s\n' "$BASE" >"$omp_dir/proc-stat"
+printf '%s\n' "$(stat_line 1000 0 500 9000 0 0 0 0)" >"$omp_dir/stat.after"
+stub "$omp_dir" uname 'echo Linux'
+# shellcheck disable=SC2016 # the stub body must expand at ITS run time
+stub "$omp_dir" nproc 'echo "${OMP_THREAD_LIMIT:-${OMP_NUM_THREADS:-16}}"'
+stub "$omp_dir" sleep "IFS= read -r l <'$omp_dir/stat.after'; printf '%s\\n' \"\$l\" >'$omp_dir/proc-stat'"
+run "$omp_dir" "JOBS_BUDGET_PROC_STAT=$omp_dir/proc-stat" OMP_THREAD_LIMIT=1
+check "OMP_THREAD_LIMIT=1 does not throttle an idle 16-core host" out_is 16
+printf '%s\n' "$BASE" >"$omp_dir/proc-stat"
+run "$omp_dir" "JOBS_BUDGET_PROC_STAT=$omp_dir/proc-stat" OMP_NUM_THREADS=64
+check "OMP_NUM_THREADS=64 does not inflate the CPU count" out_is 16
+
 os_dir=$(stub_dir unknown-os)
 stub "$os_dir" uname 'echo Plan9'
 stub "$os_dir" nproc 'echo 12'
@@ -339,12 +374,16 @@ stub "$nocpu_dir" getconf 'echo garbage'
 run "$nocpu_dir"
 check "CPU count unknown everywhere: prints 4, exit 0" out_is 4
 
+# Unknown CPU count is a probe failure: print 4 at once, do not sample. The
+# saturated reading would give 2 if the sampler ran, and leaves a marker if it does.
 nocpu_mac_dir=$(stub_dir no-ncpu-mac)
 stub "$nocpu_mac_dir" uname 'echo Darwin'
 stub "$nocpu_mac_dir" sysctl 'exit 1'
-stub "$nocpu_mac_dir" iostat "$(iostat_body '10 10 80  9.00 9.00 9.00')"
+stub "$nocpu_mac_dir" iostat ": >'$nocpu_mac_dir/iostat-ran'; $(iostat_body '65 35  0  9.00 9.00 9.00')"
 run "$nocpu_mac_dir"
-check "CPU count unknown, probe works: 80% of the assumed 4 is 4" out_is 4
+check "CPU count unknown, saturated probe: prints 4, not 2" out_is 4
+check "CPU count unknown: the sampler is not even started" test ! -e "$nocpu_mac_dir/iostat-ran"
+check "CPU count unknown: diagnostic on stderr" err_has 'cannot determine CPU count'
 
 nocpu_bad_dir=$(stub_dir no-ncpu-bad-probe)
 stub "$nocpu_bad_dir" uname 'echo Darwin'
