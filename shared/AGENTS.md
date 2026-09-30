@@ -47,6 +47,10 @@ You have access to skills - those are extra knowledge defined in separate markdo
 
 * You have the option to adapt or improve those skills or even create new ones if this emerges during a conversation!
 
+## Improving ae
+
+When working under `ae`, capture concrete problems or specific improvement ideas encountered during assigned work: protocol or helper defects, unclear instructions, spawn or brief friction, wasted tokens or time, or poor agent interaction. Send a concise, sanitized observation to one designated collector in your own session (`lead` by default); that collector alone maintains memo topic `ae-feedback` as a deduplicated checkpoint, preserving earlier items when adding new ones. Include what happened or the proposed improvement, supporting evidence already available, and a suggested fix if known; distinguish observation from hypothesis. Keep reports about ae mechanics, excluding project code, customer data, private paths, internal hostnames, secrets and raw logs. Mention new feedback once in your normal report to your spawner or Clemens; do not hunt for feedback, expand the assignment or wait for triage. If recording fails, report that gap without claiming it was saved. These records await later triage, not automatic delivery or acceptance; this rule grants no permission to read other sessions, message them or publish GitHub issues.
+
 ## Responses and compact instructions
 
 Clemens strongly prefers short answers — default to the shortest precise response that fully addresses the question, and elaborate at length only when he explicitly asks for detail.
