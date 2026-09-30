@@ -141,6 +141,7 @@ Adapt the output filename and prompt to the task.
 Review these uncommitted changes critically and constructively.
 Read AGENTS.md for project conventions before reviewing.
 Intent: <what was changed and why>.
+Form your first findings from the requirements, the standards and the diff BEFORE reading the producer's controls, conclusions or verdicts; then check those against your own findings.
 Assess: correctness, architectural consistency, missed references
 or callers needing updates, edge cases, security implications.
 Do not rubber-stamp. Be specific about issues found.
