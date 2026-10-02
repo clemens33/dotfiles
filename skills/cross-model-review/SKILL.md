@@ -67,7 +67,7 @@ All five were write-denial canary-tested on 2026-09-07. Confirm the profile stil
 eligible provider — never the plain build profile of the same name. A write-capable reviewer can
 mutate the live checkout it was asked to read, which is exactly what these seats exist to
 prevent. If no write-denied profile on an eligible provider is available, say so: the mandatory
-gate stays OPEN and nothing is committed unless the user explicitly waives it.
+gate stays OPEN and nothing is committed unless the user explicitly waives it. A write-denied seat can still author acceptance tests under the spec-first rule: it supplies the frozen test content, and the driver installs it byte-identically; authorship grants it no write access.
 
 ⚠️ **Known gap on the Codex seats.** The Codex `-s read-only` sandbox covers the model's
 built-in filesystem tools. It does **not** disable write-capable tools reached through a

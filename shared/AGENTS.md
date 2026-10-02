@@ -161,7 +161,7 @@ Field knowledge (September 2026 SOTA, source-tiered references): `~/projects/cle
    - Generated code is debt until validated (Anthropic 2026 Trends Report).
    - **Test oracle.** Expected outcomes come from requirements, invariants or an independent reference — never from the unit under test (a test that asserts what the code says is a tautology; old code can preserve the bug). A constant pin is a contract pin, not proof that consumers use it correctly.
    - **Mocking limit.** Mock external dependencies; never mock away the behaviour being judged. A test that cannot fail on the changed behaviour is not a test.
-   - **Spec-first for M/L.** Acceptance tests are written first by an independent agent of a different model provider; the implementer never edits them (a spec it believes wrong goes back with evidence). A waiver names the triage reason.
+   - **Spec-first for M/L.** Acceptance tests are authored and frozen before implementation by an agent on a different model provider from the implementer; by default that same agent then reviews the implementation, so no additional test-author seat is needed. Its implementation verdict does not gate its own tests: an eligible seat on another provider reviews those against requirements. The implementer never changes test content (a disputed spec goes back with evidence); authorized byte-identical installation of the frozen tests is allowed. A separate test author may be used for parallel slices or high blast radius. A waiver names the triage reason.
    - **Door note.** Before an irreversible action (push to main, release, deploy, delete, send), state in one line what happens, whether it can be reversed and who owns it.
 
 ### Where doctrine lives

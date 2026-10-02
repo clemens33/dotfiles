@@ -96,12 +96,12 @@ Skill-augmented single agent for the implementation; the acceptance tests come f
 - Brief inline outline in the prompt — one paragraph: what you're doing, what done looks like, how you'll know
 - Agent runs full local validation (tests, lint, types — whatever the repo has)
 - You read the diff before committing
-- Spec-first tests (AGENTS.md universal principles): an independent agent of a different model provider writes the acceptance tests first; the implementer never edits them
+- Spec-first tests (AGENTS.md universal principles): by default one different-provider seat authors and freezes acceptance tests, then reviews implementation; test changes retain their own cross-provider review. No additional test-author seat is required.
 
 **Settings:**
 - Effort: follow the seat policy below; move worker effort only on measured outcome.
 - Skills: domain skills as needed (load from a private overlay if applicable). Consider `code-review` after implementation for non-trivial diffs.
-- Subagents: `Explore` for codebase recon *only if* the change surface is unclear; plus the independent acceptance-test author required above (different provider, e.g. an independent ae test-author seat)
+- Subagents: `Explore` for codebase recon *only if* the change surface is unclear; the acceptance-test author is normally the pair's reviewer, not an additional seat. Authorship grants no extra write authority: a write-denied author supplies frozen test content for authorized byte-identical installation; review remains read-only.
 - Branch: feature branch + PR for shared repos; direct main for personal/dotfiles
 
 **Trigger cross-model review per the rule below — not by default.**
@@ -116,7 +116,7 @@ Plan-first. Phased execution. Osmani's long-running-agents discipline.
 1. **Written plan first** — `scope` skill produces a phased plan with test gates *before* code. If `scope` feels heavy, write the equivalent to `.local/plan.md` by hand.
 2. **Phased execution** — each phase ends green-or-stop. No "let me just finish this one more thing."
 
-Plus the spec-first tests rule from the AGENTS.md universal principles: an independent agent of a different model provider writes the acceptance tests first; the implementer never edits them.
+Plus the spec-first rule from the AGENTS.md universal principles: normally the same different-provider seat authors and freezes acceptance tests, then reviews implementation; test changes retain their own cross-provider review. A separate test author may be used for parallel slices or high blast radius.
 
 **Recommended before execution:**
 - **Grill the plan** with the `grill-with-docs` skill (or a cross-model plan critique) — catches handwaves before they cost you code.
@@ -304,5 +304,5 @@ If these three diverge, `shared/AGENTS.md` wins (it's the contract).
 
 ---
 
-*Last updated: 2026-09-30 (vendor defaults, seat effort policy, read-only provider-diverse reviews, review cadence, spec-first tests pointer). Update as the workflow evolves.*
+*Last updated: 2026-10-02 (vendor defaults, seat effort policy, read-only provider-diverse reviews, review cadence, spec-first tests pointer, one test-author/reviewer seat). Update as the workflow evolves.*
 *This doc was iteratively grilled via the `grill-with-docs` skill, then cross-model reviewed by codex:coworker via `ae review` per its own dual-trigger rule (touches shared agent behavior + embeds judgment calls). Findings applied before commit.*
