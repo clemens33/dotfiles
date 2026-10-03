@@ -647,6 +647,12 @@ env_http_headers = { "x-api-key" = "MIC_ASSISTANT_API_KEY" }
 url = "https://assistant-test.ai.miccust.dev/api/gateway/mcp/"
 env_http_headers = { "x-api-key" = "MIC_ASSISTANT_TEST_API_KEY" }
 
+# MIC Global Trade Assistant MCP gateway — all GTA tools (prod).
+# Same launch-scoped key delivery and MIC_ASSISTANT_* shell exclusion as above.
+[mcp_servers.gta-all-tools]
+url = "https://gta.ai.miccust.dev/api/gateway/mcp/"
+env_http_headers = { "x-api-key" = "MIC_ASSISTANT_GTA_API_KEY" }
+
 [notice]
 "hide_gpt-5.1-codex-max_migration_prompt" = true
 hide_rate_limit_model_nudge = true
