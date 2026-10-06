@@ -16,12 +16,6 @@ Trigger: the human drops an idea mid-work. Phrases include "idea:",
   Outside ae it is the single agent.
 - Store: ae memo topic `ideas` (one checkpoint record holding the
   running list), or `.local/ideas.md` outside ae.
-- Gate FIRST: re-reading the checkpoint is a fresh state read. Run the
-  source + route classification (`references/privacy.md`) before
-  opening it. If this source (session or repo) is EXCLUDED: do not read
-  or rewrite the record — tell the human plainly the idea remains
-  uncaptured pending classification, and keep his words in the
-  conversation so nothing is lost.
 - Serialize every update from the LATEST checkpoint: re-read the record,
   append, write back. A rewrite must carry every earlier item forward.
   Verify the item count before and after — a count drop means a lost
