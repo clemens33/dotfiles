@@ -57,6 +57,7 @@ The wrapper install script detects the overlay submodule and runs its Dotbot pas
 | OpenDesign | `open-design/compose.yaml`, `open-design/Dockerfile`, `bin/open-design` | `~/.config/open-design/compose.yaml`, `~/.config/open-design/Dockerfile`, `~/.local/bin/open-design{,-mcp}` |
 | DeepSeek Harness (`dsh`, pilot) | `deepseek-harness/` | `~/.local/bin/dsh`; the patch layers, the `dsh-tui` profile and the agent preset are managed **copies** under `~/.dsh`, not links |
 | `jobs-budget` | `bin/jobs-budget` | `~/.local/bin/jobs-budget` — prints how many parallel jobs a test/build run should use from the CPU free right now (`pytest -n "$(jobs-budget)"`); all cores on an idle machine |
+| `muse2` | `bin/muse2` | `~/.local/bin/muse2` — second Muse Code account under `~/.config-muse2/muse`; run `muse2 login` first. Other tools share normal `~/.config` entries through symlinks; settings and trust start fresh |
 | AI skills | `skills/<name>/` | `~/.claude/skills/<name>/`, `~/.agents/skills/<name>/` |
 
 The AI contract is the one exception: it is **rendered**, not symlinked. See
