@@ -5,6 +5,8 @@
 > (Google-grounded), Grok (X search) — plus locally-verified tool facts.
 > September 2026 refresh: installed harness defaults, instruction/skill discovery,
 > review permissions, and current hooks reference (2026-09-07).
+> October 2026 refresh: Opus/Sonnet 5.5, GPT-6 family + GPT-6.1 Sol, Muse Wonder,
+> GPT-6 effort-switch cache behaviour, current effort defaults (2026-10-13).
 > This document captures the state of the art in agentic coding workflows,
 > tooling, and best practices. Living document — update as the field evolves.
 > Source-tiering applies to all citations (see §3).
@@ -33,9 +35,17 @@ Use Claude Code or Codex well before you build a "system." Don't over-engineer.
 > Dated section. Rotates as the field moves. Older facts archive to the changelog,
 > not this section.
 
+### October 2026 — 5.5 generation, GPT-6.1 Sol, Muse Wonder [A/D]
+
+**Claude Opus 5.5 shipped 2026-09-22 [A]** — API ID `claude-opus-5-5`, $4/$20 per Mtok (down from Opus 5's $5/$25; cache reads 5% of base input = $0.20), 1M context / 128k output, knowledge cutoff June 2026. Adaptive thinking is always on and cannot be disabled. Effort ladder `low→medium→high→xhigh→max`; **vendor default is `medium`** — the first Opus flagship not to default `high` — and Anthropic says to set effort explicitly and re-run your sweep rather than carry an Opus 5 setting over, since 5.5 thinks more per turn at the same level. Claude Code's `opus` alias resolves to 5.5 since CC 2.1.280; this repo pins interactive `high` deliberately (`claude/settings.json` at HEAD, verified 2026-09-22). **Claude Sonnet 5.5 shipped 2026-09-28 [A]** — ID `claude-sonnet-5-5`, $2/$10 per Mtok (cache reads 5% = $0.10), 1M / 128k, cutoff June 2026, default effort **`high`**. Haiku 5.5 completes the 5.5 lineup (from $0.10/$0.50, default `medium`) [A]. Fable 5.1 stays the credit-billed tier above Opus 5.5 at $10/$50, default `high` [A].
+
+**GPT-6 family completed, then GPT-6.1 Sol [A]** — GPT-6 Astra released 2026-09-03 (`gpt-6-astra`, $10/$50, 1.05M API context / 128k output, efforts `low→max` with no `none`, cutoff 2026-04-30); GPT-6 Sol and Luna followed 2026-09-22 (Sol $2/$10, cached $0.20; Luna $0.10/$0.50, cached $0.01, efforts incl. `none`). **GPT-6.1 Sol shipped 2026-09-29 [A]** — `gpt-6.1-sol`, $2/$10 with cached input halved to $0.10, positioned as near-Astra coding/computer-use at one-fifth of Astra's price; it is the Codex default in this repo (`codex/config.toml` at HEAD). Codex catalog facts stay CLI-scoped: 0.159.2 (2026-09-30) gives GPT-6.1 Sol a 272k window (95% effective) and default effort **`low`** — press coverage says `medium`, the catalog wins locally; GPT-6 Sol/Luna/Astra default `medium` in the same catalog. **Cache rule retired on the API [A]**: OpenAI's 2026-09-22 GPT-6 prompt-caching update plus the Reasoning guide's `configuration_update` mechanism (appended between responses, request-level `reasoning.effort` unchanged, GPT-6 standard single-agent mode) lets API callers switch effort while preserving the prompt-prefix cache — so the pre-GPT-6 one-effort-per-thread rule no longer applies to GPT-6 API threads. Codex CLI adoption of that mechanism is **unverified** (2026-10-13; `codex/config.toml:14-16` is a comment, not client evidence) — keep one effort per CLI thread until a Codex source proves otherwise — see the superseded note in the September entry below.
+
+**Meta Muse Wonder + Wonder Full shipped 2026-10-12 [A/D]** — Meta's first frontier-class pair. IDs `muse-wonder-1.0` and `muse-wonder-full-1.0`, each with a `-contributor` variant, verified in the local Muse Code 1.4.7 provider catalog (2026-10-13): 1,007,997-token context, 128k output, efforts `minimal→low→medium→high→xhigh→max`. Only the standard Wonder is on the pay-as-you-go Meta Model API ($4/$20 per Mtok, cached $0.20 [D]); Wonder Full is Muse Code-subscription-only with no per-token API price [D]. Artificial Analysis Intelligence Index (via VentureBeat, 2026-10-12 [D]): Wonder Full **56**, Wonder **52**, vs Opus 5.5 58, Sonnet 5.5 56, Fable 5.1 53, GPT-6 Astra 53 — frontier-adjacent, not in front. The contributor tier still trains on input ("may be used for product improvement" in the catalog); locally the catalog default is now the clean `muse-wonder-1.0`, unlike the Spark-era contributor default in §12 — pin explicitly regardless. Knowledge cutoff and vendor default effort for both Wonder models: **unverified** (no Tier A page found 2026-10-13).
+
 ### September 2026 — GPT-6 Astra in Codex [A]
 
-Codex 0.153.4's local model catalog gives `gpt-6-astra` a **272,000-token window**, **95% effective (258,400)**, and default effort **`medium`** (verified locally on 0.153.4, 2026-09-07). These are CLI limits; API-capacity claims do not enlarge the active CLI window. Clemens' judgment seats default to `xhigh`; builders/workers start at vendor default and change that default only on measured outcome. Keep one effort per Astra thread because effort flips bust the prefix cache. See `WORKFLOW.md` for the shared effort table.
+Codex 0.153.4's local model catalog gives `gpt-6-astra` a **272,000-token window**, **95% effective (258,400)**, and default effort **`medium`** (verified locally on 0.153.4, 2026-09-07). These are CLI limits; API-capacity claims do not enlarge the active CLI window. Clemens' judgment seats default to `xhigh`; builders/workers start at vendor default and change that default only on measured outcome. ~~Keep one effort per Astra thread because effort flips bust the prefix cache~~ **PARTLY SUPERSEDED 2026-09-22 — `configuration_update` effort switches preserve the GPT-6 prompt-prefix cache on the API [A]; the blanket one-effort rule was pre-GPT-6. Codex CLI adoption is unverified — keep one effort per CLI thread for now, see October 2026 above.** See `WORKFLOW.md` for the shared effort table.
 
 ### Early September 2026 — Fable 5.1 lands [A]
 
@@ -161,7 +171,7 @@ Higher effort is not free. Calibrate per task class.
 
 ### Effort routing
 
-**Clemens' defaults:** judgment seats (lead/colead and interactive use) use `xhigh`; builders/workers start at the vendor default and change that default only on measured outcome. Vendor defaults are model-specific: Fable 5.1 / Opus 5 and Grok 4.6 `high`; Codex Astra / Luna / Terra `medium`, Sol `low`. See `WORKFLOW.md` for versioned evidence and the trivial-work exception. Choose Astra effort at thread creation; mid-thread flips bust the prefix cache.
+**Clemens' defaults:** interactive/default effort is `high`; raise to `xhigh` for judgment-heavy work; ae judgment seats keep `xhigh` via profile; builders/workers start at the vendor default and change that default only on measured outcome. Vendor defaults are model-specific (October 2026 [A]): Fable 5.1 / Sonnet 5.5 and Grok 4.6 `high`; **Opus 5.5 `medium`** (this repo's interactive pin stays `high`, `claude/settings.json` at HEAD); Codex GPT-6 Sol / Luna / Astra `medium`, **GPT-6.1 Sol `low`** (Codex 0.159.2 catalog, `codex/config.toml` at HEAD; GPT-5.6-era Sol `low` / Luna / Terra `medium` retired with that family). See `WORKFLOW.md` for versioned evidence and the trivial-work exception. On GPT-6 API threads, `configuration_update` effort switches preserve the prompt-prefix cache since 2026-09-22 [A]; the blanket one-effort-per-thread rule was pre-GPT-6 — but Codex CLI adoption is **unverified**, so keep one effort per CLI thread until proven.
 
 Higher worker effort needs a measured quality gain worth its added tokens/latency. A task's S/M/L bucket determines workflow gates, not an automatic effort override.
 
@@ -428,8 +438,8 @@ GPT-5.5 in Codex requires ChatGPT auth, not API-key auth, at launch. API-key use
 - Installation: self-updating `muse-stable` bash launcher at `~/.local/bin/muse`, plus a pinned `~/.local/bin/muse-bin-<version>` binary.
 - Config root: `~/.config/muse/` (`settings.json`, `auth.json`, `trust.json`). State root: `~/.local/share/muse/` (`sessions/`, `model-catalog/`, `feature-config/`, `skills/bundled/`, `session-index.db`). `XDG_CONFIG_HOME` and `XDG_DATA_HOME` override both roots.
 - Authentication uses an OAuth device code against `https://auth.meta.com` (client id embedded in the launcher) and API base `https://api.meta.ai/v1`. The token is in the macOS keychain; mode-0600 `auth.json` contains only non-secret metadata.
-- The provider catalog is cached at `~/.local/share/muse/model-catalog/6d657461__p746268.json`. Its four visible models are `muse-spark-1.3`, `muse-spark-1.3-contributor` (`is_default: true`), `muse-spark-1.2`, and `muse-spark-1.2-contributor`; all advertise a 1,007,997-token context limit and 128,000-token output limit.
-- **Contributor tier trains on prompts, retains data for 30 days, and is not ZDR.** The contributor variant remains the vendor default, so an unpinned install silently lands on the training tier. A subscription grants entitlement to the clean `muse-spark-1.3` model but does not change that default; pin the model explicitly.
+- The provider catalog is cached at `~/.local/share/muse/model-catalog/6d657461__p746268.json`. Its four visible models are `muse-spark-1.3`, `muse-spark-1.3-contributor` (`is_default: true`), `muse-spark-1.2`, and `muse-spark-1.2-contributor`; all advertise a 1,007,997-token context limit and 128,000-token output limit. **Update (Muse Code 1.4.7, 2026-10-13):** the catalog now leads with `muse-wonder-1.0` (`is_default: true`) and `muse-wonder-full-1.0` plus hidden `-contributor` variants (release 2026-10-12, same 1,007,997 / 128,000 limits, efforts `minimal→max`) — see §2 October 2026.
+- **Contributor tier trains on prompts, retains data for 30 days, and is not ZDR** (September Spark snapshot, 2026-09-13 — not re-verified on Wonder). The contributor variant was the vendor default in that snapshot, so an unpinned install silently landed on the training tier; the October Wonder catalog flips the default to the clean `muse-wonder-1.0` (see above). A subscription granted entitlement to the clean `muse-spark-1.3` model but did not change that default; pin the model explicitly.
 - Effort ladder: `none|minimal|low|medium|high|xhigh|max|ultra`; CLI default is `high`, while the 1.3 catalog ceiling is `max`. The tracked pin is therefore `reasoning_effort: max`.
 - User-scope skills resolve from **`$HOME/.agents/skills/<name>/SKILL.md`**, alongside about 22 bundled `built-in` skills. The binary separately names `~/.claude/skills` and `~/.codex/skills` as import sources; that import mechanism is not the active discovery path measured here.
 - User rules load from **`~/.claude/CLAUDE.md`** as a `rules_file` context message tagged `written-for="Claude Code"`; precedence is project → Claude Code → Codex. The Codex fallback is `$CODEX_HOME/AGENTS.md` (default `~/.codex/AGENTS.md`).
@@ -668,6 +678,12 @@ Recorded here so they're not lost; each is a separate, confirmable change:
 - Anthropic models overview (Opus 5 row, IDs, pricing) — https://platform.claude.com/docs/en/about-claude/models/overview [A]
 - Claude Code model config (aliases incl. fable -> 5.1, effort defaults, category fallback, fast mode) — https://code.claude.com/docs/en/model-config [A]
 - Anthropic Fable 5.1 model page — https://platform.claude.com/docs/en/models/fable-5-1/overview [A]
+- Anthropic Opus 5.5 model page (ID, pricing, default effort `medium`) — https://platform.claude.com/docs/en/models/opus-5-5/overview [A]
+- Anthropic Sonnet 5.5 model page (ID, pricing, default effort `high`) — https://platform.claude.com/docs/en/models/sonnet-5-5/overview [A]
+- OpenAI API changelog (GPT-6 Astra 2026-09-03, Sol/Luna 2026-09-22, GPT-6.1 Sol 2026-09-29) — https://developers.openai.com/api/docs/changelog [A]
+- OpenAI model catalog (GPT-6 family pricing, context, efforts) — https://developers.openai.com/api/docs/models [A]
+- OpenAI "Better prompt caching for GPT-6" (effort switches preserve cache, 2026-09-22) — https://openai.com/index/better-prompt-caching-for-gpt-6/ [A]
+- OpenAI Reasoning guide — change reasoning mid-conversation (`configuration_update`, API mechanism; no Codex CLI adoption stated) — https://developers.openai.com/api/docs/guides/reasoning [A]
 - Anthropic effort guide (per-model recommendations) — https://platform.claude.com/docs/en/build-with-claude/effort [A]
 - Anthropic Fable 5 / Mythos 5 launch — https://www.anthropic.com/news/claude-fable-5-mythos-5 [A]
 - Anthropic Fable/Mythos access notice (2026-06-12 suspension) — https://www.anthropic.com/news/fable-mythos-access [A]
@@ -752,6 +768,8 @@ Cite as signals only. Audit periodically.
 - ADTmag — "Loop Engineering Emerges as Developers Put AI Coding Agents on Repeat" (2026-07-01) — https://adtmag.com/articles/2026/07/01/loop-engineering-emerges-as-developers-put-ai-coding-agents-on-repeat.aspx [D]
 - LangChain "State of Agent Engineering" report (57% of orgs with agents in production) — June 2026 [D]
 - Fable5.app / DigitalApplied — Fable 5 usage-credit switch trackers (pricing/timeline signals; prefer Anthropic notices for normative claims) [D]
+- VentureBeat — Muse Wonder / Wonder Full launch + Artificial Analysis Index (2026-10-12) — https://venturebeat.com/technology/metas-new-muse-wonder-and-muse-wonder-full-models-achieve-frontier-performance-but-only-the-weaker-one-is-available-via-api [D]
+- Artificial Analysis — Muse Wonder evaluation (Index v4.3, pricing, availability) — https://artificialanalysis.ai/articles/muse-wonder [D]
 
 ### Practitioner references
 
@@ -787,7 +805,7 @@ Watch but caveat (useful framing, less foundational):
 - `--dangerously-skip-permissions` or alias `claude-yolo`
 - Better: `/permissions` with wildcards: `Bash(npm run *)`, `Edit(/src/**)`
 - `effortLevel` in `settings.json`: see §5 routing
-- Default effort is `high` on every model that supports it — **except Opus 4.7, which defaults `xhigh`**. On Opus 5 an explicitly set level carries over across model switches; set `xhigh` deliberately to opt up. Fable 5.1 and Opus 5 have no model-default effort hold; Fable 5 / Opus 4.8 / Opus 4.7 hold their default across sessions until effort is changed once — so on Fable 5.1 a settings `effortLevel` applies directly. Per-model override: `modelSettings.<id>.effortLevel`.
+- Default effort is `high` on most models that support it — **exceptions: Opus 4.7 defaults `xhigh`, Opus 5.5 defaults `medium`** [A, October 2026]. Sonnet 5.5 and Fable 5.1 default `high`. On Opus 5 an explicitly set level carries over across model switches; set `xhigh` deliberately to opt up, and on Opus 5.5 set effort explicitly rather than inheriting an Opus 5 level. Fable 5.1 and Opus 5 have no model-default effort hold; Fable 5 / Opus 4.8 / Opus 4.7 hold their default across sessions until effort is changed once — so on Fable 5.1 a settings `effortLevel` applies directly. Per-model override: `modelSettings.<id>.effortLevel`.
 - `/effort` mid-session, `--effort` on launch, `CLAUDE_CODE_EFFORT_LEVEL` env var for persistence (only way `max` persists)
 - `/model` to switch mid-session
 - `/clear` between unrelated tasks (rarely need `/compact` with 1M context)
@@ -823,4 +841,4 @@ Watch but caveat (useful framing, less foundational):
 
 ---
 
-*Last updated: 2026-09-07 (harness audit defaults and paths, official hooks/instruction/skill docs, Muse pilot, explicit verification gaps). Historical research sections retain their own dates.*
+*Last updated: 2026-10-13 (October 2026 model refresh: Opus/Sonnet 5.5, GPT-6 family + GPT-6.1 Sol, Muse Wonder, GPT-6 cache behaviour, current effort defaults). Historical research sections retain their own dates.*
