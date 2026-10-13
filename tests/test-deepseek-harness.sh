@@ -268,6 +268,10 @@ if [ -x "$comp_bin" ] && [ -d "$comp_profiles" ]; then
     # and pi-ai could still ignore it. Aim a copied patch at a local recorder,
     # run the REAL headless profile with a dummy key, and assert on the outbound
     # JSON. No OpenRouter request or model inference occurs in this test.
+    # Headless issues more than one request (the task call and a title call,
+    # on parallel connections), so the recorder captures every request and
+    # serves until the client has exited; the assertion then covers all of
+    # them instead of whichever one happened to be captured last.
     wire_home=$TMP_ROOT/wire-home
     wire_capture=$TMP_ROOT/wire-request.json
     wire_port_file=$TMP_ROOT/wire-port
@@ -282,13 +286,28 @@ import fs from 'node:fs'
 import http from 'node:http'
 
 const [capturePath, portPath] = process.argv.slice(2)
+// Every request body is appended as one JSON line BEFORE its response is
+// written, so the capture is complete on disk once the client exits, with
+// no assumption about how many requests it makes or in which order they
+// finish. The server never closes itself while the test runs: the test
+// kills it after the client exits. (Closing on a timer — just after the
+// first request, or a fixed deadline after startup — raced the client's
+// parallel connections and its boot time under load.) The idle timer is
+// only orphan insurance for an interrupted suite run: re-armed on listen
+// and on each request, and far beyond any client boot time.
+let idle
+const armIdle = () => {
+  clearTimeout(idle)
+  idle = setTimeout(() => server.close(), 120000)
+}
 const server = http.createServer((request, response) => {
   let raw = ''
   request.setEncoding('utf8')
   request.on('data', (chunk) => { raw += chunk })
   request.on('end', () => {
     const body = JSON.parse(raw)
-    fs.writeFileSync(capturePath, JSON.stringify(body))
+    fs.appendFileSync(capturePath, JSON.stringify(body) + '\n')
+    armIdle()
     response.writeHead(200, { 'content-type': 'text/event-stream' })
     const common = {
       id: 'chatcmpl-loopback',
@@ -310,14 +329,12 @@ const server = http.createServer((request, response) => {
       usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
     })}\n\n`)
     response.end('data: [DONE]\n\n')
-    clearTimeout(deadline)
-    setTimeout(() => server.close(), 25)
   })
 })
 server.listen(0, '127.0.0.1', () => {
   fs.writeFileSync(portPath, String(server.address().port))
+  armIdle()
 })
-const deadline = setTimeout(() => server.close(() => { process.exitCode = 124 }), 10000)
 RECORDER
 
     node "$wire_recorder" "$wire_capture" "$wire_port_file" &
@@ -340,22 +357,32 @@ RECORDER
             "$comp_bin" --profile headless 'return the word loopback-ok' \
             >"$wire_out" 2>"$wire_err" || rc=$?
         equals 'the real headless profile completes against loopback' "$rc" "0"
+        if [ "$rc" -ne 0 ]; then
+            # The temp tree is deleted on exit, so the client's own log has
+            # to be surfaced now or the failure leaves no evidence behind.
+            tail -n 20 "$wire_err" | sed 's/^/wire.err: /' >&2
+        fi
         if [ -s "$wire_capture" ]; then
+            # One JSON line per request the client made; EVERY one of them
+            # must carry the supported parameter spelling, not just the one
+            # a single-file capture happened to end up holding.
             wire_fields=$(node -e '
               const fs = require("node:fs")
-              const body = JSON.parse(fs.readFileSync(process.argv[1], "utf8"))
-              const present = (key) => Object.hasOwn(body, key) ? "present" : "missing"
-              process.stdout.write([
-                `model=${body.model}`,
-                `max_tokens=${present("max_tokens")}`,
-                `max_completion_tokens=${present("max_completion_tokens")}`,
-              ].join(" "))
+              const lines = fs.readFileSync(process.argv[1], "utf8").split("\n").filter((l) => l.length > 0)
+              const bodies = lines.map((l) => JSON.parse(l))
+              const badAt = bodies.findIndex((b) => b.model !== "@preset/deepseek-v41-flash-us-zdr" || !Object.hasOwn(b, "max_tokens") || Object.hasOwn(b, "max_completion_tokens"))
+              if (bodies.length > 0 && badAt === -1) {
+                process.stdout.write("ok")
+              } else {
+                const b = bodies[badAt] || {}
+                process.stdout.write(`bad requests=${bodies.length} first_bad=${badAt} model=${b.model} max_tokens=${Object.hasOwn(b, "max_tokens")} max_completion_tokens=${Object.hasOwn(b, "max_completion_tokens")}`)
+              }
             ' "$wire_capture")
-            equals 'headless emits the supported token-limit parameter on the wire' \
-                "$wire_fields" \
-                "model=@preset/deepseek-v41-flash-us-zdr max_tokens=present max_completion_tokens=missing"
+            equals 'every request headless emits carries the supported token-limit parameter' \
+                "$wire_fields" "ok"
         else
             bad 'the real headless profile reaches the loopback recorder'
+            tail -n 20 "$wire_err" | sed 's/^/wire.err: /' >&2
         fi
         kill "$wire_recorder_pid" 2>/dev/null || true
         wait "$wire_recorder_pid" 2>/dev/null || true
