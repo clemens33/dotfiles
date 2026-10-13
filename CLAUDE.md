@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-Personal dotfiles for Ubuntu WSL (Windows host) and macOS (Apple Silicon), fish shell on both. Uses Dotbot for symlink management. Also bundles AI coding tool configuration (Claude Code, Codex, OpenCode, Gemini) and a shared skill set. macOS package manifest lives in `macos/Brewfile`; migration playbook in `~/MAC-MIGRATION.md`.
+Personal dotfiles for Ubuntu WSL (Windows host) and macOS (Apple Silicon), fish shell on both. Uses Dotbot for symlink management. Also bundles AI coding tool configuration (Claude Code, Codex, OpenCode, Antigravity) and a shared skill set. macOS package manifest lives in `macos/Brewfile`; migration playbook in `~/MAC-MIGRATION.md`.
 
 ## Commands
 
@@ -15,9 +15,10 @@ Personal dotfiles for Ubuntu WSL (Windows host) and macOS (Apple Silicon), fish 
 ./install
 
 # Test dotbot config without applying. Needs a dotbot with --dry-run support:
-# added in v1.23 (its CHANGELOG). This submodule pins v1.17.1, which rejects the
-# flag; the private overlay's vendored copy (dotfiles-mic/dotbot) supports it.
-./dotbot/bin/dotbot -d . -c install.conf.yaml --dry-run
+# added in v1.23 (its CHANGELOG). The pinned ./dotbot submodule is v1.17.1 and
+# REJECTS the flag — do not use it for this. The working command uses the
+# private overlay's vendored copy (only when the overlay is present):
+./dotfiles-mic/dotbot/bin/dotbot -d . -c install.conf.yaml --dry-run
 
 # macOS only: install/update the host toolchain
 brew bundle --file macos/Brewfile
@@ -28,18 +29,19 @@ brew bundle --file macos/Brewfile
 **Dotbot** manages symlinks via `install.conf.yaml`:
 - Shell/editor/git/WSL utility links (`~/.config/fish/`, `~/.gitconfig`, `~/.vimrc`, …)
 - Fish functions directory is symlinked entirely (`fish/functions/` → `~/.config/fish/functions/`)
-- AI contract: **generated, not linked.** `scripts/render-contract.sh` concatenates `shared/AGENTS.md` with the private overlay's `dotfiles-mic/AGENTS-MIC.md` and writes a regular file into `~/.claude/CLAUDE.md`, `~/.claude2/CLAUDE.md`, `~/.claude-mic/CLAUDE.md`, `~/.codex/AGENTS.md`, `~/.config/opencode/AGENTS.md`, and `~/.gemini/config/plugins/dotfiles/rules/AGENTS.md`. Editing one of those targets is pointless — the next `./install` overwrites it. Edit the source, re-run `./install`; `scripts/render-contract.sh --check` reports drift. Grok keeps a short `grok/AGENTS.md` pointer → `~/.grok/AGENTS.md` (10k-char rules cap) and loads the full contract via its Claude-compat reading of `~/.claude/CLAUDE.md`
+- AI contract: **generated, not linked.** `scripts/render-contract.sh` concatenates `shared/AGENTS.md` with the private overlay's `dotfiles-mic/AGENTS-MIC.md` and writes a regular file into `~/.claude/CLAUDE.md`, `~/.claude2/CLAUDE.md`, `~/.claude-mic/CLAUDE.md`, `~/.codex/AGENTS.md`, `~/.config/opencode/AGENTS.md`, `~/.gemini/config/plugins/dotfiles/rules/AGENTS.md`, and `~/.dsh/AGENTS.md`. Editing one of those targets is pointless — the next `./install` overwrites it. Edit the source, re-run `./install`; `scripts/render-contract.sh --check` reports drift. Grok keeps a short `grok/AGENTS.md` pointer → `~/.grok/AGENTS.md` (10k-char rules cap) and loads the full contract via its Claude-compat reading of `~/.claude/CLAUDE.md`
 - AI tool settings: `claude/`, `codex/`, `opencode/`, `antigravity/`, `grok/` configs (Grok reads `~/.claude/skills/`, `~/.claude/agents/`, and `~/.claude/settings.json` permissions natively — no per-skill symlinks needed). Gemini CLI was retired by Google 2026-06-18; Antigravity CLI (`agy`) replaces it: rules/skills under `~/.gemini/config/`, settings and runtime state under `~/.gemini/antigravity-cli/`
 - Per-skill symlinks into `~/.claude/skills/` and `~/.agents/skills/` for Codex (NOT a directory symlink, so an optional private overlay can contribute its own skills into the same target); Antigravity's `~/.gemini/config/skills` links to `~/.claude/skills`
 
 **AI skill layers:** the generic skills in `skills/` are the public layer. A private overlay (`dotfiles-mic/`, optional git submodule) can add domain-specific skills + agents on machines with access to it. The wrapper `./install` script handles both layers — public always, private only if submodule is populated. See the **manage-skills** skill for the two-layer model.
 
 **Fish shell** (`config.fish`):
-- PATH includes: `~/.local/bin`, `~/bin`, nvm, go
-- fnm for node version management
+- PATH includes: `~/.local/bin`, `~/bin`, go
+- Node/runtime management: mise intended for macOS (`config.fish:31-35`); legacy fnm hook runs wherever `~/.local/share/fnm` exists (`config.fish:75-80`)
 - `gh copilot` aliases: `g` (shell), `ghg` (gh), `gitg` (git)
 - Loads `~/.config/fish/functions-mic/` when present (provided by the private overlay)
 
 **Git config** uses conditional includes:
 - Default: personal (`clemens33`)
 - `[includeIf "gitdir:~/projects/mic/"]` references `~/.gitconfig-mic`, installed only when the private overlay is present. Silently no-op without overlay.
+- `[includeIf "hasconfig:remote.*.url:..."]` additionally routes clones whose remote is under `github.com/mic-cust/**` or `github.com/mic-cust-copilot/**` to `~/.gitconfig-mic-github`, covering MIC clones outside `~/projects/mic/` (`gitconfig:27-30` at HEAD).

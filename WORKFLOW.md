@@ -104,7 +104,7 @@ Skill-augmented single agent for the implementation; the acceptance tests come f
 - Subagents: `Explore` for codebase recon *only if* the change surface is unclear; the acceptance-test author is normally the pair's reviewer, not an additional seat. Authorship grants no extra write authority: a write-denied author supplies frozen test content for authorized byte-identical installation; review remains read-only.
 - Branch: feature branch + PR for shared repos; direct main for personal/dotfiles
 
-**Trigger cross-model review per the rule below — not by default.**
+**Cross-model at M:** spec-first already makes different-provider implementation review the default — the acceptance-test author reviews the implementation (Must list above), and that pass satisfies the slice's cross-model gate. The dual-trigger rule below governs work not already reviewed (plan critique, integrated delta), not a second pass on the same implementation.
 
 ---
 
@@ -124,12 +124,12 @@ Plus the spec-first rule from the AGENTS.md universal principles: normally the s
 
 **Use as needed (context-dependent):**
 - **Subagent split** (planner / implementer / reviewer fan-out) if work parallelizes. Skip if you can hold the plan in your head.
-- **Worktrees** if parallel tracks exist. Overkill for sequential phases.
+- **Worktrees** if parallel tracks exist. Overkill for sequential phases. Own cleanup per the `shared/AGENTS.md` worktree duty (record path/branch/owner; `git worktree remove` when no longer needed).
 - **ADR** if a real design decision was made (genuine alternatives, hard to reverse, surprising without context). Rare.
 - **`arch-docs` update** if the change touches the living architecture (new module, new boundary, new invariant). Not for every L task.
 
 **Settings:**
-- Effort: judgment seats use `xhigh`; builders follow the vendor-default policy below.
+- Effort: interactive default `high`, raised to `xhigh` for judgment-heavy phases; ae judgment seats keep `xhigh` via profile; builders follow the vendor-default policy below.
 - Branch: feature branch minimum. Worktree if you need to context-switch.
 - Commits: per-phase. Each phase = revertable unit.
 
@@ -148,10 +148,10 @@ When an L task spans sessions or runs unsupervised, additional patterns apply. T
 - **Durable decisions** as ADRs in `docs/adr/` (or repo-visible equivalents). Code, plans, and decisions all live as repo files — that's the agent's memory per `shared/AGENTS.md`.
 
 **Optional (tool-specific mirror, not primary):**
-- `~/.claude/memory/` — Claude-only, not visible to Codex/OpenCode/Gemini, not versioned. Use only when (a) you're solo-on-Claude *and* (b) you want auto-memory's surfacing across unrelated sessions. Do not put anything load-bearing here that another tool would need to read.
+- `~/.claude/memory/` — Claude-only, not visible to Codex/OpenCode/Antigravity (`agy`), not versioned. Use only when (a) you're solo-on-Claude *and* (b) you want auto-memory's surfacing across unrelated sessions. Do not put anything load-bearing here that another tool would need to read.
 
 **Recommended:**
-- **`ae` multi-agent workspace** — use the session's full-path `spawn <name> --using <profile>` helper (for example `spawn reviewer --using gpt56sol-review`, if that profile is configured); served providers must differ. Use session `ask` / `review` helpers or the `collab` skill for auditable handoffs. See the cross-model review section below for how this satisfies the contract.
+- **`ae` multi-agent workspace** — use the session's full-path `spawn <name> --using <profile>` helper (for example `spawn reviewer --using <write-denied-profile>`, if that profile is configured); served providers must differ. Use session `ask` / `review` helpers or the `collab` skill for auditable handoffs. See the cross-model review section below for how this satisfies the contract.
 - **`zoom-out` skill** periodically — step back, look at the work in aggregate, check you're still on the plan. Especially after each phase merges.
 - **Scheduled / unattended runs** via `/loop` (built-in to Claude Code) with an explicit max-iteration bound. Apply Ralph-loop discipline (`KNOWLEDGE.md` §17): mechanical work only, machine-verifiable completion criterion, hard iteration ceiling.
 
@@ -173,7 +173,7 @@ strict and separates "review depth" from "cross-model satisfied."
 
 Run cross-model review if **either**:
 
-- **(a) Hard to undo cheaply** — touches `shared/AGENTS.md`, `KNOWLEDGE.md`, `install.conf.yaml`, `claude/settings.json`, data contracts, public APIs, deps with transitive scope, license/attribution-sensitive content, anything that changes other agents' behavior.
+- **(a) Hard to undo cheaply** — touches `shared/AGENTS.md`, `WORKFLOW.md`, `skills/`, `KNOWLEDGE.md`, `install.conf.yaml`, `claude/settings.json` or other agent harness configs, data contracts, public APIs, deps with transitive scope, license/attribution-sensitive content, anything that changes other agents' behavior.
 - **(b) Agent made a decision** rather than mechanically derived it — *"I chose X over Y because…"* in the diff or commit message signals judgment, not derivation.
 
 One trigger fires = one cross-model pass. Both fire on an L task = two passes (plan-level + diff-level).
@@ -221,15 +221,17 @@ Pick the provider before the harness. These permission forms do not themselves p
 
 | Harness / served model | Vendor default effort | Verification |
 |---|---|---|
-| Claude Code / Fable 5.1, Opus 5 | `high` | 2.1.263, 2026-09-07 |
-| Codex / GPT-6 Astra | `medium` | 0.153.4 model catalog, 2026-09-07 |
-| Codex / GPT-5.6 Sol | `low` | 0.153.4 model catalog, 2026-09-07 |
-| Codex / GPT-5.6 Luna, Terra | `medium` | 0.153.4 model catalog, 2026-09-07 |
-| Grok / Grok 4.6 | `high` | 1.0.13, 2026-09-07 |
+| Claude Code / Opus 5.5 | `medium` | `claude/settings.json:51` at HEAD (verified there 2026-09-22) |
+| Claude Code / Fable 5.1, Opus 5 | `high` | 2.1.263, 2026-09-07 — **unverified** for current models |
+| Codex / GPT-6.1 Sol | `low` | `codex/config.toml:3-8` at HEAD (0.159.2, 2026-09-30) |
+| Codex / GPT-6 Sol/Luna/Astra | `medium` | `codex/config.toml:3-8` at HEAD (0.159.2, 2026-09-30) |
+| Codex / GPT-5.6 Sol | `low` | `codex/config.toml:3-8` at HEAD (0.159.2, 2026-09-30) |
+| Codex / GPT-5.6 Luna, Terra | `medium` | `codex/config.toml:3-8` at HEAD (0.159.2, 2026-09-30) |
+| Grok / Grok 4.6 | `high` | 1.0.13, 2026-09-07 — **unverified** since |
 
-**Clemens' defaults:** judgment seats (lead/colead and interactive use) use `xhigh`; builders/workers start at the vendor default and change that default only on measured outcome. Keep one effort per Astra thread: effort flips bust the prefix cache. Choose a new thread when a measured change calls for different effort.
+**Clemens' defaults** (ruling 2026-09-30, 8f473ed): interactive/default effort is `high`; raise to `xhigh` via `/effort` for judgment-heavy work; ae judgment seats keep `xhigh` via profile. Builders/workers start at the vendor default and change that default only on measured outcome. Effort switches preserve the prompt-prefix cache only via the API mechanism OpenAI documents (configuration_update with unchanged request-level reasoning.effort; OpenAI reasoning guide 2026-09-22) — whether Codex `/effort` uses that path is **unverified**, so treat CLI mid-thread switches as cache-risky until proven. The one-effort-per-thread rule applies to pre-GPT-6 models and, conservatively, to CLI switches generally (`codex/config.toml:14-16` at HEAD records the claim, not the adoption).
 
-For trivial mechanical work (typos, formatting, version bumps), any seat may choose `low`/`medium` per task; worker default changes still need measured outcomes, and Astra effort is chosen only at thread start. Claude `max` is session-only for the single hardest L phase; only `CLAUDE_CODE_EFFORT_LEVEL` persists it.
+For trivial mechanical work (typos, formatting, version bumps), any seat may choose `low`/`medium` per task; worker default changes still need measured outcomes, and on pre-GPT-6 models effort is still chosen only at thread start (same caution for CLI `/effort` switches on GPT-6 until the cache-preserving path is verified). Claude `max` is session-only for the single hardest L phase; only `CLAUDE_CODE_EFFORT_LEVEL` persists it.
 
 ---
 
@@ -239,7 +241,7 @@ For trivial mechanical work (typos, formatting, version bumps), any seat may cho
 2. **Articulate before solving** — Hashimoto's "reproduce your own work" + Ronacher's "judgment, not abdication"; baked into the `diagnose` skill loop. If you can't state the problem in one sentence, you're not ready to fix it. Reproduce → describe → then act.
 3. **Caveman-lite output** — `shared/AGENTS.md` rule #4. Drift back to verbose = drift back to slop.
 4. **Source-tier your justifications** — `KNOWLEDGE.md` §3. Tier A/B drives, C/D suggests.
-5. **Effort follows seat policy** — judgment defaults to `xhigh`; worker default changes need measured outcomes. Apply the trivial-work exception above, not a blanket task-bucket override.
+5. **Effort follows seat policy** — interactive default `high`, `xhigh` for judgment-heavy work and for ae judgment seats via profile; worker default changes need measured outcomes. Apply the trivial-work exception above, not a blanket task-bucket override.
 6. **Don't abdicate judgment** — Ronacher. The agent does the typing, you do the thinking. Read every diff at S/M, every phase at L.
 7. **Generated code is debt until validated** — Anthropic Trends Report. Test coverage caps real throughput.
 8. **Stop at done** — once the requested outcome is verified and required findings are resolved, stop. One provider-diverse review per required gate, then one focused recheck of BLOCKER/IMPORTANT fixes; no new full pass after a clean verdict. No speculative edge cases or polish past diminishing returns. Required = BLOCKER/IMPORTANT per the severity contract; NIT stays apply-if-quick.
@@ -255,7 +257,7 @@ For trivial mechanical work (typos, formatting, version bumps), any seat may cho
 
 **Process:**
 - Forcing every worker to `xhigh` without measured quality gains
-- Switching Astra effort mid-thread and losing the prefix cache
+- Switching effort mid-thread on pre-GPT-6 models and losing the prefix cache (GPT-6 preserves it only via the documented API mechanism; CLI behavior unverified — see cheat sheet)
 - Skipping the plan at L because "I get it now" — if you got it, the one-sentence done test would have made it M
 - "Let me just finish this one more thing" mid-phase at L — abandoning the gates that made it L
 - Spawning subagents on S work — overhead exceeds work
@@ -304,5 +306,5 @@ If these three diverge, `shared/AGENTS.md` wins (it's the contract).
 
 ---
 
-*Last updated: 2026-10-02 (vendor defaults, seat effort policy, read-only provider-diverse reviews, review cadence, spec-first tests pointer, one test-author/reviewer seat). Update as the workflow evolves.*
+*Last updated: 2026-10-13 (spec-first review satisfies slice gate, agent-behaviour review trigger, interactive `high` / judgment `xhigh` effort ruling, GPT-6 cache claim scoped to documented API mechanism with CLI unverified, effort cheat-sheet refreshed from HEAD configs). Update as the workflow evolves.*
 *This doc was iteratively grilled via the `grill-with-docs` skill, then cross-model reviewed by codex:coworker via `ae review` per its own dual-trigger rule (touches shared agent behavior + embeds judgment calls). Findings applied before commit.*

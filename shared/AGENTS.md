@@ -119,6 +119,8 @@ A single model has predictable blind spots. Use a different model provider for a
 * Config, formatting, linting, or version-bump-only changes
 * Changes the user explicitly marks as WIP
 
+**Exception:** the documentation/config skips above cover ordinary docs/config only. Files that change agent behaviour — `shared/AGENTS.md`, `WORKFLOW.md`, `skills/`, `KNOWLEDGE.md`, agent harness configs — are hard to undo cheaply and trigger review under quick rule 5 below, even when doc/config-only in form.
+
 ### How to invoke — see the `cross-model-review` skill
 
 Exact CLI invocations per tool, prompt templates, and artifact conventions live in the
@@ -126,7 +128,7 @@ Exact CLI invocations per tool, prompt templates, and artifact conventions live 
 because they bind before the skill loads:
 
 * **Inside an ae session (STRONG RULE):** route review through ae (`.../ask`, `.../review`,
-  `.../spawn <alias>:reviewer`). Do NOT shell out to another CLI (`codex exec`, `claude -p`,
+  `.../spawn <name> --using <profile>`). Do NOT shell out to another CLI (`codex exec`, `claude -p`,
   `grok -p`) and do NOT use your harness's internal subagents — ae agents are visible to the
   human and steward-monitored; CLI and internal runs are invisible to everyone but you.
 * **Severity contract:** BLOCKER → must fix. IMPORTANT → fix unless you have explicit
@@ -156,7 +158,7 @@ Field knowledge (September 2026 SOTA, source-tiered references): `~/projects/cle
    - Articulate before solving (Hashimoto / Ronacher / diagnose-loop) — one-sentence problem statement, then act.
    - Caveman-lite output by default (Efficiency Pact rule 4).
    - Source-tier justifications — Tier A/B (official, academic) drives normative; C/D (practitioner, commercial) suggests.
-   - Effort defaults: judgment `xhigh`; workers at vendor default, change defaults on measured outcome; trivial-work exception in WORKFLOW.md.
+   - Effort defaults: interactive/default `high`; raise to `xhigh` via `/effort` for judgment-heavy work; ae judgment seats keep `xhigh` via profile; workers at vendor default, change defaults on measured outcome; trivial-work exception in WORKFLOW.md. (Clemens ruling 2026-09-30, 8f473ed.)
    - Don't abdicate judgment (Ronacher) — read every diff at S/M, every phase at L.
    - Generated code is debt until validated (Anthropic 2026 Trends Report).
    - **Test oracle.** Expected outcomes come from requirements, invariants or an independent reference — never from the unit under test (a test that asserts what the code says is a tautology; old code can preserve the bug). A constant pin is a contract pin, not proof that consumers use it correctly.

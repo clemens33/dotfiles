@@ -28,7 +28,10 @@ Classify the model that produced the work, not the CLI it ran in:
 | `gpt-*`, `codex-*` | OpenAI |
 | `grok-*` | xAI |
 | `gemini-*` (Antigravity / `agy`) | Google |
+| `muse-*` (Muse Spark, Muse Wonder; native `muse` CLI) | Meta |
 | anything else | declare it explicitly |
+
+Meta contributor variants (Muse Spark/Wonder CONTRIBUTOR) train on input — never route MIC or customer content to them.
 
 Harness-mutable profiles carry no provider of their own. OpenCode serving
 `github-copilot/claude-opus-5` is **Anthropic**, and must be reviewed by OpenAI, xAI or Google —
@@ -62,7 +65,7 @@ reviewer cannot mutate the checkout it is reading:
 | `opus5-review` | Anthropic | `--restricted --strict-mcp-config`, Edit/Write/NotebookEdit disallowed, no Bash |
 | `grok46-review` | xAI | `--sandbox read-only` |
 
-All five were write-denial canary-tested on 2026-09-07. Confirm the profile still exists in
+All five were write-denial canary-tested on 2026-09-07. **Historical names (2026-10-13):** the profile names above predate the 2026-09-22/30 profile refresh; none was verified present in `~/.ae/config` `[profiles]` on 2026-10-13 — re-verify before naming any of them, and do not substitute a same-named build profile. Confirm the profile still exists in
 `~/.ae/config` before naming it. If it does not, pick a **different write-denied profile** on an
 eligible provider — never the plain build profile of the same name. A write-capable reviewer can
 mutate the live checkout it was asked to read, which is exactly what these seats exist to
@@ -185,8 +188,8 @@ Record the reviewer's provider and profile in the verdict line, so a later reade
 diversity gate was met rather than take it on trust:
 
 ```
-gate: OpenAI/gpt56sol-review PASS
-gate: Anthropic/opus5-review BLOCKER x1, IMPORTANT x2
+gate: OpenAI/<write-denied-profile> PASS
+gate: Anthropic/<write-denied-profile> BLOCKER x1, IMPORTANT x2
 ```
 
 - **BLOCKER** → must fix, no exceptions

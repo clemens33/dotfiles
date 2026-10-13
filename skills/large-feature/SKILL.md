@@ -96,7 +96,7 @@ The thinnest end-to-end slice that proves the spine works comes *first* — even
 - **Risk-first without a skeleton** — attacking the hardest behavior before proving the path exists. Spike first if needed; don't force the hard slice as #1.
 - **Slice inertia between candidates** — "we did A–E so let's do F" is not a reason to do F. Before adding a slice from an audit list, apply the **actively-biting test**: does this seam cause PR friction, recurring bugs, or block a feature? Long ≠ tangled. If just long, scope it tighter or skip.
 
-## Stage 3 — Per-slice red → green → refactor with strict phase isolation 🅐 🅡
+## Stage 3 — Per-slice red → green → refactor with strict phase isolation 🅐 🅡 🅛
 
 **The TDD core. Strongly supported.** For each slice:
 
@@ -105,9 +105,8 @@ The thinnest end-to-end slice that proves the spine works comes *first* — even
 - Test behavior through the slice's **public interface**, not implementation shape
 - Test must fail for the right reason (not import error, not undefined symbol)
 - Tests written against the slice's **acceptance contract** from the per-slice template (see below) — not invented behavior
-- **Strict context isolation between red and green.** Either:
-  - Clear the agent's context between writing the test and writing the impl, OR
-  - Use a different agent / model for test authoring (see hardening options below)
+- **Spec-first (default at M/L)** (`shared/AGENTS.md`): a **different-provider** agent authors+freezes acceptance tests before impl (below). TDD loop governs implementer-level tests inside that frame. Waiver names triage reason.
+- **Strict isolation red|green.** Different-provider authorship is default form; context-clear fallback only under named waiver.
 
 The agentic-coding-handbook makes the isolation rule explicit:
 
@@ -119,12 +118,12 @@ The agentic-coding-handbook makes the isolation rule explicit:
 - **Otherwise**: run the new failing test plus the nearest relevant existing tests (same module, same callers). Run broader validation at phase boundary and final integration (Stage 5), not after every green
 - A manually guessed impact set is weaker than TDAD's tooled version — do not over-trust it
 
-### Hardening options for tests (high-risk slices only)
+### Spec-first acceptance tests (default at M/L) 🅛
 
-These add cost; use only when slice risk warrants it:
+Contract shape (`shared/AGENTS.md`) — local doctrine, not experimental:
 
-- 🅡 **Cross-model test review** — different-model agent reads the test and challenges whether it encodes implementation shape vs. behavior. Better-supported than cross-model authorship.
-- 🅔 **Cross-model test authoring** — a different model writes the failing test from acceptance criteria, the implementing model writes only the impl. *Experimental synthesis from cross-model review patterns; not documented as established SOTA*. Risk: tests authored in isolation can encode imagined behavior or accidental API shape (see Hora et al. *"Are Coding Agents Generating Over-Mocked Tests?"*). If used, require the test author to work strictly from the per-slice acceptance contract + domain docs, and have the implementer challenge any test that encodes impl shape.
+- 🅛 **Cross-model authoring (default)** — different-provider agent writes+freezes acceptance test strictly from acceptance contract + domain docs, before impl; by default same agent then reviews impl (no extra seat). **Separate author** (≠ impl reviewer) allowed for parallel slices / high blast radius. Implementer never edits frozen tests; disputed spec goes back with evidence. Isolation risk: imagined behavior / accidental API shape (Hora et al.) — challenge impl-shape tests.
+- 🅡 **Cross-model test review** — author's impl verdict doesn't gate own tests: another-provider seat reviews frozen tests vs requirements (behavior vs impl shape). Byte-identical installation allowed.
 
 ### Green — make the test pass
 
@@ -140,7 +139,7 @@ Note the distinction: micro-refactor inside a slice ≠ architecture-deepening r
 
 ### Per-slice review
 
-Trigger cross-model review per `WORKFLOW.md`'s dual-trigger rule. If the slice modifies shared agent behavior or embeds a design decision, one cross-model pass per slice. If purely mechanical, batch at Stage 5.
+Spec-first author reviews impl by default — that different-provider pass satisfies the slice's cross-model gate. `WORKFLOW.md` dual-trigger applies to work not already reviewed (plan, integrated delta), not a second pass on the same implementation; purely mechanical slices batch at Stage 5. Frozen acceptance tests keep their own separate review against requirements.
 
 **Pre-flight your own diff before sending it.** Closure rounds (a second review pass on the same slice to address findings the first pass surfaced) are a process signal that the rewire-phase self-review missed something — not a routine step. Target **0 closure rounds per slice**. Before the cross-model review:
 
@@ -263,7 +262,7 @@ For any slice that adds dependencies, GitHub Actions workflows, auth/permissions
 - **Running all 7 stages on every L feature** — over-prescription. The playbook is full-rigor; the baseline `WORKFLOW.md` L is plan + phased. Most L features sit between.
 - **Fake vertical slices** — horizontal layered work in slice-shaped issue titles
 - **Disguising spikes as features** — call enabling work and technical spikes what they are
-- **Cross-model test authoring as default** — it's experimental; use only when slice risk warrants the overhead
+- **Implementer-authored acceptance tests at M/L** — violates spec-first (frozen, different-provider; waiver names reason). Implementer-level TDD tests stay implementer's
 - **Cadence-based zoom-out** — gets skipped when bureaucratic; use triggers
 - **Smuggling architecture refactor into feature slices** — Stage 3 is micro only; Stage 6 is the place for structural work
 - **Per-slice acceptance contract missing** — without it, a different agent can't author tests safely and the feature becomes a black box
@@ -275,7 +274,7 @@ For any slice that adds dependencies, GitHub Actions workflows, auth/permissions
 
 To be transparent about what this playbook is doing beyond pure synthesis:
 
-- 🅔 **Cross-model test authoring** as a documented hardening option (Stage 3) — extrapolation, not yet documented elsewhere. Labeled experimental.
+- 🅛 **Spec-first cross-model authoring** (Stage 3) — was 🅔 experimental; now local doctrine (`shared/AGENTS.md`, default M/L).
 - 🅛 **Architecture-deepening refactor as a separate cadence with explicit micro-refactor allowance inside TDD** (Stage 6 + Stage 3 distinction) — local doctrine that resolves the apparent contradiction between "refactor inside features" and "separate architectural work."
 - 🅛 **Per-slice acceptance contract template** — synthesizes Matt Pocock `to-issues` + Hashimoto harness-engineering + Willison test-first into a single artifact per slice.
 
