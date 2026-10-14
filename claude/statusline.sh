@@ -5,6 +5,12 @@ set -euo pipefail
 
 input=$(cat)
 
+# Hand the payload to ae's Claude quota cache (CLAUDE_CONFIG_DIR picks the account).
+# Backgrounded and silenced so a slow or missing ae never delays or breaks the footer.
+if command -v ae >/dev/null 2>&1; then
+  { printf '%s' "$input" | ae _quota-feed || true; } >/dev/null 2>&1 &
+fi
+
 model=$(printf '%s' "$input" | jq -r '.model.display_name // "?"')
 effort=$(printf '%s' "$input" | jq -r '.effort.level // ""')
 cwd=$(printf '%s' "$input" | jq -r '.workspace.current_dir // .cwd // ""')
