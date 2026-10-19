@@ -413,7 +413,9 @@ installed_version() {
 agy_latest() {
   local changelog
   changelog=$(agy changelog 2>>"$LOG_FILE") || return 1
-  printf '%s\n' "$changelog" | awk '/^[0-9]+\.[0-9]+\.[0-9]+:/ { sub(/:$/, "", $1); print $1; exit }'
+  # No early `exit`: the changelog is far larger than the pipe buffer, and awk
+  # quitting first would SIGPIPE printf, which pipefail reports as a failed lookup.
+  printf '%s\n' "$changelog" | awk '!found && /^[0-9]+\.[0-9]+\.[0-9]+:/ { sub(/:$/, "", $1); print $1; found = 1 }'
 }
 
 grok_latest() {

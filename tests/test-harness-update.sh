@@ -51,6 +51,11 @@ case "${1:-}" in
     fi
     if [ "$1" = changelog ]; then
       printf '1.2.3:\n'
+      # Optional bulk after the newest entry, like the real multi-release log.
+      if [ "${FAKE_AGY_CHANGELOG_LINES:-0}" -gt 0 ]; then
+        awk -v n="$FAKE_AGY_CHANGELOG_LINES" \
+          'BEGIN { for (i = 0; i < n; i++) print "· older release note line"; print "1.2.2:" }'
+      fi
     fi
     ;;
   *)
@@ -250,6 +255,20 @@ check_mode_lookup_is_retried() {
 
 check 'check-mode latest lookup recovers on attempt 2' \
   check_mode_lookup_is_retried
+
+# The real `agy changelog` is >150 KB, far past the 64 KB pipe buffer. Reading
+# only its first entry must not turn the early-closed pipe into a lookup failure.
+check_mode_large_changelog() {
+  local name=large-changelog
+  FAKE_AGY_CHANGELOG_LINES=8000 run_agy "$name" 0 check || return 1
+
+  [ "$(wc -l <"$TMP_ROOT/$name/agy.calls" | tr -d ' ')" -eq 1 ] &&
+    grep -Fq 'agy CHECK current=1.2.2 latest=1.2.3' "$TMP_ROOT/$name/output" &&
+    ! grep -Fq 'lookup failed' "$TMP_ROOT/$name/output"
+}
+
+check 'check-mode latest lookup survives a changelog larger than the pipe buffer' \
+  check_mode_large_changelog
 
 retry_removal_negative_control() {
   local name=no-retry
