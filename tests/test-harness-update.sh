@@ -443,5 +443,385 @@ muse_lookup_removal_negative_control() {
 check 'negative control rejects the updater with the muse lookup removed' \
   muse_lookup_removal_negative_control
 
+# --- effective-binary lag -------------------------------------------------
+# The pain: npm installs a newer opencode-ai, but the opencode first on PATH is a
+# stale link into a different tree and keeps printing the old version. Real
+# mise/npm must never be reachable, so stub both ahead of them on PATH.
+
+make_fake_opencode_home() {
+  local name=$1
+  local bin_version=$2
+  local held_version=$3
+  local fake_home dir
+  fake_home=$(make_fake_home "$name")
+  dir="$TMP_ROOT/$name"
+  mkdir -p "$dir/stale"
+  printf '%s\n' "$bin_version" >"$dir/bin.version"
+  printf '%s\n' "$held_version" >"$dir/npm.held"
+  : >"$dir/npm.calls"
+
+  cat >"$dir/stale/opencode-target" <<'EOF'
+#!/usr/bin/env bash
+case "${1:-}" in
+  --version) cat "$FAKE_OC_DIR/bin.version" ;;
+  *) exit 2 ;;
+esac
+EOF
+  chmod +x "$dir/stale/opencode-target"
+
+  printf '#!/usr/bin/env bash\nexit 1\n' >"$fake_home/.local/bin/fnm"
+  if [ "${OC_VIA_MISE:-0}" -eq 1 ]; then
+    # opencode is NOT on PATH: only a mise-managed node puts it there.
+    mkdir -p "$dir/mise-bin"
+    ln -s "$dir/stale/opencode-target" "$dir/mise-bin/opencode"
+    cat >"$fake_home/.local/bin/mise" <<'EOF'
+#!/usr/bin/env bash
+case "${1:-}" in
+  which) exit 0 ;;
+  exec)
+    shift 3
+    PATH="$FAKE_OC_DIR/mise-bin:$PATH" exec "$@"
+    ;;
+  *) exit 2 ;;
+esac
+EOF
+  else
+    ln -s "$dir/stale/opencode-target" "$fake_home/.local/bin/opencode"
+    printf '#!/usr/bin/env bash\nexit 1\n' >"$fake_home/.local/bin/mise"
+  fi
+
+  cat >"$fake_home/.local/bin/npm" <<'EOF'
+#!/usr/bin/env bash
+case "${1:-}" in
+  view)
+    [ "${FAKE_NPM_VIEW_FAIL:-0}" -eq 0 ] || exit 1
+    printf '%s\n' "$FAKE_NPM_LATEST"
+    ;;
+  install)
+    printf '%s\n' "$*" >>"$FAKE_OC_DIR/npm.calls"
+    printf '%s\n' "$FAKE_NPM_LATEST" >"$FAKE_OC_DIR/npm.held"
+    if [ "${FAKE_NPM_LINKED:-0}" -eq 1 ]; then
+      printf '%s\n' "$FAKE_NPM_LATEST" >"$FAKE_OC_DIR/bin.version"
+    fi
+    printf 'changed 2 packages\n'
+    ;;
+  ls)
+    if [ "${FAKE_NPM_LS_FAIL:-0}" -ne 0 ]; then
+      printf '{}\n'
+      exit 1
+    fi
+    printf '{\n  "name": "lib",\n  "dependencies": {\n    "opencode-ai": {\n      "version": "%s",\n      "overridden": false\n    }\n  }\n}\n' \
+      "$(cat "$FAKE_OC_DIR/npm.held")"
+    ;;
+  *)
+    exit 2
+    ;;
+esac
+EOF
+  chmod +x "$fake_home/.local/bin/mise" "$fake_home/.local/bin/fnm" "$fake_home/.local/bin/npm"
+  printf '%s\n' "$fake_home"
+}
+
+# run_opencode NAME MODE NPM_LATEST LINKED [BIN_VERSION [HELD [LS_FAIL [VIEW_FAIL [UPDATER]]]]]
+run_opencode() {
+  local name=$1
+  local mode=$2
+  local latest=$3
+  local linked=$4
+  local bin_version=${5:-1.18.32}
+  local held=${6:-1.18.32}
+  local ls_fail=${7:-0}
+  local view_fail=${8:-0}
+  local updater=${9:-$SCRIPT}
+  local fake_home check_arg=""
+  fake_home=$(make_fake_opencode_home "$name" "$bin_version" "$held")
+  if [ "$mode" = check ]; then check_arg=--check; fi
+
+  env \
+    HOME="$fake_home" \
+    FAKE_OC_DIR="$TMP_ROOT/$name" \
+    FAKE_NPM_LATEST="$latest" \
+    FAKE_NPM_LINKED="$linked" \
+    FAKE_NPM_LS_FAIL="$ls_fail" \
+    FAKE_NPM_VIEW_FAIL="$view_fail" \
+    FAKE_SLEEP_CALLS="$TMP_ROOT/$name/sleep.calls" \
+    HARNESS_UPDATE_TIMEOUT_SECONDS=10 \
+    "$updater" $check_arg --only opencode >"$TMP_ROOT/$name/output" 2>&1
+}
+
+harness_log() {
+  printf '%s/%s/home/.local/state/harness-update/%s.log' "$TMP_ROOT" "$1" "$(date +%F)"
+}
+
+opencode_stale_binary_fails() {
+  local name=oc-stale
+  local status log
+  if run_opencode "$name" update 1.19.3 0; then
+    return 1
+  else
+    status=$?
+  fi
+  log=$(harness_log "$name")
+
+  [ "$status" -eq 1 ] &&
+    [ "$(cat "$TMP_ROOT/$name/npm.held")" = 1.19.3 ] &&
+    [ "$(grep -c '^opencode FAIL ' "$log")" -eq 1 ] &&
+    grep -Fq "opencode FAIL effective=1.18.32 expected=1.19.3 (npm installed) binary=$TMP_ROOT/$name/home/.local/bin/opencode -> $TMP_ROOT/$name/stale/opencode-target" "$log" &&
+    grep -Fq 'opencode FAIL effective=1.18.32 expected=1.19.3' "$TMP_ROOT/$name/output" &&
+    ! grep -Fq 'opencode OK' "$log" &&
+    grep -Fq 'harness update finish exit=1' "$log"
+}
+
+check 'opencode: npm installs 1.19.3 but the PATH binary stays 1.18.32 -> FAIL naming both versions and the binary' \
+  opencode_stale_binary_fails
+
+opencode_linked_update_ok() {
+  local name=oc-linked
+  run_opencode "$name" update 1.19.3 1 || return 1
+  grep -Fq 'opencode OK 1.18.32 -> 1.19.3' "$TMP_ROOT/$name/output" &&
+    ! grep -Fq 'opencode FAIL' "$TMP_ROOT/$name/output"
+}
+
+check 'opencode: update the PATH binary actually follows stays OK' \
+  opencode_linked_update_ok
+
+opencode_current_stays_ok() {
+  local name=oc-current
+  run_opencode "$name" update 1.19.3 0 1.19.3 1.19.3 || return 1
+  grep -Fq 'opencode OK 1.19.3 -> 1.19.3' "$TMP_ROOT/$name/output" &&
+    ! grep -Fq 'opencode FAIL' "$TMP_ROOT/$name/output"
+}
+
+check 'opencode: a genuinely current tool (effective == installed) stays OK' \
+  opencode_current_stays_ok
+
+opencode_unknown_installed_keeps_old_behaviour() {
+  local name=oc-unknown
+  run_opencode "$name" update 1.19.3 0 1.18.32 1.18.32 1 || return 1
+  grep -Fq 'opencode OK 1.18.32 -> 1.18.32' "$TMP_ROOT/$name/output" &&
+    ! grep -Fq 'opencode FAIL' "$TMP_ROOT/$name/output"
+}
+
+check 'opencode: npm cannot say what it holds -> no new failure, old OK line' \
+  opencode_unknown_installed_keeps_old_behaviour
+
+opencode_newer_binary_is_not_a_lag() {
+  local name=oc-newer
+  run_opencode "$name" update 1.19.3 0 1.20.0 1.19.0 || return 1
+  grep -Fq 'opencode OK 1.20.0 -> 1.20.0' "$TMP_ROOT/$name/output" &&
+    ! grep -Fq 'opencode FAIL' "$TMP_ROOT/$name/output"
+}
+
+check 'opencode: a PATH binary newer than npm holds is not reported as lagging' \
+  opencode_newer_binary_is_not_a_lag
+
+opencode_check_flags_lag() {
+  local name=oc-check-lag
+  run_opencode "$name" check 1.19.3 0 1.18.32 1.19.3 || return 1
+  grep -Fq 'opencode CHECK current=1.18.32 latest=1.19.3 BEHIND' "$TMP_ROOT/$name/output" &&
+    grep -Fq "binary=$TMP_ROOT/$name/home/.local/bin/opencode -> $TMP_ROOT/$name/stale/opencode-target" "$TMP_ROOT/$name/output" &&
+    grep -Fq 'npm-installed=1.19.3' "$TMP_ROOT/$name/output" &&
+    [ ! -s "$TMP_ROOT/$name/npm.calls" ]
+}
+
+check 'opencode --check flags a PATH binary behind latest and npm, changes nothing' \
+  opencode_check_flags_lag
+
+opencode_check_current_is_quiet() {
+  local name=oc-check-current
+  run_opencode "$name" check 1.19.3 0 1.19.3 1.19.3 || return 1
+  grep -Fq 'opencode CHECK current=1.19.3 latest=1.19.3' "$TMP_ROOT/$name/output" &&
+    ! grep -Fq 'BEHIND' "$TMP_ROOT/$name/output" &&
+    ! grep -Fq 'npm-installed' "$TMP_ROOT/$name/output"
+}
+
+check 'opencode --check on a current tool prints no lag flag' \
+  opencode_check_current_is_quiet
+
+opencode_check_unknown_latest_unchanged() {
+  local name=oc-check-unknown
+  local status
+  if run_opencode "$name" check 1.19.3 0 1.18.32 1.18.32 0 1; then
+    return 1
+  else
+    status=$?
+  fi
+  [ "$status" -eq 1 ] &&
+    grep -Fq 'opencode FAIL current=1.18.32 latest lookup failed' "$TMP_ROOT/$name/output" &&
+    ! grep -Fq 'BEHIND' "$TMP_ROOT/$name/output"
+}
+
+check 'opencode --check with an unreachable registry keeps its lookup-failed behaviour' \
+  opencode_check_unknown_latest_unchanged
+
+opencode_prerelease_binary_is_a_lag() {
+  local name=oc-pre-lag
+  local status log
+  if run_opencode "$name" update 1.19.3 0 1.19.3-beta.1 1.19.3-beta.1; then
+    return 1
+  else
+    status=$?
+  fi
+  log=$(harness_log "$name")
+  [ "$status" -eq 1 ] &&
+    grep -Fq 'opencode FAIL effective=1.19.3-beta.1 expected=1.19.3 (npm installed)' "$log" &&
+    ! grep -Fq 'opencode OK' "$log"
+}
+
+check 'opencode: a pre-release PATH binary is behind the release npm installed -> FAIL' \
+  opencode_prerelease_binary_is_a_lag
+
+opencode_release_over_prerelease_is_not_a_lag() {
+  local name=oc-pre-ahead
+  run_opencode "$name" update 1.19.3-beta.1 0 1.19.3 1.19.2 || return 1
+  grep -Fq 'opencode OK 1.19.3 -> 1.19.3' "$TMP_ROOT/$name/output" &&
+    ! grep -Fq 'opencode FAIL' "$TMP_ROOT/$name/output"
+}
+
+check 'opencode: a release PATH binary ahead of the installed pre-release is not a lag' \
+  opencode_release_over_prerelease_is_not_a_lag
+
+opencode_check_prerelease_directions() {
+  run_opencode oc-check-pre-behind check 1.19.3 0 1.19.3-beta.1 1.19.3-beta.1 || return 1
+  run_opencode oc-check-pre-ahead check 1.19.3-beta.1 0 1.19.3 1.19.3 || return 1
+  grep -Fq 'opencode CHECK current=1.19.3-beta.1 latest=1.19.3 BEHIND' "$TMP_ROOT/oc-check-pre-behind/output" &&
+    grep -Fq 'opencode CHECK current=1.19.3 latest=1.19.3-beta.1' "$TMP_ROOT/oc-check-pre-ahead/output" &&
+    ! grep -Fq 'BEHIND' "$TMP_ROOT/oc-check-pre-ahead/output"
+}
+
+check 'opencode --check ranks a pre-release below its release, never above' \
+  opencode_check_prerelease_directions
+
+opencode_manager_fallback_names_binary() {
+  local name=oc-mise-lag
+  local status log expected_binary
+  if OC_VIA_MISE=1 run_opencode "$name" update 1.19.3 0; then
+    return 1
+  else
+    status=$?
+  fi
+  log=$(harness_log "$name")
+  expected_binary="$TMP_ROOT/$name/mise-bin/opencode -> $TMP_ROOT/$name/stale/opencode-target"
+  [ "$status" -eq 1 ] &&
+    [ ! -e "$TMP_ROOT/$name/home/.local/bin/opencode" ] &&
+    grep -Fq "opencode FAIL effective=1.18.32 expected=1.19.3 (npm installed) binary=$expected_binary" "$log" &&
+    ! grep -Fq 'not-on-PATH' "$log"
+}
+
+check 'opencode: lag found through the mise fallback names the binary mise resolves' \
+  opencode_manager_fallback_names_binary
+
+opencode_manager_fallback_check_names_binary() {
+  local name=oc-mise-check
+  OC_VIA_MISE=1 run_opencode "$name" check 1.19.3 0 1.18.32 1.19.3 || return 1
+  grep -Fq "BEHIND binary=$TMP_ROOT/$name/mise-bin/opencode -> $TMP_ROOT/$name/stale/opencode-target" "$TMP_ROOT/$name/output" &&
+    ! grep -Fq 'not-on-PATH' "$TMP_ROOT/$name/output"
+}
+
+check 'opencode --check through the mise fallback names the binary mise resolves' \
+  opencode_manager_fallback_check_names_binary
+
+muse_check_flags_behind_channel() {
+  local name=muse-behind
+  run_muse "$name" "$MUSE_CHANNEL_BODY" || return 1
+  grep -Fq 'muse CHECK current=1.2.1-R2847.1 latest=1.2.2-R2848.1 BEHIND binary=' "$TMP_ROOT/$name/output"
+}
+
+check 'muse --check flags a build behind the channel' \
+  muse_check_flags_behind_channel
+
+opencode_lag_gate_negative_control() {
+  local name=oc-no-gate
+  local variant="$TMP_ROOT/$name/harness-update.sh"
+  mkdir -p "$TMP_ROOT/$name"
+
+  [ "$(grep -c '^effective_lag() {$' "$SCRIPT" | tr -d ' ')" -eq 1 ] || return 1
+  sed 's/^effective_lag() {$/effective_lag() { return 0;/' "$SCRIPT" >"$variant"
+  chmod +x "$variant"
+  grep -Fq 'effective_lag() { return 0;' "$variant" || return 1
+
+  # With the gate removed the stale binary sails through as OK: exactly the bug.
+  run_opencode "$name" update 1.19.3 0 1.18.32 1.18.32 0 0 "$variant" || return 1
+  grep -Fq 'opencode OK 1.18.32 -> 1.18.32' "$TMP_ROOT/$name/output" &&
+    ! grep -Fq 'opencode FAIL' "$TMP_ROOT/$name/output"
+}
+
+check 'negative control: updater without the lag gate reports the stale binary as OK' \
+  opencode_lag_gate_negative_control
+
+make_fake_ae_home() {
+  local name=$1
+  local fake_home dir
+  fake_home=$(make_fake_home "$name")
+  dir="$TMP_ROOT/$name"
+  printf '2026.10.93\n' >"$dir/ae.version"
+  cat >"$fake_home/.local/bin/ae" <<'EOF'
+#!/usr/bin/env bash
+case "${1:-}" in
+  --version) printf 'ae %s\n' "$(cat "$FAKE_OC_DIR/ae.version")" ;;
+  upgrade)
+    if [ "${FAKE_AE_LINKED:-0}" -eq 1 ]; then
+      printf '%s\n' "$AE_VERSION" >"$FAKE_OC_DIR/ae.version"
+    fi
+    ;;
+  *) exit 2 ;;
+esac
+EOF
+  chmod +x "$fake_home/.local/bin/ae"
+  printf '%s\n' "$fake_home"
+}
+
+# run_ae NAME LINKED [--check]
+run_ae() {
+  local name=$1
+  local linked=$2
+  local fake_home check_arg=""
+  fake_home=$(make_fake_ae_home "$name")
+  if [ "${3:-}" = --check ]; then check_arg=--check; fi
+  env \
+    HOME="$fake_home" \
+    FAKE_OC_DIR="$TMP_ROOT/$name" \
+    FAKE_AE_LINKED="$linked" \
+    FAKE_SLEEP_CALLS="$TMP_ROOT/$name/sleep.calls" \
+    AE_VERSION=2026.10.94 \
+    HARNESS_UPDATE_TIMEOUT_SECONDS=10 \
+    "$SCRIPT" $check_arg --include-ae --only ae >"$TMP_ROOT/$name/output" 2>&1
+}
+
+ae_pinned_version_not_reached_fails() {
+  local name=ae-stale
+  local status
+  if run_ae "$name" 0; then
+    return 1
+  else
+    status=$?
+  fi
+  [ "$status" -eq 1 ] &&
+    grep -Fq "ae FAIL effective=2026.10.93 expected=2026.10.94 (pinned AE_VERSION) binary=$TMP_ROOT/$name/home/.local/bin/ae" "$(harness_log "$name")" &&
+    ! grep -Fq 'ae OK' "$(harness_log "$name")"
+}
+
+check 'ae: pinned upgrade that leaves the PATH binary on the old version -> FAIL' \
+  ae_pinned_version_not_reached_fails
+
+ae_pinned_version_reached_ok() {
+  local name=ae-ok
+  run_ae "$name" 1 || return 1
+  grep -Fq 'ae OK 2026.10.93 -> 2026.10.94' "$TMP_ROOT/$name/output" &&
+    ! grep -Fq 'ae FAIL' "$TMP_ROOT/$name/output"
+}
+
+check 'ae: pinned upgrade the PATH binary follows stays OK' \
+  ae_pinned_version_reached_ok
+
+ae_check_flags_behind_pin() {
+  local name=ae-check
+  run_ae "$name" 0 --check || return 1
+  grep -Fq 'ae CHECK current=2026.10.93 target=2026.10.94 BEHIND binary=' "$TMP_ROOT/$name/output"
+}
+
+check 'ae --check flags a PATH binary behind the pin' \
+  ae_check_flags_behind_pin
+
 printf '%s passed, %s failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]

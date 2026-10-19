@@ -276,6 +276,98 @@ npm_install_latest() {
   esac
 }
 
+# Version npm itself holds for a global package, read from its own tree (no
+# registry call). The PATH binary can be a different copy that npm never touched.
+npm_global_version() {
+  local package="$1"
+  local mode listing
+  mode=$(npm_mode) || return 1
+  case "$mode" in
+    mise) listing=$(mise exec node@lts -- npm ls --global --depth=0 --json "$package" 2>>"$LOG_FILE") ;;
+    fnm) listing=$(fnm exec --using=default -- npm ls --global --depth=0 --json "$package" 2>>"$LOG_FILE") ;;
+    nvm) listing=$(nvm_exec npm ls --global --depth=0 --json "$package" 2>>"$LOG_FILE") ;;
+    npm) listing=$(npm ls --global --depth=0 --json "$package" 2>>"$LOG_FILE") ;;
+  esac
+  printf '%s\n' "$listing" | tr -d '\n' |
+    sed -n "s/.*\"$package\"[[:space:]]*:[[:space:]]*{[^}]*\"version\"[[:space:]]*:[[:space:]]*\"\([^\"]*\)\".*/\1/p"
+}
+
+# Succeeds when $1 sorts before $2 under sort -V. If sort lacks -V, any
+# difference counts as earlier: loud beats silent.
+version_sorts_first() {
+  local first
+  first=$(printf '%s\n%s\n' "$1" "$2" | sort -V 2>/dev/null | sed -n 1p) || first=""
+  [ -z "$first" ] || [ "$first" = "$1" ]
+}
+
+# Succeeds when version $1 is strictly older than $2. Equality and an unknown
+# version on either side are never "older", so a failed lookup cannot fail a
+# step. sort -V alone ranks 1.2.3-beta.1 above 1.2.3, so split off the
+# pre-release first: on equal cores the release outranks its pre-releases.
+version_older() {
+  local core_a core_b pre_a pre_b
+  [ -n "$1" ] && [ -n "$2" ] && [ "$1" != "$2" ] || return 1
+  core_a=${1%%-*}
+  core_b=${2%%-*}
+  pre_a=${1#"$core_a"}
+  pre_b=${2#"$core_b"}
+  if [ "$core_a" != "$core_b" ]; then
+    version_sorts_first "$core_a" "$core_b"
+  elif [ -z "$pre_a" ]; then
+    return 1
+  elif [ -z "$pre_b" ]; then
+    return 0
+  else
+    version_sorts_first "$pre_a" "$pre_b"
+  fi
+}
+
+# `command -v` as run_opencode would see it when the tool is only reachable
+# through the node manager, so diagnostics name the binary that actually runs.
+manager_command_v() {
+  local mode
+  mode=$(npm_mode) || return 1
+  # Expand the positional argument in the child, not here.
+  # shellcheck disable=SC2016
+  case "$mode" in
+    mise) mise exec node@lts -- bash -c 'command -v "$1"' bash "$1" ;;
+    fnm) fnm exec --using=default -- bash -c 'command -v "$1"' bash "$1" ;;
+    nvm) nvm_exec bash -c 'command -v "$1"' bash "$1" ;;
+    npm) return 1 ;;
+  esac
+}
+
+# Where `tool` actually runs from. A symlink is shown with its target: a stale
+# link is how the PATH binary outlives the install that should have replaced it.
+resolved_binary() {
+  local path target
+  path=$(command -v "$1" 2>/dev/null) || path=$(manager_command_v "$1" 2>/dev/null) || path=""
+  if [ -z "$path" ]; then
+    printf 'not-on-PATH'
+    return 0
+  fi
+  if [ -L "$path" ] && target=$(readlink "$path"); then
+    printf '%s -> %s' "$path" "$target"
+  else
+    printf '%s' "$path"
+  fi
+}
+
+# Check-mode suffix: current is behind latest, with the binary that answered.
+behind_note() {
+  version_older "$2" "$3" || return 0
+  printf ' BEHIND binary=%s' "$(resolved_binary "$1")"
+}
+
+# Update-mode gate: fail when the PATH binary is older than the version the
+# update step installed. An unknown expected version never fails.
+effective_lag() {
+  local tool=$1 effective=$2 expected=$3 source=$4
+  version_older "$effective" "$expected" || return 0
+  summary "$tool FAIL effective=$effective expected=$expected ($source) binary=$(resolved_binary "$tool"); the binary on PATH lags the update, repoint or remove it"
+  return 1
+}
+
 opencode_available() {
   local mode
   if command -v opencode >/dev/null 2>&1; then
@@ -400,7 +492,7 @@ check_with_npm() {
     summary "$tool FAIL current=$before latest lookup failed"
     return 1
   fi
-  summary "$tool CHECK current=$before latest=$latest"
+  summary "$tool CHECK current=$before latest=$latest$(behind_note "$tool" "$before" "$latest")"
 }
 
 update_native() {
@@ -466,7 +558,7 @@ process_agy() {
       summary "agy FAIL current=$before latest lookup failed"
       return 1
     fi
-    summary "agy CHECK current=$before latest=$latest"
+    summary "agy CHECK current=$before latest=$latest$(behind_note agy "$before" "$latest")"
   else
     update_native agy agy update
   fi
@@ -489,7 +581,7 @@ process_grok() {
       summary "grok FAIL current=$before latest lookup failed"
       return 1
     fi
-    summary "grok CHECK current=$before latest=$latest"
+    summary "grok CHECK current=$before latest=$latest$(behind_note grok "$before" "$latest")"
   else
     update_native grok grok update
   fi
@@ -500,7 +592,7 @@ process_opencode() {
     summary 'opencode SKIP not installed'
     return 0
   fi
-  local before latest after
+  local before latest after installed note
   before=$(installed_version opencode) || before=""
   if [ -z "$before" ]; then
     summary 'opencode FAIL unable to read installed version'
@@ -512,7 +604,12 @@ process_opencode() {
       summary "opencode FAIL current=$before latest lookup failed"
       return 1
     fi
-    summary "opencode CHECK current=$before latest=$latest"
+    note=$(behind_note opencode "$before" "$latest")
+    installed=$(npm_global_version opencode-ai) || installed=""
+    if [ -n "$installed" ] && [ "$installed" != "$before" ]; then
+      note="$note npm-installed=$installed"
+    fi
+    summary "opencode CHECK current=$before latest=$latest$note"
     return 0
   fi
   if ! npm_install_latest opencode-ai; then
@@ -525,6 +622,10 @@ process_opencode() {
     summary "opencode FAIL before=$before unable to read updated version"
     return 1
   fi
+  # What npm just installed, not the registry: the PATH binary can be another
+  # copy (a stale link into a hoisted tree) that the install never replaced.
+  installed=$(npm_global_version opencode-ai) || installed=""
+  effective_lag opencode "$after" "$installed" "npm installed" || return 1
   summary "opencode OK $before -> $after"
 }
 
@@ -545,7 +646,7 @@ process_ae() {
   fi
   target=${AE_VERSION:-}
   if [ "$CHECK_ONLY" -eq 1 ]; then
-    summary "ae CHECK current=$before target=${target:-pin-required}"
+    summary "ae CHECK current=$before target=${target:-pin-required}$(behind_note ae "$before" "$target")"
     return 0
   fi
   if [ -z "$target" ]; then
@@ -562,6 +663,7 @@ process_ae() {
     summary "ae FAIL before=$before unable to read updated version"
     return 1
   fi
+  effective_lag ae "$after" "$target" "pinned AE_VERSION" || return 1
   summary "ae OK $before -> $after"
 }
 
@@ -586,7 +688,7 @@ process_muse() {
     latest=${lookup%%$'\t'*}
     reason=${lookup#*$'\t'}
     if [ -n "$latest" ]; then
-      summary "muse CHECK current=$before latest=$latest"
+      summary "muse CHECK current=$before latest=$latest$(behind_note muse "$before" "$latest")"
     else
       summary "muse CHECK current=$before latest=unknown ($reason)"
     fi
@@ -986,6 +1088,8 @@ process_contract() {
 # Export existing step functions so timeout can supervise a separate Bash process.
 export CHECK_ONLY INCLUDE_AE LOG_FILE REPO_ROOT RETRY_ATTEMPTS
 export -f summary run_with_retry log_run npm_mode nvm_exec npm_latest npm_install_latest \
+  npm_global_version version_sorts_first version_older manager_command_v resolved_binary \
+  behind_note effective_lag \
   opencode_available run_opencode installed_version agy_latest grok_latest muse_latest \
   check_with_npm update_native install_muse process_claude process_codex \
   process_agy process_grok process_opencode process_muse process_ae \
