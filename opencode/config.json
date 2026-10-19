@@ -12,23 +12,26 @@
   "$schema": "https://opencode.ai/config.json",
 
   // --- Model -------------------------------------------------------------
-  // Primary: OpenRouter GLM 5.3 Flash, routed through an explicit provider
-  // order (EU first, then US, no Chinese-HQ hosts) with everything outside
-  // that list disabled — see the openrouter block below. max is our
-  // deliberate highest-effort default. OpenRouter availability and billing
-  // can change.
+  // Primary: OpenCode Zen free GLM 5.3 Flash (opencode/glm-5.3-flash-free):
+  // $0, zero retention, no training (opencode.ai/docs/zen), 200K context /
+  // 32K output; free for a limited time, normal opencode client only. It is
+  // the default because the OpenRouter account has no budget. max is our
+  // deliberate highest-effort default (agent.build.variant below).
   //
-  // GitHub Copilot Gemini 3.7 remains declared below as a selectable fallback
-  // if the OpenRouter model is unavailable or misbehaves.
-  "model": "openrouter/z-ai/glm-5.3-flash",
+  // The openrouter block below keeps the GLM 5.3 Flash provider pins (EU
+  // first, then US, no Chinese-HQ hosts, everything outside that list
+  // disabled) for explicit `--model openrouter/z-ai/glm-5.3-flash` use.
+  // GitHub Copilot Gemini 3.7 remains declared as a selectable fallback if
+  // the primary is unavailable or misbehaves.
+  "model": "opencode/glm-5.3-flash-free",
   // Titles/summaries/compaction: small_model remains the fast internal lane,
   // but it is Copilot-quota-bound. It fires on nearly every turn. Verified
   // working on this seat
   // 2026-08-17 (`opencode run -m github-copilot/gpt-5.6-luna`).
   "small_model": "github-copilot/gpt-5.6-luna",
 
-  // Provider model overrides: the primary GLM 5.3 Flash uses deliberate max
-  // reasoning effort; its provider order is configured below.
+  // Provider model overrides: the explicit-use OpenRouter GLM 5.3 Flash keeps
+  // deliberate max reasoning effort; its provider order is configured below.
   "provider": {
     // Registry back-fill for the selectable fallback, NOT a credential or
     // endpoint change: auth still runs through `opencode auth login -p
@@ -60,8 +63,8 @@
     // of the GitHub Copilot subscription above. Authenticate interactively via
     // `/connect` -> OpenRouter; NEVER put the API key in this tracked file.
     //
-    // Full GLM 5.3 stays hard-pinned to Fireworks; GLM 5.3 Flash (the
-    // primary) walks an explicit provider order. allow_fallbacks=false on
+    // Full GLM 5.3 stays hard-pinned to Fireworks; GLM 5.3 Flash walks an
+    // explicit provider order. allow_fallbacks=false on
     // both: a host outside the list is never used, so when the whole list is
     // down the request fails visibly instead of routing prompts elsewhere.
     // Every listed endpoint exposes a 1,048,576-token context.
@@ -110,8 +113,9 @@
             }
           }
         },
-        // Selectable alternative, NOT the default: GLM 5.3 Flash above stays
-        // the primary and keeps agent.build. DeepSeek V4.1 Flash shipped
+        // Selectable alternative, NOT the default: the free GLM 5.3 Flash
+        // (top-level model) stays the primary and keeps agent.build. DeepSeek
+        // V4.1 Flash shipped
         // 2026-09-10 (MIT open weights, 552B backbone activating 8B on input /
         // 16B on output, 1,048,576-token context, text+image in, text out).
         // Registered active in the local catalog 2026-09-11 (`opencode models
@@ -183,12 +187,13 @@
     }
   },
 
-  // The default primary TUI agent selects GLM 5.3 Flash's max variant;
-  // Fireworks accepted max in the live probe on 2026-08-31.
+  // The default primary TUI agent selects the free GLM 5.3 Flash's max
+  // variant (verified live 2026-10-19, default and --variant max); the
+  // OpenRouter route accepted max via Fireworks on 2026-08-31.
   // Permissions remain inherited; do not redefine them here.
   "agent": {
     "build": {
-      "model": "openrouter/z-ai/glm-5.3-flash",
+      "model": "opencode/glm-5.3-flash-free",
       "variant": "max"
     }
   },
