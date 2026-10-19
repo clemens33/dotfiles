@@ -631,7 +631,7 @@ url = "https://developers.openai.com/mcp"
 #
 # ACCEPTED TRADE-OFF on machines WITHOUT the private overlay: codex has no
 # config includes, so these defs cannot move to the overlay. With the env vars
-# unset, both servers stay `enabled` with a missing header env var, `codex
+# unset, these servers stay `enabled` with a missing header env var, `codex
 # doctor` reports an overall warning, and startup logs an auth failure — it does
 # NOT break codex or block a session. The alternative (an overlay-owned profile
 # + `codex-mic` wrapper via `codex -p`) was judged not worth a second wrapper
@@ -646,6 +646,11 @@ env_http_headers = { "x-api-key" = "MIC_ASSISTANT_API_KEY" }
 [mcp_servers.assistant-all-tools-test]
 url = "https://assistant-test.ai.miccust.dev/api/gateway/mcp/"
 env_http_headers = { "x-api-key" = "MIC_ASSISTANT_TEST_API_KEY" }
+
+# Same gateway on the DEV stage — separate key and server name, like test.
+[mcp_servers.assistant-all-tools-dev]
+url = "https://assistant-dev.ai.miccust.dev/api/gateway/mcp/"
+env_http_headers = { "x-api-key" = "MIC_ASSISTANT_DEV_API_KEY" }
 
 # MIC Global Trade Assistant MCP gateway — all GTA tools (prod).
 # Same launch-scoped key delivery and MIC_ASSISTANT_* shell exclusion as above.
