@@ -51,6 +51,7 @@ The wrapper install script detects the overlay submodule and runs its Dotbot pas
 | Vim | `vimrc` | `~/.vimrc` |
 | Bash aliases | `bash_aliases` | `~/.bash_aliases` |
 | Claude Code | `claude/settings.json`, `claude/mcpServers.json` | `~/.claude/` |
+| GitHub Copilot CLI | Native settings command + rendered instructions + merged MCP; auth/preferences remain CLI-owned | `${COPILOT_HOME:-~/.copilot}/` |
 | Codex CLI | `codex/config.toml` | `~/.codex/config.toml` |
 | OpenCode | `opencode/config.json` | `~/.config/opencode/config.json` |
 | Antigravity CLI (`agy`) | `antigravity/settings.json` | `~/.gemini/antigravity-cli/settings.json` |
@@ -80,13 +81,13 @@ writes the result as a **regular file** into every harness identity:
 ~/.claude/CLAUDE.md                                ~/.codex/AGENTS.md
 ~/.claude2/CLAUDE.md                               ~/.config/opencode/AGENTS.md
 ~/.claude-mic/CLAUDE.md                            ~/.gemini/config/plugins/dotfiles/rules/AGENTS.md
-~/.dsh/AGENTS.md
+~/.dsh/AGENTS.md                                  ~/.copilot/copilot-instructions.md
 ```
 
 `./install` runs the renderer; nothing links to `shared/AGENTS.md` any more. The
 renderer creates no identity of its own — it skips any whose directory is
 missing. `./install` is what provisions them: the public pass creates
-`~/.claude2` and `~/.dsh`, the private overlay's pass creates `~/.claude-mic`. So
+`~/.claude2`, `~/.dsh`, and `${COPILOT_HOME:-$HOME/.copilot}`, the private overlay's pass creates `~/.claude-mic`. So
 a public-only clone has no `~/.claude-mic`, and the renderer simply skips it —
 as it does for `~/.dsh` on a machine where the DeepSeek Harness pilot has been
 rolled back.
@@ -113,6 +114,41 @@ org half ships inside the file each tool already loads.
 - **Grok is unchanged**: `grok/AGENTS.md` → `~/.grok/AGENTS.md` stays a symlink
   because of grok's 10k-char rules cap, and grok picks the full contract up
   through its Claude-compatible read of `~/.claude/CLAUDE.md`.
+
+## GitHub Copilot CLI
+
+The public install renders the complete shared contract into
+`${COPILOT_HOME:-$HOME/.copilot}/copilot-instructions.md` and reconciles the
+four public MCP servers into that home's `mcp-config.json`. Copilot discovers
+existing `~/.agents/skills` natively; no duplicate skill tree is installed.
+Existing repository instructions remain in effect alongside the personal contract.
+
+The MCP adapter converts Claude `stdio` definitions to native `local` entries
+with `tools: ["*"]`. It owns only Serena, Context7, Chrome DevTools and OpenDesign:
+removing one from the managed source removes that entry; machine-local servers
+and unrelated fields survive. Invalid managed schema fails without rewriting the
+target. The resulting regular file is mode0600. Tool discovery does not add
+blanket tool, path or URL permissions.
+
+Authentication/state `config.json` and other preferences stay CLI-owned. Install
+sets only `copilot config includeCoAuthoredBy false`, matching the commit metadata
+contract. Both that command and generated targets honor `COPILOT_HOME`.
+
+The scheduled updater includes `copilot update stable` under its existing deadline
+and retries. `--only copilot --check` compares the active CLI with GitHub's latest
+stable release and does not run update; an older active version returns nonzero.
+The npm loader manifest can be older than the active downloaded native package
+and is not the installed-version oracle. A successful install/update records
+`~/.local/state/harness-update/copilot-installed`: if Copilot later disappears
+(for example after a mise Node change), the updater fails with a restore message.
+A fresh host without a CLI or marker skips. Check mode writes only routine updater
+logs, never the installed marker, native settings or update cache. Native
+`autoUpdate` remains at the user's existing value (default true).
+
+The optional private overlay supplies gateway entries and a per-launch shim.
+Its accepted key-inheritance boundary is documented in the overlay README.
+Legacy Fish `g`/`ghg`/`gitg` aliases still use the retired `gh copilot suggest -t`
+interface; this integration does not redesign them. Invoke `copilot` directly.
 
 ## OpenDesign
 
@@ -304,7 +340,7 @@ policy, the copied-preset drift check, and rollback are all in
 
 ## Automatic harness updates
 
-`scripts/harness-update.sh` updates installed Claude Code, Codex, Antigravity
+`scripts/harness-update.sh` updates installed Claude Code, Codex, GitHub Copilot CLI, Antigravity
 (`agy`), Grok, and OpenCode CLIs, and reports on the pinned DeepSeek Harness
 pilot without ever upgrading it. Each tool is isolated: one failed update does
 not skip the rest. It runs daily at 06:30 local time and writes dated logs to

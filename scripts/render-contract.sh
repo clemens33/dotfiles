@@ -75,6 +75,7 @@ $HOME/.codex|$HOME/.codex/AGENTS.md
 $HOME/.config/opencode|$HOME/.config/opencode/AGENTS.md
 $HOME/.gemini/config|$HOME/.gemini/config/plugins/dotfiles/rules/AGENTS.md
 $HOME/.dsh|$HOME/.dsh/AGENTS.md
+${COPILOT_HOME:-$HOME/.copilot}|${COPILOT_HOME:-$HOME/.copilot}/copilot-instructions.md
 EOF
 }
 

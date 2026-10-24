@@ -842,5 +842,104 @@ ae_check_flags_behind_pin() {
 check 'ae --check flags a PATH binary behind the pin' \
   ae_check_flags_behind_pin
 
+
+# Native Copilot must compare the active package with the stable release, keep
+# check mode read-only, and notice a lost managed Node installation.
+make_copilot_home() {
+  local home="$TMP_ROOT/$1/home"
+  mkdir -p "$home/.local/bin"
+  printf '%s\n' "${2:-1.0.103}" >"$home/active-version"
+  cat >"$home/.local/bin/copilot" <<'EOF'
+#!/usr/bin/env bash
+case "$1" in
+  --version)
+    printf 'GitHub Copilot CLI %s.\n' "$(cat "$HOME/active-version")"
+    awk 'BEGIN { for (i=0;i<6000;i++) print "large diagnostic output" }'
+    ;;
+  update)
+    [ "$2" = stable ] || exit 45
+    if IFS= read -r ignored; then exit 46; fi
+    printf 'update\n' >>"$HOME/update-calls"
+    [ "${FAKE_COPILOT_UPDATE_FAIL:-0}" = 0 ] || exit 42
+    printf '%s\n' "${FAKE_COPILOT_AFTER:-1.0.103}" >"$HOME/active-version"
+    ;;
+  *) exit 2 ;;
+esac
+EOF
+  cat >"$home/.local/bin/curl" <<'EOF'
+#!/usr/bin/env bash
+[ "${FAKE_COPILOT_LOOKUP_FAIL:-0}" = 0 ] || exit 22
+printf '{"tag_name":"v%s"}\n' "${FAKE_COPILOT_LATEST:-1.0.103}"
+awk 'BEGIN { for (i=0;i<6000;i++) print " " }'
+EOF
+  printf '#!/bin/sh\nexit 0\n' >"$home/.local/bin/sleep"
+  # npm's root manifest intentionally remains old; it is not the oracle.
+  printf '#!/bin/sh\nprintf "1.0.76\\n"\n' >"$home/.local/bin/npm"
+  chmod +x "$home/.local/bin/"{copilot,curl,sleep,npm}
+  printf '%s\n' "$home"
+}
+
+copilot_check_uses_active_and_never_updates() {
+  local home
+  home=$(make_copilot_home cp-check)
+  HOME="$home" "$SCRIPT" --check --only copilot >"$home/out" 2>&1 || return 1
+  grep -q 'copilot CHECK current=1.0.103 latest=1.0.103' "$home/out" &&
+    [ ! -e "$home/update-calls" ] &&
+    [ ! -e "$home/.local/state/harness-update/copilot-installed" ]
+}
+check 'copilot check drains large output, uses active native version, no npm/update/state writes' copilot_check_uses_active_and_never_updates
+
+copilot_update_reaches_stable_with_stdin_eof() {
+  local home
+  home=$(make_copilot_home cp-update 1.0.76)
+  printf 'must not reach updater child\n' | HOME="$home" "$SCRIPT" --only copilot >"$home/out" 2>&1 || return 1
+  grep -q 'copilot OK 1.0.76 -> 1.0.103 latest=1.0.103' "$home/out" &&
+    [ -f "$home/.local/state/harness-update/copilot-installed" ] &&
+    [ "$(wc -l <"$home/update-calls" | tr -d ' ')" = 1 ]
+}
+check 'copilot native update is stable/noninteractive and records successful install' copilot_update_reaches_stable_with_stdin_eof
+
+copilot_stale_update_fails() {
+  local home
+  home=$(make_copilot_home cp-stale 1.0.76)
+  if HOME="$home" FAKE_COPILOT_AFTER=1.0.76 "$SCRIPT" --only copilot >"$home/out" 2>&1; then return 1; fi
+  grep -q 'copilot FAIL effective=1.0.76 expected=1.0.103' "$home/out" &&
+    ! grep -q 'copilot OK' "$home/out" &&
+    [ ! -e "$home/.local/state/harness-update/copilot-installed" ]
+}
+check 'copilot stale active binary after update fails instead of trusting package metadata' copilot_stale_update_fails
+
+copilot_check_stale_fails() {
+  local home
+  home=$(make_copilot_home cp-behind 1.0.76)
+  if HOME="$home" "$SCRIPT" --check --only copilot >"$home/out" 2>&1; then return 1; fi
+  grep -q 'BEHIND binary=' "$home/out" && [ ! -e "$home/update-calls" ]
+}
+check 'copilot check returns nonzero when active release is behind stable' copilot_check_stale_fails
+
+copilot_failure_paths() {
+  local home
+  home=$(make_copilot_home cp-fail)
+  if HOME="$home" FAKE_COPILOT_UPDATE_FAIL=1 "$SCRIPT" --only copilot >"$home/out" 2>&1; then return 1; fi
+  grep -q 'copilot FAIL current=1.0.103 update command failed' "$home/out" || return 1
+  [ "$(wc -l <"$home/update-calls" | tr -d ' ')" = 3 ] || return 1
+  rm "$home/update-calls"
+  if HOME="$home" FAKE_COPILOT_LOOKUP_FAIL=1 "$SCRIPT" --check --only copilot >"$home/out" 2>&1; then return 1; fi
+  grep -q 'stable release lookup failed' "$home/out" && [ ! -e "$home/update-calls" ]
+}
+check 'copilot update and latest-lookup failures remain nonzero under bounded retries' copilot_failure_paths
+
+copilot_missing_known_install() {
+  local home
+  home=$(make_copilot_home cp-missing)
+  rm "$home/.local/bin/copilot"
+  HOME="$home" "$SCRIPT" --check --only copilot >"$home/out" 2>&1 || return 1
+  grep -q 'copilot SKIP not installed' "$home/out" || return 1
+  touch "$home/.local/state/harness-update/copilot-installed"
+  if HOME="$home" "$SCRIPT" --check --only copilot >"$home/out" 2>&1; then return 1; fi
+  grep -q 'copilot FAIL previously installed binary missing' "$home/out" && ! grep -q 'RETRY' "$home/out"
+}
+check 'copilot fresh absent skips; recorded install lost after Node/mise change fails immediately' copilot_missing_known_install
+
 printf '%s passed, %s failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]

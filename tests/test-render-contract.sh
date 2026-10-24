@@ -87,7 +87,7 @@ render() {
     r=$TMP_ROOT/$1
     h=$TMP_ROOT/$2
     shift 2
-    HOME=$h sh "$r/scripts/render-contract.sh" "$@"
+    COPILOT_HOME="$h/.copilot" HOME=$h sh "$r/scripts/render-contract.sh" "$@"
 }
 
 PUBLIC_MARK='# SOUL.md'
@@ -97,12 +97,12 @@ MIC_MARK='# MIC addendum'
 # 1. Full render: every identity present, overlay present
 # ---------------------------------------------------------------------------
 make_root full yes
-make_home h1 .claude .claude2 .claude-mic .codex .config/opencode .gemini/config .dsh
+make_home h1 .claude .claude2 .claude-mic .codex .config/opencode .gemini/config .dsh .copilot
 render full h1 >"$TMP_ROOT/out1" 2>"$TMP_ROOT/err1" || bad "render exited non-zero"
 
 for t in .claude/CLAUDE.md .claude2/CLAUDE.md .claude-mic/CLAUDE.md \
     .codex/AGENTS.md .config/opencode/AGENTS.md \
-    .gemini/config/plugins/dotfiles/rules/AGENTS.md .dsh/AGENTS.md; do
+    .gemini/config/plugins/dotfiles/rules/AGENTS.md .dsh/AGENTS.md .copilot/copilot-instructions.md; do
     target=$TMP_ROOT/h1/$t
     check "$t is a regular file" test -f "$target"
     check "$t is not a symlink" test ! -L "$target"
@@ -111,7 +111,7 @@ for t in .claude/CLAUDE.md .claude2/CLAUDE.md .claude-mic/CLAUDE.md \
     check "$t carries the generated-file header" contains "$target" 'GENERATED FILE'
 done
 
-check 'summary reports seven renders' grep -q 'contract: 7 rendered' "$TMP_ROOT/out1"
+check 'summary reports eight renders' grep -q 'contract: 8 rendered' "$TMP_ROOT/out1"
 check 'rendered file is mode 0644' mode_is_644 "$TMP_ROOT/h1/.claude/CLAUDE.md"
 
 # ---------------------------------------------------------------------------
@@ -135,7 +135,7 @@ check 'replaced target holds the rendered contract' \
 cp "$TMP_ROOT/h1/.claude/CLAUDE.md" "$TMP_ROOT/first-render"
 touch "$TMP_ROOT/marker"
 render full h1 >"$TMP_ROOT/out3"
-check 'second run renders nothing' grep -q 'contract: 0 rendered, 7 unchanged' "$TMP_ROOT/out3"
+check 'second run renders nothing' grep -q 'contract: 0 rendered, 8 unchanged' "$TMP_ROOT/out3"
 check 'second run leaves bytes identical' cmp -s "$TMP_ROOT/first-render" "$TMP_ROOT/h1/.claude/CLAUDE.md"
 newer=$(find "$TMP_ROOT/h1/.claude/CLAUDE.md" -newer "$TMP_ROOT/marker")
 check 'second run does not even rewrite the file' test -z "$newer"
@@ -167,7 +167,7 @@ check 'no ~/.dsh directory is created' test ! -e "$TMP_ROOT/h4/.dsh"
 # 6. --check reports drift and writes nothing
 # ---------------------------------------------------------------------------
 render full h1 --check >"$TMP_ROOT/out6" 2>&1
-check '--check is quiet when up to date' grep -q '7 up to date, 0 stale' "$TMP_ROOT/out6"
+check '--check is quiet when up to date' grep -q '8 up to date, 0 stale' "$TMP_ROOT/out6"
 
 printf 'tampered\n' >>"$TMP_ROOT/h1/.codex/AGENTS.md"
 tampered=$(sha256 "$TMP_ROOT/h1/.codex/AGENTS.md")
@@ -256,6 +256,26 @@ render full h1 --check >/dev/null 2>&1 || rc=$?
 check '--check catches a 0666 target' test "$rc" = 1
 render full h1 >/dev/null
 check 'a normal run repairs a world-writable target' mode_is_644 "$TMP_ROOT/h1/.codex/AGENTS.md"
+
+
+# Native home overrides are a discovery contract, not a second default home.
+custom="$TMP_ROOT/copilot custom home"
+mkdir -p "$custom"
+COPILOT_HOME="$custom" HOME="$TMP_ROOT/h4" sh "$TMP_ROOT/public-only/scripts/render-contract.sh" >/dev/null
+check 'Copilot custom home receives full public contract' contains "$custom/copilot-instructions.md" "$PUBLIC_MARK"
+check 'Copilot custom home does not create default identity' test ! -e "$TMP_ROOT/h4/.copilot"
+printf '\nchanged\n' >>"$custom/copilot-instructions.md"
+rc=0
+COPILOT_HOME="$custom" HOME="$TMP_ROOT/h4" sh "$TMP_ROOT/public-only/scripts/render-contract.sh" --check >"$TMP_ROOT/cp-check" || rc=$?
+check 'Copilot override drift is reported without repair' test "$rc" = 1
+check 'Copilot override drift names native target' contains "$TMP_ROOT/cp-check" "stale $custom/copilot-instructions.md"
+check 'Copilot check preserves changed content' contains "$custom/copilot-instructions.md" changed
+rm "$custom/copilot-instructions.md"
+ln -s "$TMP_ROOT/public-only/shared/AGENTS.md" "$custom/copilot-instructions.md"
+cp "$TMP_ROOT/public-only/shared/AGENTS.md" "$TMP_ROOT/source-before"
+COPILOT_HOME="$custom" HOME="$TMP_ROOT/h4" sh "$TMP_ROOT/public-only/scripts/render-contract.sh" >/dev/null
+check 'Copilot render replaces symlink without writing through' cmp -s "$TMP_ROOT/public-only/shared/AGENTS.md" "$TMP_ROOT/source-before"
+check 'Copilot rendered override is regular file' test ! -L "$custom/copilot-instructions.md"
 
 printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]

@@ -217,6 +217,9 @@
     # would truncate shared/AGENTS.md. ~/.claude-mic belongs to the overlay pass,
     # which runs this same script again once that identity exists. Idempotent:
     # an unchanged target is not even rewritten.
+    # Copilot supports COPILOT_HOME; provision only that resolved native home.
+    - command: mkdir -p "${COPILOT_HOME:-$HOME/.copilot}"
+      description: Creating native Copilot instruction and MCP home
     - command: scripts/render-contract.sh
       description: Rendering the AI contract (shared + private addendum)
       stdout: true
@@ -236,6 +239,21 @@
           fi
         fi
       description: Purge legacy codex shell snapshots
+    - command: scripts/copilot-mcp-merge.sh "${COPILOT_HOME:-$HOME/.copilot}/mcp-config.json" claude/mcpServers.json
+      description: Reconciling native Copilot public MCP servers
+    # Native key-only edit; auth/config.json and other preferences stay CLI-owned.
+    - command: |
+        if command -v copilot >/dev/null 2>&1; then
+          copilot config includeCoAuthoredBy false || exit 1
+          dir="$HOME/.local/state/harness-update"
+          mkdir -p "$dir" || exit 1
+          marker=$(mktemp "$dir/.copilot-installed.XXXXXX") || exit 1
+          trap 'rm -f "$marker"' EXIT HUP INT TERM
+          printf 'installed\n' >"$marker" && chmod 600 "$marker" && mv "$marker" "$dir/copilot-installed" || exit 1
+        else
+          echo "Copilot CLI absent; native attribution setting skipped"
+        fi
+      description: Disabling Copilot commit attribution and recording installed state
     - command: scripts/mcp-merge.sh "$HOME/.claude.json" claude/mcpServers.json
       description: Merging Claude Code MCP servers
     # Muse rewrites settings.json itself (/model, /effort, and TUI state), so

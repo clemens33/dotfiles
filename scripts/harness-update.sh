@@ -22,7 +22,7 @@ usage() {
   cat <<'EOF'
 Usage: scripts/harness-update.sh [--check] [--only TOOL] [--include-ae]
 
-Tools: claude, codex, agy, grok, opencode, muse, ae, dsh, contract
+Tools: claude, codex, agy, grok, opencode, muse, copilot, ae, dsh, contract
 
   --check       Report installed and latest versions without changing anything
   --only TOOL   Process one tool only
@@ -43,7 +43,7 @@ EOF
 
 valid_tool() {
   case "$1" in
-    claude|codex|agy|grok|opencode|muse|ae|dsh|contract) return 0 ;;
+    claude|codex|agy|grok|opencode|muse|copilot|ae|dsh|contract) return 0 ;;
     *) return 1 ;;
   esac
 }
@@ -58,7 +58,7 @@ while [ "$#" -gt 0 ]; do
       ;;
     --only)
       if [ "$#" -lt 2 ] || ! valid_tool "$2"; then
-        printf 'error: --only requires one of: claude, codex, agy, grok, opencode, muse, ae, dsh, contract\n' >&2
+        printf 'error: --only requires one of: claude, codex, agy, grok, opencode, muse, copilot, ae, dsh, contract\n' >&2
         usage >&2
         exit 2
       fi
@@ -126,6 +126,13 @@ summary() {
   printf '%s\n' "$message"
   printf '%s\n' "$message" >>"$LOG_FILE"
 }
+
+# Observe presence before another tool update changes the Node/mise runtime.
+# The marker survives that transition; check mode never creates it.
+COPILOT_EXPECTED=0
+if [ -f "$LOG_DIR/copilot-installed" ] || command -v copilot >/dev/null 2>&1; then
+  COPILOT_EXPECTED=1
+fi
 
 selected() {
   [ -z "$ONLY_TOOL" ] || [ "$ONLY_TOOL" = "$1" ]
@@ -199,6 +206,12 @@ run_with_retry() {
 
 run_step() {
   local result
+  # A lost managed install is a local setup failure, not a transient network
+  # error. Fail immediately rather than spending retry backoffs on it.
+  if [ "$1" = copilot ] && [ "$COPILOT_EXPECTED" -eq 1 ] && ! command -v copilot >/dev/null 2>&1; then
+    process_copilot
+    return $?
+  fi
   # Expand the positional argument in the child, not the supervising shell.
   # shellcheck disable=SC2016
   case "$1" in
@@ -405,6 +418,7 @@ installed_version() {
     grok) grok --version 2>>"$LOG_FILE" | awk 'NR == 1 { print $2 }' ;;
     opencode) run_opencode --version 2>>"$LOG_FILE" | awk 'NR == 1 { print $1 }' ;;
     muse) muse --version 2>>"$LOG_FILE" | awk 'NR == 1 { gsub(/[()]/, "", $NF); print $NF }' ;;
+    copilot) copilot --version 2>>"$LOG_FILE" | awk 'NR == 1 { sub(/\.$/, "", $NF); print $NF }' ;;
     ae) ae --version 2>>"$LOG_FILE" | awk 'NR == 1 { print $NF }' ;;
     *) return 1 ;;
   esac
@@ -541,6 +555,61 @@ process_codex() {
   else
     update_native codex codex update
   fi
+}
+
+# Use the stable release channel and the ACTIVE CLI, not the npm loader's
+# manifest: cached native packages can be newer than that manifest.
+copilot_latest() {
+  curl --fail --silent --show-error --location --max-redirs 3 \
+    --proto '=https' --proto-redir '=https' --connect-timeout 5 --max-time 15 \
+    https://api.github.com/repos/github/copilot-cli/releases/latest 2>>"$LOG_FILE" |
+    jq -er '.tag_name | select(type == "string") | select(test("^v[0-9]+\\.[0-9]+\\.[0-9]+$")) | ltrimstr("v")'
+}
+
+process_copilot() {
+  hash -r
+  if ! command -v copilot >/dev/null 2>&1; then
+    if [ "$COPILOT_EXPECTED" -eq 1 ]; then
+      summary 'copilot FAIL previously installed binary missing; restore Copilot in the active Node/mise runtime'
+      return 1
+    fi
+    summary 'copilot SKIP not installed'
+    return 0
+  fi
+  local before latest after marker
+  before=$(installed_version copilot) || before=""
+  if ! [[ "$before" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    summary 'copilot FAIL unable to read active version'
+    return 1
+  fi
+  latest=$(copilot_latest) || latest=""
+  if [ -z "$latest" ]; then
+    summary "copilot FAIL current=$before stable release lookup failed"
+    return 1
+  fi
+  if [ "$CHECK_ONLY" -eq 1 ]; then
+    summary "copilot CHECK current=$before latest=$latest$(behind_note copilot "$before" "$latest")"
+    ! version_older "$before" "$latest"
+    return
+  fi
+  if ! log_run copilot update stable; then
+    summary "copilot FAIL current=$before update command failed"
+    return 1
+  fi
+  hash -r
+  after=$(installed_version copilot) || after=""
+  if ! [[ "$after" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    summary 'copilot FAIL unable to read updated active version'
+    return 1
+  fi
+  effective_lag copilot "$after" "$latest" 'stable GitHub release' || return 1
+  marker=$(mktemp "$LOG_DIR/.copilot-installed.XXXXXX") || return 1
+  if ! printf '%s\n' "$after" >"$marker" || ! chmod 600 "$marker" || ! mv "$marker" "$LOG_DIR/copilot-installed"; then
+    rm -f "$marker"
+    summary 'copilot FAIL cannot record installed state'
+    return 1
+  fi
+  summary "copilot OK $before -> $after latest=$latest"
 }
 
 process_agy() {
@@ -1088,17 +1157,17 @@ process_contract() {
 }
 
 # Export existing step functions so timeout can supervise a separate Bash process.
-export CHECK_ONLY INCLUDE_AE LOG_FILE REPO_ROOT RETRY_ATTEMPTS
+export CHECK_ONLY INCLUDE_AE LOG_FILE LOG_DIR REPO_ROOT RETRY_ATTEMPTS COPILOT_EXPECTED
 export -f summary run_with_retry log_run npm_mode nvm_exec npm_latest npm_install_latest \
   npm_global_version version_sorts_first version_older manager_command_v resolved_binary \
   behind_note effective_lag \
   opencode_available run_opencode installed_version agy_latest grok_latest muse_latest \
   check_with_npm update_native install_muse process_claude process_codex \
-  process_agy process_grok process_opencode process_muse process_ae \
+  copilot_latest process_copilot process_agy process_grok process_opencode process_muse process_ae \
   process_dsh process_contract
 
 failures=0
-for tool in claude codex agy grok opencode muse ae dsh contract; do
+for tool in claude codex agy grok opencode muse copilot ae dsh contract; do
   if selected "$tool" && ! run_step "$tool"; then failures=1; fi
 done
 

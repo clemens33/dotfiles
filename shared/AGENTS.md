@@ -170,7 +170,7 @@ Field knowledge (September 2026 SOTA, source-tiered references): `~/projects/cle
 
 | File | Role | Visibility |
 |---|---|---|
-| `shared/AGENTS.md` (this file) | Contract — rules to never break | Rendered, not linked: `scripts/render-contract.sh` concatenates this file with the private overlay's `AGENTS-MIC.md` into the global instruction file of Claude Code / Codex / OpenCode / Antigravity. Grok via its own short pointer + Claude compatibility; Muse imports `~/.claude/CLAUDE.md` with project → Claude Code → Codex precedence |
+| `shared/AGENTS.md` (this file) | Contract — rules to never break | Rendered, not linked: `scripts/render-contract.sh` concatenates this file with the private overlay's `AGENTS-MIC.md` into the global instruction file of Claude Code / Codex / OpenCode / Antigravity / GitHub Copilot CLI (`${COPILOT_HOME:-$HOME/.copilot}/copilot-instructions.md`). Grok via its own short pointer + Claude compatibility; Muse imports `~/.claude/CLAUDE.md` with project → Claude Code → Codex precedence |
 | `WORKFLOW.md` | Doctrine — how to approach a task | Read on demand by any tool via absolute path above |
 | `KNOWLEDGE.md` | Field knowledge — what's true in September 2026 | Read on demand by any tool via absolute path above |
 | `skills/large-feature/SKILL.md` | Full-rigor L playbook | Claude Code / OpenCode via `~/.claude/skills/`; Codex and Muse via `~/.agents/skills/` per-skill links; Grok reads `~/.claude/skills/` natively; Antigravity via `~/.gemini/config/skills` → `~/.claude/skills` |
