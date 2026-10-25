@@ -15,14 +15,15 @@ installer = "internal"
 auto_update = false
 
 [models]
-# grok-4.6 = current Grok Build default (500k context; grok CLI 1.0.3, 4.5 also
-# listed). "grok-build" is a rolling alias (currently resolves to 4.6); we pin
-# the versioned id for deterministic behavior (switched off the alias
-# 2026-08-14), and so a fallback can't drop to grok-composer-2.5-fast (Cursor's
-# model, 200k). Effort: high is the server default; [models].default_reasoning_effort
-# is deliberately left unset so we track the vendor default — override per
-# session with --effort medium/xhigh, or set that key to persist a choice.
-default = "grok-4.6"
+# Pin the native model and effort for new sessions.
+# Grok 4.7 offers 256k/500k windows; a 500k default is not established here.
+# Verify the selected window in the native session header/footer.
+default = "grok-4.7"
+default_reasoning_effort = "high"
+
+# Candidate only: retain after native subscription/window verification.
+[model."grok-4.7"]
+context_window = 500000
 
 [features]
 # Match codex/claude: no telemetry, no permission prompts (trusted local use).
