@@ -16,4 +16,5 @@ lint = "clippy --all-targets --all-features -- -D warnings"
 # wins come from `cargo check`, nextest, and (optionally) sccache below.
 
 [build]
-# rustc-wrapper = "sccache"   # uncomment after `brew install sccache`
+# rustc-wrapper: not here — config.fish exports RUSTC_WRAPPER=sccache only
+# where sccache is installed (apt sccache / brew install sccache).

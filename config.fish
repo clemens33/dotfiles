@@ -91,6 +91,13 @@ fish_add_path -g ~/.opencode/bin
 # compiler that ignores rust-toolchain.toml. See macos/Brewfile §4.
 fish_add_path -g ~/.cargo/bin
 
+# sccache — only where installed (apt on Linux, brew on macOS). Env var, not
+# cargo-config `rustc-wrapper`: that is a hard requirement on every machine
+# sharing the config. Agents launched via `bash -lc` inherit it.
+if command -q sccache
+    set -gx RUSTC_WRAPPER sccache
+end
+
 # >>> grok installer >>>
 fish_add_path -g $HOME/.grok/bin
 # <<< grok installer <<<
