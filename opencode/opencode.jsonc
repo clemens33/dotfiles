@@ -1,13 +1,20 @@
-// opencode — symlinked to ~/.config/opencode/config.json via dotbot.
-// NOTE: this file is JSONC. opencode's schema sets allowComments +
-// allowTrailingCommas, so // comments are valid — but plain `jq` will NOT
-// parse it. Edit by hand and validate with `opencode debug config | jq`,
-// which prints the RESOLVED config — opencode silently ignores unknown keys,
-// and `opencode models` proves only local registration, never that a model
-// can actually execute. For that, run a real `opencode run -m <id> ...`.
+// OpenCode 2 — symlinked to ~/.config/opencode/opencode.jsonc via dotbot.
+// Native V2 shape (opencode.ai/v2/docs/config, migrate-v1), ported from the
+// V1 config.json 2026-10-26. V2 ignores config.json entirely; it reads only
+// opencode.json(c). V1 reads this same path, so do NOT point an OpenCode 1
+// binary at it — V2-only keys would be misread.
 //
-// Install: `npm i -g opencode-ai` (NOT brew — the formula drags in brew node
-// and shadows mise). See macos/Brewfile §4.
+// JSONC: // comments and trailing commas are valid, plain `jq` will NOT parse
+// it. Validate with `opencode api config.get`, which prints each source as
+// V2 resolved it. V2 drops unsupported or malformed keys with a WARN
+// "configuration normalization diagnostic" in
+// ~/.local/share/opencode/log/opencode.log — grep it after every edit.
+// `opencode models` proves only local registration, never that a model can
+// execute; for that run a real `opencode run -m <id> ...`.
+//
+// Install: curl -fsSL https://opencode.ai/v2/install | bash -s -- --no-modify-path
+// then link ~/.local/bin/opencode -> ~/.opencode/bin/opencode (npm
+// @opencode/cli also works). scripts/harness-update.sh owns updates.
 {
   "$schema": "https://opencode.ai/config.json",
 
@@ -16,7 +23,7 @@
   // $0, zero retention, no training (opencode.ai/docs/zen), 200K context /
   // 32K output; free for a limited time, normal opencode client only. It is
   // the default because the OpenRouter account has no budget. max is our
-  // deliberate highest-effort default (agent.build.variant below).
+  // deliberate highest-effort default (agents.build below).
   //
   // The openrouter block below keeps the GLM 5.3 Flash provider pins (EU
   // first, then US, no Chinese-HQ hosts, everything outside that list
@@ -24,40 +31,40 @@
   // GitHub Copilot Gemini 3.7 remains declared as a selectable fallback if
   // the primary is unavailable or misbehaves.
   "model": "opencode/glm-5.3-flash-free",
-  // Titles/summaries/compaction: small_model remains the fast internal lane,
-  // but it is Copilot-quota-bound. It fires on nearly every turn. Verified
-  // working on this seat
-  // 2026-08-17 (`opencode run -m github-copilot/gpt-5.6-luna`).
-  "small_model": "github-copilot/gpt-5.6-luna",
 
   // Provider model overrides: the explicit-use OpenRouter GLM 5.3 Flash keeps
   // deliberate max reasoning effort; its provider order is configured below.
-  "provider": {
+  // V1 `options` became `settings` (provider package options), passed through
+  // unchanged — V2's own normalizer produced exactly these blocks.
+  "providers": {
     // Registry back-fill for the selectable fallback, NOT a credential or
-    // endpoint change: auth still runs through `opencode auth login -p
-    // github-copilot`. Core metadata is copied from the models.dev entry for
-    // gemini-3.7-flash (2026-08-17); the options block is a local addition.
+    // endpoint change: auth still runs through `/connect` -> GitHub Copilot.
+    // Core metadata is copied from the models.dev entry for gemini-3.7-flash
+    // (2026-08-17); settings is a local addition.
     "github-copilot": {
       "models": {
         "gemini-3.7-flash": {
-          "id": "gemini-3.7-flash",
+          "modelID": "gemini-3.7-flash",
           "name": "Gemini 3.7 Flash",
-          "release_date": "2026-08-13",
-          "attachment": true,
-          "reasoning": true,
-          "tool_call": true,
+          "releaseDate": "2026-08-13",
+          "capabilities": {
+            "tools": true,
+            "input": ["text", "image"],
+            "output": ["text"],
+            "reasoning": { "supported": true, "effort": ["low", "medium", "high"] },
+          },
           "limit": { "context": 1000000, "input": 936000, "output": 64000 },
-          "cost": { "input": 0.75, "output": 3.75, "cache_read": 0.075 },
+          "cost": { "input": 0.75, "output": 3.75, "cache": { "read": 0.075 } },
           // Thinking level. 3.7 Flash accepts low / medium / high, and
           // rejects "minimal" with a validation error. Google DEFAULTS this
           // model to medium; "high" here is our own deliberate
           // deeper-reasoning choice, not a vendor recommendation: on a
           // $0.75/$3.75 fallback, extra thinking tokens are cheap relative to
-          // a wrong answer, and small_model remains the fast internal lane.
+          // a wrong answer, and the title agent remains the fast internal lane.
           // Drop to "medium" if latency or credit burn becomes binding.
-          "options": { "reasoningEffort": "high" }
-        }
-      }
+          "settings": { "reasoningEffort": "high" },
+        },
+      },
     },
     // OpenRouter models are billed against the OpenRouter account, independent
     // of the GitHub Copilot subscription above. Authenticate interactively via
@@ -72,13 +79,13 @@
       "models": {
         "z-ai/glm-5.3": {
           // GLM 5.3 accepts low / high / max; max is also its vendor default.
-          "options": {
+          "settings": {
             "reasoningEffort": "max",
             "provider": {
               "order": ["fireworks"],
-              "allow_fallbacks": false
-            }
-          }
+              "allow_fallbacks": false,
+            },
+          },
         },
         "z-ai/glm-5.3-flash": {
           // Provider order, Clemens 2026-09-07: EU preferred, then US, no
@@ -104,17 +111,17 @@
           // PROMPTS per its data policy and offers tool_choice=auto only.
           // max effort accepted by live probes (Fireworks 2026-08-31, this
           // order 2026-09-07). Re-check the snapshot before reordering.
-          "options": {
+          "settings": {
             "reasoningEffort": "max",
             "provider": {
               "order": ["nextbit", "coreweave", "fireworks"],
               "allow_fallbacks": false,
-              "zdr": true
-            }
-          }
+              "zdr": true,
+            },
+          },
         },
         // Selectable alternative, NOT the default: the free GLM 5.3 Flash
-        // (top-level model) stays the primary and keeps agent.build. DeepSeek
+        // (top-level model) stays the primary and keeps agents.build. DeepSeek
         // V4.1 Flash shipped
         // 2026-09-10 (MIT open weights, 552B backbone activating 8B on input /
         // 16B on output, 1,048,576-token context, text+image in, text out).
@@ -173,85 +180,74 @@
         // implies fireworks passed the zdr filter — inferred from the error
         // class, not proven by a 200. Re-check this snapshot before reordering.
         "deepseek/deepseek-v4.1-flash": {
-          "options": {
+          "settings": {
             "reasoningEffort": "high",
             "provider": {
               "order": ["wafer", "modal", "fireworks"],
               "allow_fallbacks": false,
               "require_parameters": true,
-              "zdr": true
-            }
-          }
-        }
-      }
-    }
+              "zdr": true,
+            },
+          },
+        },
+      },
+    },
   },
 
-  // The default primary TUI agent selects the free GLM 5.3 Flash's max
-  // variant (verified live 2026-10-19, default and --variant max); the
-  // OpenRouter route accepted max via Fireworks on 2026-08-31.
-  // Permissions remain inherited; do not redefine them here.
-  "agent": {
-    "build": {
-      "model": "opencode/glm-5.3-flash-free",
-      "variant": "max"
-    }
+  "agents": {
+    // The default primary TUI agent selects the free GLM 5.3 Flash's max
+    // variant (V2 catalog lists low/high/max, 2026-10-26; V1 verified live
+    // 2026-10-19). `#max` is V2's model#variant syntax for V1's separate
+    // variant field. Permissions stay global (below); none are set here.
+    "build": { "model": "opencode/glm-5.3-flash-free#max" },
+    // V1 small_model. V2 maps it to the built-in title agent only
+    // (migrate-v1 docs). Copilot-quota-bound and fires on nearly every session. Verified working
+    // on this seat 2026-08-17 under V1 (`opencode run -m
+    // github-copilot/gpt-5.6-luna`).
+    "title": { "model": "github-copilot/gpt-5.6-luna" },
   },
 
-  // --- Permissions: yolo, with two deliberate exceptions ------------------
+  // --- Permissions: yolo, with one deliberate exception -------------------
   // Matches the rest of the toolchain (claude bypassPermissions, codex
   // approval_policy=never, grok support_permission=false, agy
-  // always-proceed). Most of these are already opencode's defaults; they are
-  // written out so an upstream default change cannot quietly re-introduce
-  // prompts mid-session.
-  "permission": {
-    "bash": "allow",
-    "edit": "allow",
-    "webfetch": "allow",
-    "websearch": "allow",
-    "task": "allow",
-    "skill": "allow",
-    "lsp": "allow",
-    // Default is "ask". bash is already unrestricted, so prompting on paths
-    // outside the project buys no safety — only friction on ~/projects work.
-    "external_directory": "allow",
-    // Catch-all FIRST, denies last: last matching rule wins. This blocks
-    // ACCIDENTAL secret ingestion into context. It is NOT a security
-    // boundary — bash is unrestricted and can read the same bytes.
-    // Patterns are matched against the WORKTREE-RELATIVE path and `*` already
-    // crosses separators, so a leading `**/` would miss a root-level .env
-    // (the path is literally ".env"). Use slash-free patterns — they cover
-    // both root and nested hits.
-    "read": {
-      "*": "allow",
-      "*.env": "deny",
-      "*.env.*": "deny",
-      "*credentials.env": "deny",
-      "*.ssh": "deny",
-      "*.ssh/*": "deny",
-      "*.pem": "deny"
-    }
-    // doom_loop is deliberately LEFT OUT, so it keeps its "ask" default. It
-    // is the one guard whose failure mode now costs real money (token-billed
-    // credits), and it only trips on genuinely repeated identical calls.
-  },
+  // always-proceed). V2 actions: shell (V1 bash), subagent (V1 task).
+  // external_directory is V2's default allow — listed so an upstream default
+  // change cannot quietly re-introduce prompts. V2 has no lsp or doom_loop
+  // actions (permissions docs), so both V1 entries are gone.
+  // Ordered, LAST MATCH WINS: catch-alls first, denies last.
+  "permissions": [
+    { "action": "shell", "resource": "*", "effect": "allow" },
+    { "action": "edit", "resource": "*", "effect": "allow" },
+    { "action": "webfetch", "resource": "*", "effect": "allow" },
+    { "action": "websearch", "resource": "*", "effect": "allow" },
+    { "action": "subagent", "resource": "*", "effect": "allow" },
+    { "action": "skill", "resource": "*", "effect": "allow" },
+    { "action": "external_directory", "resource": "*", "effect": "allow" },
+    // Blocks ACCIDENTAL secret ingestion into context. It is NOT a security
+    // boundary — shell is unrestricted and can read the same bytes.
+    // Patterns match the location-relative path and `*` crosses separators,
+    // so a leading `*/` would miss a root-level .env (the path is literally
+    // ".env"). Use slash-free patterns — they cover root and nested hits.
+    { "action": "read", "resource": "*", "effect": "allow" },
+    { "action": "read", "resource": "*.env", "effect": "deny" },
+    { "action": "read", "resource": "*.env.*", "effect": "deny" },
+    { "action": "read", "resource": "*credentials.env", "effect": "deny" },
+    { "action": "read", "resource": "*.ssh", "effect": "deny" },
+    { "action": "read", "resource": "*.ssh/*", "effect": "deny" },
+    { "action": "read", "resource": "*.pem", "effect": "deny" },
+  ],
 
   // --- Skills: nothing to configure --------------------------------------
-  // opencode auto-discovers ~/.claude/skills and per-project .claude/skills,
-  // the same Claude-compat path grok uses — the dotfiles + overlay library
-  // works as-is. It requires frontmatter name == dirname in kebab-case,
-  // which scripts/lint-skills.sh already gates.
+  // V2 auto-discovers ~/.agents/skills, which install.conf.yaml fills with the
+  // dotfiles + overlay library (31 skills via `opencode api skill.list`,
+  // 2026-10-26). Frontmatter name == dirname in kebab-case is gated by
+  // scripts/lint-skills.sh.
 
   // --- Privacy / updates -------------------------------------------------
   "share": "disabled", // never upload sessions to the share service
-  // npm owns the binary; the built-in `opencode upgrade` would self-replace
-  // it behind npm's back, so notify only.
-  "autoupdate": "notify",
-
-  // `plugin: ["opencode-gemini-auth@latest"]` was dropped 2026-08-17: no
-  // longer needed now that the Copilot seat supplies Gemini directly. (It WAS
-  // installed — 1.4.15 under ~/.cache/opencode/packages/ — just not under
-  // ~/.config/opencode/node_modules, which is what misled an earlier note.)
+  // scripts/harness-update.sh runs `opencode upgrade` (curl install) or npm;
+  // the built-in updater only notifies so two updaters never race.
+  "update": "notify",
 
   // --- MCP servers: same set as codex/grok --------------------------------
   // Package pins (bump via harness-update): serena v1.7.0 = commit
@@ -259,24 +255,29 @@
   // pins in codex/config.toml, claude/mcpServers.json, antigravity/settings.json,
   // grok/config.toml — bump all five together. OpenDesign is separately digest-
   // pinned in open-design/compose.yaml and is not managed by harness-update.
+  // `opencode mcp list` shows only servers that connected; a missing
+  // uvx/npx/docker hides an entry there — check opencode.log for
+  // "mcp connect failed".
   "mcp": {
-    "serena": {
-      "type": "local",
-      "command": ["uvx", "--from", "git+https://github.com/oraios/serena@949a27ef1e5fda1a6e7b561e777bcece345c6ffd", "serena", "start-mcp-server", "--context", "ide-assistant", "--enable-web-dashboard", "false"]
+    "servers": {
+      "serena": {
+        "type": "local",
+        "command": ["uvx", "--from", "git+https://github.com/oraios/serena@949a27ef1e5fda1a6e7b561e777bcece345c6ffd", "serena", "start-mcp-server", "--context", "ide-assistant", "--enable-web-dashboard", "false"],
+      },
+      "context7": {
+        "type": "local",
+        "command": ["npx", "-y", "@upstash/context7-mcp@4.0.5"],
+      },
+      // Privacy flags are mandatory here: usage statistics and CrUX URL upload
+      // from performance traces are both ON by default upstream.
+      "chrome-devtools": {
+        "type": "local",
+        "command": ["npx", "-y", "chrome-devtools-mcp@1.8.0", "--browser-url=http://127.0.0.1:9222", "--no-usage-statistics", "--no-performance-crux"],
+      },
+      "open-design": {
+        "type": "local",
+        "command": ["open-design-mcp"],
+      },
     },
-    "context7": {
-      "type": "local",
-      "command": ["npx", "-y", "@upstash/context7-mcp@4.0.5"]
-    },
-    // Privacy flags are mandatory here: usage statistics and CrUX URL upload
-    // from performance traces are both ON by default upstream.
-    "chrome-devtools": {
-      "type": "local",
-      "command": ["npx", "-y", "chrome-devtools-mcp@1.8.0", "--browser-url=http://127.0.0.1:9222", "--no-usage-statistics", "--no-performance-crux"]
-    },
-    "open-design": {
-      "type": "local",
-      "command": ["open-design-mcp"]
-    }
-  }
+  },
 }

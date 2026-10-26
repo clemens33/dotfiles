@@ -290,7 +290,7 @@
 # startup-timeout setting; there is none to set.
 #
 # Pins are the SAME ones the five existing clients share (codex/config.toml,
-# claude/mcpServers.json, opencode/config.json, antigravity/settings.json,
+# claude/mcpServers.json, opencode/opencode.jsonc, antigravity/settings.json,
 # grok/config.toml) — bump all six together via harness-update.
 
 - id: mcp-serena

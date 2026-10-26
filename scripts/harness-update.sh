@@ -301,8 +301,9 @@ npm_global_version() {
     nvm) listing=$(nvm_exec npm ls --global --depth=0 --json "$package" 2>>"$LOG_FILE") ;;
     npm) listing=$(npm ls --global --depth=0 --json "$package" 2>>"$LOG_FILE") ;;
   esac
+  # `|` delimiter: scoped package names (@opencode/cli) contain `/`.
   printf '%s\n' "$listing" | tr -d '\n' |
-    sed -n "s/.*\"$package\"[[:space:]]*:[[:space:]]*{[^}]*\"version\"[[:space:]]*:[[:space:]]*\"\([^\"]*\)\".*/\1/p"
+    sed -n "s|.*\"$package\"[[:space:]]*:[[:space:]]*{[^}]*\"version\"[[:space:]]*:[[:space:]]*\"\([^\"]*\)\".*|\1|p"
 }
 
 # Succeeds when $1 sorts before $2 under sort -V. If sort lacks -V, any
@@ -354,7 +355,14 @@ manager_command_v() {
 # link is how the PATH binary outlives the install that should have replaced it.
 resolved_binary() {
   local path target
-  path=$(command -v "$1" 2>/dev/null) || path=$(manager_command_v "$1" 2>/dev/null) || path=""
+  # Same order run_opencode executes: PATH, the opencode curl install, managers.
+  path=$(command -v "$1" 2>/dev/null) || path=""
+  if [ -z "$path" ] && [ "$1" = opencode ] && [ -x "$OPENCODE_NATIVE_BIN" ]; then
+    path=$OPENCODE_NATIVE_BIN
+  fi
+  if [ -z "$path" ]; then
+    path=$(manager_command_v "$1" 2>/dev/null) || path=""
+  fi
   if [ -z "$path" ]; then
     printf 'not-on-PATH'
     return 0
@@ -381,9 +389,12 @@ effective_lag() {
   return 1
 }
 
+# PATH first, so a copy shadowing the curl install is the one measured; then
+# the curl install itself, which the vendor installer does not link onto this
+# script's fixed PATH; then the node managers.
 opencode_available() {
   local mode
-  if command -v opencode >/dev/null 2>&1; then
+  if command -v opencode >/dev/null 2>&1 || [ -x "$OPENCODE_NATIVE_BIN" ]; then
     return 0
   fi
   mode=$(npm_mode) || return 1
@@ -401,6 +412,10 @@ run_opencode() {
     opencode "$@"
     return
   fi
+  if [ -x "$OPENCODE_NATIVE_BIN" ]; then
+    "$OPENCODE_NATIVE_BIN" "$@"
+    return
+  fi
   mode=$(npm_mode) || return 1
   case "$mode" in
     mise) mise exec node@lts -- opencode "$@" ;;
@@ -416,7 +431,8 @@ installed_version() {
     codex) codex --version 2>>"$LOG_FILE" | awk 'NR == 1 { print $NF }' ;;
     agy) agy --version 2>>"$LOG_FILE" | awk 'NR == 1 { print $1 }' ;;
     grok) grok --version 2>>"$LOG_FILE" | awk 'NR == 1 { print $2 }' ;;
-    opencode) run_opencode --version 2>>"$LOG_FILE" | awk 'NR == 1 { print $1 }' ;;
+    # OpenCode 2 prints "opencode v2.1.4"; OpenCode 1 printed a bare "1.19.4".
+    opencode) run_opencode --version 2>>"$LOG_FILE" | awk 'NR == 1 { v = $NF; sub(/^v/, "", v); print v }' ;;
     muse) muse --version 2>>"$LOG_FILE" | awk 'NR == 1 { gsub(/[()]/, "", $NF); print $NF }' ;;
     copilot) copilot --version 2>>"$LOG_FILE" | awk 'NR == 1 { sub(/\.$/, "", $NF); print $NF }' ;;
     ae) ae --version 2>>"$LOG_FILE" | awk 'NR == 1 { print $NF }' ;;
@@ -430,6 +446,23 @@ agy_latest() {
   # No early `exit`: the changelog is far larger than the pipe buffer, and awk
   # quitting first would SIGPIPE printf, which pipefail reports as a failed lookup.
   printf '%s\n' "$changelog" | awk '!found && /^[0-9]+\.[0-9]+\.[0-9]+:/ { sub(/:$/, "", $1); print $1; found = 1 }'
+}
+
+# OpenCode 2 ships two ways: the vendor curl installer (binary in
+# ~/.opencode/bin, updated by `opencode upgrade`) or npm (@opencode/cli). The
+# curl copy wins when present; npm is the fallback.
+OPENCODE_NPM_PACKAGE=@opencode/cli
+OPENCODE_NATIVE_BIN="$HOME/.opencode/bin/opencode"
+
+native_opencode_version() {
+  "$OPENCODE_NATIVE_BIN" --version 2>>"$LOG_FILE" | awk 'NR == 1 { v = $NF; sub(/^v/, "", v); print v }'
+}
+
+# Same release endpoint the vendor installer resolves "latest" from.
+opencode_latest() {
+  curl --silent --show-error --location --proto '=https' --connect-timeout 5 --max-time 15 \
+    https://opencode.ai/update/api/latest/cli/npm 2>>"$LOG_FILE" |
+    sed -n 's/.*"version":"\([^"]*\)".*/\1/p'
 }
 
 grok_latest() {
@@ -663,27 +696,62 @@ process_opencode() {
     summary 'opencode SKIP not installed'
     return 0
   fi
-  local before latest after installed note
+  local before latest after installed note native=0
   before=$(installed_version opencode) || before=""
   if [ -z "$before" ]; then
     summary 'opencode FAIL unable to read installed version'
     return 1
   fi
+  # OpenCode 1 cannot upgrade itself to 2 here (npm package renamed, v1
+  # installer refuses 2.x) and opencode/opencode.jsonc is native V2 config.
+  case "$before" in
+    1.*)
+      summary "opencode FAIL current=$before is OpenCode 1 binary=$(resolved_binary opencode); remove it (npm uninstall -g opencode-ai) and install V2: curl -fsSL https://opencode.ai/v2/install | bash -s -- --no-modify-path"
+      return 1
+      ;;
+  esac
+  if [ -x "$OPENCODE_NATIVE_BIN" ]; then
+    native=1
+    # A leftover V1 in ~/.opencode/bin would run V1's own upgrader.
+    installed=$(native_opencode_version) || installed=""
+    case "$installed" in
+      1.*)
+        summary "opencode FAIL ~/.opencode/bin holds OpenCode 1 ($installed); install V2 over it: curl -fsSL https://opencode.ai/v2/install | bash -s -- --no-modify-path"
+        return 1
+        ;;
+    esac
+  fi
   if [ "$CHECK_ONLY" -eq 1 ]; then
-    latest=$(npm_latest opencode-ai) || latest=""
+    if [ "$native" -eq 1 ]; then
+      latest=$(opencode_latest) || latest=""
+    else
+      latest=$(npm_latest "$OPENCODE_NPM_PACKAGE") || latest=""
+    fi
     if [ -z "$latest" ]; then
       summary "opencode FAIL current=$before latest lookup failed"
       return 1
     fi
     note=$(behind_note opencode "$before" "$latest")
-    installed=$(npm_global_version opencode-ai) || installed=""
-    if [ -n "$installed" ] && [ "$installed" != "$before" ]; then
-      note="$note npm-installed=$installed"
+    if [ "$native" -eq 1 ]; then
+      installed=$(native_opencode_version) || installed=""
+      if [ -n "$installed" ] && [ "$installed" != "$before" ]; then
+        note="$note native-installed=$installed"
+      fi
+    else
+      installed=$(npm_global_version "$OPENCODE_NPM_PACKAGE") || installed=""
+      if [ -n "$installed" ] && [ "$installed" != "$before" ]; then
+        note="$note npm-installed=$installed"
+      fi
     fi
     summary "opencode CHECK current=$before latest=$latest$note"
     return 0
   fi
-  if ! npm_install_latest opencode-ai; then
+  if [ "$native" -eq 1 ]; then
+    if ! log_run "$OPENCODE_NATIVE_BIN" upgrade; then
+      summary "opencode FAIL current=$before native upgrade failed"
+      return 1
+    fi
+  elif ! npm_install_latest "$OPENCODE_NPM_PACKAGE"; then
     summary "opencode FAIL current=$before npm update failed"
     return 1
   fi
@@ -693,10 +761,16 @@ process_opencode() {
     summary "opencode FAIL before=$before unable to read updated version"
     return 1
   fi
-  # What npm just installed, not the registry: the PATH binary can be another
-  # copy (a stale link into a hoisted tree) that the install never replaced.
-  installed=$(npm_global_version opencode-ai) || installed=""
-  effective_lag opencode "$after" "$installed" "npm installed" || return 1
+  # What the update just installed, not the registry: the PATH binary can be
+  # another copy (a stale link into a hoisted tree, a leftover npm install
+  # shadowing ~/.opencode/bin) that the update never replaced.
+  if [ "$native" -eq 1 ]; then
+    installed=$(native_opencode_version) || installed=""
+    effective_lag opencode "$after" "$installed" "native installed" || return 1
+  else
+    installed=$(npm_global_version "$OPENCODE_NPM_PACKAGE") || installed=""
+    effective_lag opencode "$after" "$installed" "npm installed" || return 1
+  fi
   summary "opencode OK $before -> $after"
 }
 
@@ -1157,11 +1231,11 @@ process_contract() {
 }
 
 # Export existing step functions so timeout can supervise a separate Bash process.
-export CHECK_ONLY INCLUDE_AE LOG_FILE LOG_DIR REPO_ROOT RETRY_ATTEMPTS COPILOT_EXPECTED
+export CHECK_ONLY INCLUDE_AE LOG_FILE LOG_DIR REPO_ROOT RETRY_ATTEMPTS COPILOT_EXPECTED OPENCODE_NPM_PACKAGE OPENCODE_NATIVE_BIN
 export -f summary run_with_retry log_run npm_mode nvm_exec npm_latest npm_install_latest \
   npm_global_version version_sorts_first version_older manager_command_v resolved_binary \
   behind_note effective_lag \
-  opencode_available run_opencode installed_version agy_latest grok_latest muse_latest \
+  opencode_available run_opencode native_opencode_version opencode_latest installed_version agy_latest grok_latest muse_latest \
   check_with_npm update_native install_muse process_claude process_codex \
   copilot_latest process_copilot process_agy process_grok process_opencode process_muse process_ae \
   process_dsh process_contract

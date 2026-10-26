@@ -79,13 +79,15 @@ brew "age"     # encrypts the migration secrets bundle (see MAC-MIGRATION.md 0.5
 # is for java, replacing fnm + sdkman). `mise use -g node@lts` first, then the
 # npm -g installs below.
 #
-# DO NOT `brew install opencode`, tempting as homebrew-core now is: the formula
-# drags in `brew "node"` as a dependency, and /opt/homebrew/bin/node then
+# DO NOT `brew install opencode`: that homebrew-core formula is OpenCode 1
+# and drags in `brew "node"` as a dependency, so /opt/homebrew/bin/node then
 # shadows mise's pinned version for every shell and every npm -g agent.
-# The formula just repackages the npm tarball anyway (urls.stable points at
-# registry.npmjs.org/opencode-ai) and lagged 1.18.15 vs npm's 1.18.18 on
-# 2026-08-17 — so `npm i -g opencode-ai` is the same artifact, current, and
-# node-conflict-free.
+# OpenCode 2 (2026-10-26) installs with the vendor curl installer instead —
+# a standalone binary in ~/.opencode/bin, no node involved:
+#   npm uninstall -g opencode-ai   # V1 first; both own the `opencode` command
+#   curl -fsSL https://opencode.ai/v2/install | bash -s -- --no-modify-path
+#   ln -s ~/.opencode/bin/opencode ~/.local/bin/opencode
+# scripts/harness-update.sh then upgrades it with `opencode upgrade`.
 # ---------------------------------------------------------------------------
 brew "go"
 brew "mise"
@@ -183,11 +185,9 @@ cask "sqlcl"              # replaces the manual ~/opt/sqlcl install
 # Not available in Homebrew at all — install another way:
 #   pinniped (/usr/local/bin/pinniped)  -> vendor release or a custom tap
 #   the npm -g packages (codex, copilot, gemini-cli, pi-coding-agent,
-#     ccusage, context-mode, pi-web-access, taskplane, opencode-ai,
-#     @bitwarden/cli)
-#     -> npm after mise node. `npm i -g opencode-ai` (NOT brew — see §4);
-#     update the same way — the built-in `opencode upgrade` self-replaces the
-#     binary behind npm's back. Config: opencode/config.json -> ~/.config/opencode/
+#     ccusage, context-mode, pi-web-access, taskplane, @bitwarden/cli)
+#     -> npm after mise node. OpenCode 2 is NOT npm here: vendor curl
+#     installer, see §4. Config: opencode/opencode.jsonc -> ~/.config/opencode/
 #     `npm i -g @bitwarden/cli` gives `bw` (vault CLI; the cask below is the
 #     GUI). Also NOT brew: the bitwarden-cli formula depends on node and would
 #     shadow mise, same trap as opencode. NOTE npm resolves to 2026.6.0, not

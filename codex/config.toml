@@ -588,7 +588,7 @@ trust_level = "trusted"
 # 949a27ef; @upstash/context7-mcp 4.0.5; chrome-devtools-mcp 1.8.0. Exact pins
 # stop `uvx --from git+…` / `npx -y pkg@latest` re-resolving upstream on every
 # session start and keep a breaking release from landing on all harnesses the
-# same day. Same pins in claude/mcpServers.json, opencode/config.json,
+# same day. Same pins in claude/mcpServers.json, opencode/opencode.jsonc,
 # antigravity/settings.json, grok/config.toml — bump all five together.
 # OpenDesign is separately digest-pinned in open-design/compose.yaml; it is not
 # managed by harness-update.

@@ -88,7 +88,7 @@ git = "https://github.com/xai-org/plugin-marketplace.git"
 # MCP servers — same set as codex/config.toml, identical TOML shape.
 # Package pins (bump via harness-update): serena v1.7.0 = commit
 # 949a27ef; @upstash/context7-mcp 4.0.5; chrome-devtools-mcp 1.8.0. Same pins
-# in codex/config.toml, claude/mcpServers.json, opencode/config.json,
+# in codex/config.toml, claude/mcpServers.json, opencode/opencode.jsonc,
 # antigravity/settings.json — bump all five together. OpenDesign is separately
 # digest-pinned in open-design/compose.yaml and is not managed by harness-update.
 [mcp_servers.serena]

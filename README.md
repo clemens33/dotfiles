@@ -53,7 +53,7 @@ The wrapper install script detects the overlay submodule and runs its Dotbot pas
 | Claude Code | `claude/settings.json`, `claude/mcpServers.json` | `~/.claude/` |
 | GitHub Copilot CLI | Native settings command + rendered instructions + merged MCP; auth/preferences remain CLI-owned | `${COPILOT_HOME:-~/.copilot}/` |
 | Codex CLI | `codex/config.toml` | `~/.codex/config.toml` |
-| OpenCode | `opencode/config.json` | `~/.config/opencode/config.json` |
+| OpenCode 2 | `opencode/opencode.jsonc` | `~/.config/opencode/opencode.jsonc` |
 | Antigravity CLI (`agy`) | `antigravity/settings.json` | `~/.gemini/antigravity-cli/settings.json` |
 | OpenDesign | `open-design/compose.yaml`, `open-design/Dockerfile`, `bin/open-design` | `~/.config/open-design/compose.yaml`, `~/.config/open-design/Dockerfile`, `~/.local/bin/open-design{,-mcp}` |
 | DeepSeek Harness (`dsh`, pilot) | `deepseek-harness/` | `~/.local/bin/dsh`; the patch layers, the `dsh-tui` profile and the agent preset are managed **copies** under `~/.dsh`, not links |

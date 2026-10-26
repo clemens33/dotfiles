@@ -468,7 +468,7 @@ for flag in --no-usage-statistics --no-performance-crux; do
     check "Chrome DevTools keeps $flag" grep -q -- "$flag" "$PRESET"
 done
 check 'the same Serena pin is used by OpenCode' \
-    grep -q 'serena@949a27ef1e5fda1a6e7b561e777bcece345c6ffd' "$ROOT/opencode/config.json"
+    grep -q 'serena@949a27ef1e5fda1a6e7b561e777bcece345c6ffd' "$ROOT/opencode/opencode.jsonc"
 
 # ---------------------------------------------------------------------------
 # 5. The wrapper fails clearly instead of obscurely
