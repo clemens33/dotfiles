@@ -1,0 +1,29 @@
+[Palette]
+Name=Darcula
+Background=#2B2B2B
+Foreground=#A9B7C6
+Cursor=#FFFFFF
+Color0=#0C0C0C
+Color1=#C4423E
+Color2=#79AD72
+Color3=#C19C00
+Color4=#E68738
+Color5=#881798
+Color6=#3A96DD
+Color7=#CCCCCC
+Color8=#808080
+Color9=#BC3F3C
+Color10=#5E8759
+Color11=#DCC457
+Color12=#CC7832
+Color13=#85678F
+Color14=#299999
+Color15=#A9B7C6
+
+# Ptyxis (Ubuntu's default terminal) user palette, linked by dotbot into
+# ~/.local/share/org.gnome.Ptyxis/palettes/. Same Darcula as
+# terminal/ghostty.config and terminal/settings.json (orange in ANSI blue 4/12
+# is the personal tweak). Ptyxis has no selection-colour key, so ghostty's
+# selection-background has no counterpart here. Selecting it is per-profile
+# dconf state, not a file: Ptyxis -> Preferences -> Palette, or
+#   gsettings set org.gnome.Ptyxis.Profile:/org/gnome/Ptyxis/Profiles/<uuid>/ palette 'Darcula'

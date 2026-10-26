@@ -695,6 +695,10 @@
     ~/.config/systemd/user/harness-update.timer:
       path: linux/systemd/harness-update.timer
       if: '[ "$(uname -s)" = "Linux" ] && [ -d /run/systemd/system ]'
+    # Ptyxis (Ubuntu's default terminal) Darcula palette; macOS has no Ptyxis.
+    ~/.local/share/org.gnome.Ptyxis/palettes/Darcula.palette:
+      path: terminal/Darcula.palette
+      if: '[ "$(uname -s)" = "Linux" ]'
 
 # Activate or reload the scheduler after its platform-specific files are linked.
 - shell:
