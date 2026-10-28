@@ -1120,6 +1120,7 @@ esac
 EOF
   cat >"$home/.local/bin/curl" <<'EOF'
 #!/usr/bin/env bash
+printf 'lookup\n' >>"$HOME/curl-calls"
 [ "${FAKE_COPILOT_LOOKUP_FAIL:-0}" = 0 ] || exit 22
 printf '{"tag_name":"v%s"}\n' "${FAKE_COPILOT_LATEST:-1.0.103}"
 awk 'BEGIN { for (i=0;i<6000;i++) print " " }'
@@ -1161,13 +1162,39 @@ copilot_stale_update_fails() {
 }
 check 'copilot stale active binary after update fails instead of trusting package metadata' copilot_stale_update_fails
 
-copilot_check_stale_fails() {
-  local home
-  home=$(make_copilot_home cp-behind 1.0.76)
-  if HOME="$home" "$SCRIPT" --check --only copilot >"$home/out" 2>&1; then return 1; fi
-  grep -q 'BEHIND binary=' "$home/out" && [ ! -e "$home/update-calls" ]
+# "<stdout> <log>" count of copilot CHECK lines: the CLI output and the day log.
+copilot_check_counts() {
+  printf '%s %s\n' "$(grep -cF 'copilot CHECK' "$1/out")" \
+    "$(cat "$1"/.local/state/harness-update/????-??-??.log | grep -cF 'copilot CHECK')"
 }
-check 'copilot check returns nonzero when active release is behind stable' copilot_check_stale_fails
+
+# An outdated active release is a definitive answer: reported once (stdout and
+# log), exit 1, one lookup, no retry noise, and never an update or state write.
+copilot_check_stale_fails() {
+  local home status
+  home=$(make_copilot_home cp-behind 1.0.76)
+  HOME="$home" "$SCRIPT" --check --only copilot >"$home/out" 2>&1
+  status=$?
+  [ "$status" -eq 1 ] || return 1
+  [ "$(copilot_check_counts "$home")" = '1 1' ] || return 1
+  grep -q 'copilot CHECK current=1.0.76 latest=1.0.103 BEHIND binary=' "$home/out" || return 1
+  ! grep -Eq 'ATTEMPT|RETRY' "$home/out" || return 1
+  [ "$(wc -l <"$home/curl-calls" | tr -d ' ')" = 1 ] &&
+    [ ! -e "$home/update-calls" ] &&
+    [ ! -e "$home/.local/state/harness-update/copilot-installed" ]
+}
+check 'copilot check reports an outdated active release once, exits 1, never updates' copilot_check_stale_fails
+
+copilot_check_current_or_ahead_passes() {
+  local home latest
+  for latest in 1.0.103 1.0.100; do
+    home=$(make_copilot_home "cp-ok-$latest")
+    HOME="$home" FAKE_COPILOT_LATEST=$latest "$SCRIPT" --check --only copilot >"$home/out" 2>&1 || return 1
+    [ "$(copilot_check_counts "$home")" = '1 1' ] || return 1
+    ! grep -Eq 'BEHIND|ATTEMPT|RETRY' "$home/out" || return 1
+  done
+}
+check 'copilot check of a current or ahead active release reports once and exits 0' copilot_check_current_or_ahead_passes
 
 copilot_failure_paths() {
   local home
@@ -1175,9 +1202,10 @@ copilot_failure_paths() {
   if HOME="$home" FAKE_COPILOT_UPDATE_FAIL=1 "$SCRIPT" --only copilot >"$home/out" 2>&1; then return 1; fi
   grep -q 'copilot FAIL current=1.0.103 update command failed' "$home/out" || return 1
   [ "$(wc -l <"$home/update-calls" | tr -d ' ')" = 3 ] || return 1
-  rm "$home/update-calls"
+  rm "$home/update-calls" "$home/curl-calls"
   if HOME="$home" FAKE_COPILOT_LOOKUP_FAIL=1 "$SCRIPT" --check --only copilot >"$home/out" 2>&1; then return 1; fi
-  grep -q 'stable release lookup failed' "$home/out" && [ ! -e "$home/update-calls" ]
+  grep -q 'stable release lookup failed' "$home/out" && [ ! -e "$home/update-calls" ] &&
+    [ "$(wc -l <"$home/curl-calls" | tr -d ' ')" = 3 ]
 }
 check 'copilot update and latest-lookup failures remain nonzero under bounded retries' copilot_failure_paths
 

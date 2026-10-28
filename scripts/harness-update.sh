@@ -17,6 +17,9 @@ LOG_DIR="$HOME/.local/state/harness-update"
 LOG_FILE="$LOG_DIR/$(date +%F).log"
 STEP_TIMEOUT=${HARNESS_UPDATE_TIMEOUT_SECONDS:-300}
 RETRY_ATTEMPTS=3
+# process_<tool> status for a --check verdict of "outdated": it fails the run, but
+# it is a definitive answer rather than a transient error, so it is never retried.
+CHECK_OUTDATED=3
 
 usage() {
   cat <<'EOF'
@@ -190,6 +193,9 @@ run_with_retry() {
     result=$?
     if [ "$result" -eq 0 ]; then
       return 0
+    fi
+    if [ "$result" -eq "$CHECK_OUTDATED" ]; then
+      return 1
     fi
     if [ "$attempt" -eq "$RETRY_ATTEMPTS" ]; then
       return "$result"
@@ -622,8 +628,10 @@ process_copilot() {
   fi
   if [ "$CHECK_ONLY" -eq 1 ]; then
     summary "copilot CHECK current=$before latest=$latest$(behind_note copilot "$before" "$latest")"
-    ! version_older "$before" "$latest"
-    return
+    if version_older "$before" "$latest"; then
+      return "$CHECK_OUTDATED"
+    fi
+    return 0
   fi
   if ! log_run copilot update stable; then
     summary "copilot FAIL current=$before update command failed"
@@ -1231,7 +1239,7 @@ process_contract() {
 }
 
 # Export existing step functions so timeout can supervise a separate Bash process.
-export CHECK_ONLY INCLUDE_AE LOG_FILE LOG_DIR REPO_ROOT RETRY_ATTEMPTS COPILOT_EXPECTED OPENCODE_NPM_PACKAGE OPENCODE_NATIVE_BIN
+export CHECK_ONLY INCLUDE_AE LOG_FILE LOG_DIR REPO_ROOT RETRY_ATTEMPTS CHECK_OUTDATED COPILOT_EXPECTED OPENCODE_NPM_PACKAGE OPENCODE_NATIVE_BIN
 export -f summary run_with_retry log_run npm_mode nvm_exec npm_latest npm_install_latest \
   npm_global_version version_sorts_first version_older manager_command_v resolved_binary \
   behind_note effective_lag \
