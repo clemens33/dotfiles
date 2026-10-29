@@ -580,6 +580,12 @@ trust_level = "trusted"
 [projects."/Users/ckriech/projects/clemens33/ae-legacy"]
 trust_level = "trusted"
 
+[projects."/Users/ckriech/projects/clemens33/tsep"]
+trust_level = "trusted"
+
+[projects."/Users/ckriech/projects/mic/ai/assistant-iop-catalog"]
+trust_level = "trusted"
+
 # NO trust for /private/tmp (removed 2026-08-11, cross-model review): it is
 # root-owned mode 1777 — any local process can plant project-local .codex
 # config/hooks under a trusted root. Trust only user-owned project paths.
@@ -692,9 +698,32 @@ status_line = [
   "five-hour-limit",
   "weekly-limit",
 ]
+screen_reader_detection_done = true
 
 [tui.model_availability_nux]
 "gpt-5.3-codex-spark" = 4
 "gpt-5.5" = 4
 "gpt-5.6-sol" = 4
 gpt-6-astra = 4
+"gpt-6.1-sol" = 4
+
+[projects."/Users/ckriech/projects/mic/ai/global-trade-assistant-catalog"]
+trust_level = "trusted"
+
+[projects."/Users/ckriech/projects/mic/iop/saas-ngip-tools"]
+trust_level = "trusted"
+
+[projects."/Users/ckriech/aetrial/A/luna/proj"]
+trust_level = "trusted"
+
+[projects."/Users/ckriech/aetrial/B/luna/proj"]
+trust_level = "trusted"
+
+[projects."/Users/ckriech/aetrial/S/luna/proj"]
+trust_level = "trusted"
+
+[projects."/Users/ckriech/projects/mic/ai/mcp-render"]
+trust_level = "trusted"
+
+[projects."/Users/ckriech/projects/mic/analytics/da-superset"]
+trust_level = "trusted"
