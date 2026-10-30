@@ -120,10 +120,7 @@ The agentic-coding-handbook makes the isolation rule explicit:
 
 ### Spec-first acceptance tests (default at M/L) 🅛
 
-Contract shape (`shared/AGENTS.md`) — local doctrine, not experimental:
-
-- 🅛 **Cross-model authoring (default)** — different-provider agent writes+freezes acceptance test strictly from acceptance contract + domain docs, before impl; by default same agent then reviews impl (no extra seat). **Separate author** (≠ impl reviewer) allowed for parallel slices / high blast radius. Implementer never edits frozen tests; disputed spec goes back with evidence. Isolation risk: imagined behavior / accidental API shape (Hora et al.) — challenge impl-shape tests.
-- 🅡 **Cross-model test review** — author's impl verdict doesn't gate own tests: another-provider seat reviews frozen tests vs requirements (behavior vs impl shape). Byte-identical installation allowed.
+Canonical contract: `shared/AGENTS.md` → Universal principles → **Spec-first for M/L** (always loaded). Playbook additions: the author works strictly from the slice's acceptance contract (template below) plus domain docs, and challenges tests that encode implementation shape (imagined behavior or accidental API shape, Hora et al.). The playbook's original elaboration of the authoring and test-review arrangement is in `references/spec-first-notes.md`.
 
 ### Green — make the test pass
 
