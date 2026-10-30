@@ -97,10 +97,10 @@ MIC_MARK='# MIC addendum'
 # 1. Full render: every identity present, overlay present
 # ---------------------------------------------------------------------------
 make_root full yes
-make_home h1 .claude .claude2 .claude-mic .codex .config/opencode .gemini/config .dsh .copilot
+make_home h1 .claude .claude2 .claude-p .claude-mic .codex .config/opencode .gemini/config .dsh .copilot
 render full h1 >"$TMP_ROOT/out1" 2>"$TMP_ROOT/err1" || bad "render exited non-zero"
 
-for t in .claude/CLAUDE.md .claude2/CLAUDE.md .claude-mic/CLAUDE.md \
+for t in .claude/CLAUDE.md .claude2/CLAUDE.md .claude-p/CLAUDE.md .claude-mic/CLAUDE.md \
     .codex/AGENTS.md .config/opencode/AGENTS.md \
     .gemini/config/plugins/dotfiles/rules/AGENTS.md .dsh/AGENTS.md .copilot/copilot-instructions.md; do
     target=$TMP_ROOT/h1/$t
@@ -111,7 +111,7 @@ for t in .claude/CLAUDE.md .claude2/CLAUDE.md .claude-mic/CLAUDE.md \
     check "$t carries the generated-file header" contains "$target" 'GENERATED FILE'
 done
 
-check 'summary reports eight renders' grep -q 'contract: 8 rendered' "$TMP_ROOT/out1"
+check 'summary reports nine renders' grep -q 'contract: 9 rendered' "$TMP_ROOT/out1"
 check 'rendered file is mode 0644' mode_is_644 "$TMP_ROOT/h1/.claude/CLAUDE.md"
 
 # ---------------------------------------------------------------------------
@@ -135,7 +135,7 @@ check 'replaced target holds the rendered contract' \
 cp "$TMP_ROOT/h1/.claude/CLAUDE.md" "$TMP_ROOT/first-render"
 touch "$TMP_ROOT/marker"
 render full h1 >"$TMP_ROOT/out3"
-check 'second run renders nothing' grep -q 'contract: 0 rendered, 8 unchanged' "$TMP_ROOT/out3"
+check 'second run renders nothing' grep -q 'contract: 0 rendered, 9 unchanged' "$TMP_ROOT/out3"
 check 'second run leaves bytes identical' cmp -s "$TMP_ROOT/first-render" "$TMP_ROOT/h1/.claude/CLAUDE.md"
 newer=$(find "$TMP_ROOT/h1/.claude/CLAUDE.md" -newer "$TMP_ROOT/marker")
 check 'second run does not even rewrite the file' test -z "$newer"
@@ -157,6 +157,7 @@ check 'public-only target ends without a separator' no_trailing_separator "$solo
 # 5. Absent identity directory is skipped, never conjured
 # ---------------------------------------------------------------------------
 check 'no ~/.claude2 directory is created' test ! -e "$TMP_ROOT/h4/.claude2"
+check 'no ~/.claude-p directory is created' test ! -e "$TMP_ROOT/h4/.claude-p"
 check 'no ~/.claude-mic directory is created' test ! -e "$TMP_ROOT/h4/.claude-mic"
 # ~/.dsh is optional in the same way: removing it is how the DeepSeek Harness
 # pilot is rolled back, and the renderer must then skip its target rather than
@@ -167,7 +168,7 @@ check 'no ~/.dsh directory is created' test ! -e "$TMP_ROOT/h4/.dsh"
 # 6. --check reports drift and writes nothing
 # ---------------------------------------------------------------------------
 render full h1 --check >"$TMP_ROOT/out6" 2>&1
-check '--check is quiet when up to date' grep -q '8 up to date, 0 stale' "$TMP_ROOT/out6"
+check '--check is quiet when up to date' grep -q '9 up to date, 0 stale' "$TMP_ROOT/out6"
 
 printf 'tampered\n' >>"$TMP_ROOT/h1/.codex/AGENTS.md"
 tampered=$(sha256 "$TMP_ROOT/h1/.codex/AGENTS.md")

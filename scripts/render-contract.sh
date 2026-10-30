@@ -32,7 +32,7 @@ overlay is present, into each harness's global instruction file.
   --check   List targets whose content is out of date, exit 1. Writes nothing.
 
 A target is skipped when its identity directory does not exist: this script never
-creates one. ./install provisions ~/.claude2 (public pass) and ~/.claude-mic
+creates one. ./install provisions ~/.claude2 and ~/.claude-p (public pass) and ~/.claude-mic
 (private overlay pass), so a public-only clone simply has no ~/.claude-mic.
 EOF
 }
@@ -60,16 +60,17 @@ if [ ! -f "$PUBLIC_SRC" ]; then
 fi
 
 # identity directory | target file. The identity dir gate mirrors what the
-# retired link entries did: install.conf.yaml creates ~/.claude, ~/.claude2,
+# retired link entries did: install.conf.yaml creates ~/.claude, ~/.claude2, ~/.claude-p,
 # ~/.codex, ~/.config/opencode, ~/.gemini/config and ~/.dsh, and the overlay
 # creates ~/.claude-mic. A machine without the overlay must not grow a
 # ~/.claude-mic, and a machine that has never installed the DeepSeek Harness
 # pilot must not grow a ~/.dsh: removing that directory is how the pilot is
-# rolled back, and the seventh target then reports skipped by design.
+# rolled back, and the target then reports skipped by design.
 targets() {
     cat <<EOF
 $HOME/.claude|$HOME/.claude/CLAUDE.md
 $HOME/.claude2|$HOME/.claude2/CLAUDE.md
+$HOME/.claude-p|$HOME/.claude-p/CLAUDE.md
 $HOME/.claude-mic|$HOME/.claude-mic/CLAUDE.md
 $HOME/.codex|$HOME/.codex/AGENTS.md
 $HOME/.config/opencode|$HOME/.config/opencode/AGENTS.md

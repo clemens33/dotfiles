@@ -78,16 +78,17 @@ overlay's `dotfiles-mic/AGENTS-MIC.md`, when that submodule is checked out, and
 writes the result as a **regular file** into every harness identity:
 
 ```
-~/.claude/CLAUDE.md                                ~/.codex/AGENTS.md
-~/.claude2/CLAUDE.md                               ~/.config/opencode/AGENTS.md
-~/.claude-mic/CLAUDE.md                            ~/.gemini/config/plugins/dotfiles/rules/AGENTS.md
-~/.dsh/AGENTS.md                                  ~/.copilot/copilot-instructions.md
+~/.claude/CLAUDE.md       ~/.codex/AGENTS.md
+~/.claude2/CLAUDE.md      ~/.config/opencode/AGENTS.md
+~/.claude-p/CLAUDE.md     ~/.gemini/config/plugins/dotfiles/rules/AGENTS.md
+~/.claude-mic/CLAUDE.md   ~/.copilot/copilot-instructions.md
+~/.dsh/AGENTS.md
 ```
 
 `./install` runs the renderer; nothing links to `shared/AGENTS.md` any more. The
 renderer creates no identity of its own — it skips any whose directory is
 missing. `./install` is what provisions them: the public pass creates
-`~/.claude2`, `~/.dsh`, and `${COPILOT_HOME:-$HOME/.copilot}`, the private overlay's pass creates `~/.claude-mic`. So
+`~/.claude2`, `~/.claude-p`, `~/.dsh`, and `${COPILOT_HOME:-$HOME/.copilot}`, the private overlay's pass creates `~/.claude-mic`. So
 a public-only clone has no `~/.claude-mic`, and the renderer simply skips it —
 as it does for `~/.dsh` on a machine where the DeepSeek Harness pilot has been
 rolled back.
@@ -299,7 +300,7 @@ mounted or copied into it.
 
 To uninstall, run `open-design down`, revert the managed config entries and
 links, and remove `open-design` explicitly from every existing Claude identity
-state file (`~/.claude.json`, `~/.claude2/.claude.json`, and
+state file (`~/.claude.json`, `~/.claude2/.claude.json`, `~/.claude-p/.claude.json`, and
 `~/.claude-mic/.claude.json` when present). The Claude merge is additive, so
 rerunning `./install` alone cannot retire an old server. Sign out in the UI
 before retiring the Vela volume, then keep or explicitly remove each named

@@ -370,9 +370,12 @@ installer_wires_trust_merge() {
         "$1" &&
         grep -Fqx \
             '    - command: scripts/claude-trust-merge.sh "$HOME/.claude2/.claude.json" claude/trusted-paths.txt' \
+            "$1" &&
+        grep -Fqx \
+            '    - command: scripts/claude-trust-merge.sh "$HOME/.claude-p/.claude.json" claude/trusted-paths.txt' \
             "$1"
 }
-check 'Dotbot install merges the tracked list into both identities' \
+check 'Dotbot install merges the tracked list into all identities' \
     installer_wires_trust_merge "$INSTALL"
 
 installer_wiring_negative_control() {

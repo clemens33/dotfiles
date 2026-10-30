@@ -306,9 +306,12 @@ installer_wires_mcp_merge() {
         "$1" &&
         grep -Fqx \
             '    - command: scripts/mcp-merge.sh "$HOME/.claude2/.claude.json" claude/mcpServers.json' \
+            "$1" &&
+        grep -Fqx \
+            '    - command: scripts/mcp-merge.sh "$HOME/.claude-p/.claude.json" claude/mcpServers.json' \
             "$1"
 }
-check 'Dotbot install merges the tracked source into both identities' \
+check 'Dotbot install merges the tracked source into all identities' \
     installer_wires_mcp_merge "$INSTALL"
 
 installer_wiring_negative_control() {
