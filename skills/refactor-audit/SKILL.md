@@ -201,13 +201,11 @@ These move drift from "agent has to notice" to "CI surfaces it." Over time, the 
 
 ## Anti-patterns
 
-- **Cadence-without-signal busywork** — don't run the audit on a calendar if no signals fired; you'll either find nothing (waste) or invent something (worse).
 - **Refactoring during feature work** — keep Stage 3 micro-refactor inside the slice; use this audit's recommendation for *separate* structural refactor.
-- **Big-bang structural refactor** — if recommendation is L, slice it like any other L feature (`large-feature` Stage 2).
 - **Refactor without test coverage in the affected area** — coverage gap is itself a guardrail candidate; address before structural work.
 - **"Clean up while I'm here" smuggling** — anything beyond the slice's scope goes into a separate refactor task driven by this audit.
-- **Treating tooling-gap signals as fired** — they're not measured yet. They count toward guardrail candidates, not toward the decision rule.
-- **Inventing thresholds** — no universal "20% slower" / "10% coverage drop" — always compare against the repo's own baseline. If no baseline exists, record that explicitly.
+
+Four further anti-patterns, each restating a rule above, are in `references/background.md`.
 
 ## Relationship to feature work
 
@@ -218,11 +216,4 @@ During feature work, only do Stage 3 micro-refactor after green. If a feature sl
 - `skills/scope/` — phased planning when the refactor is non-trivial.
 - `skills/large-feature/` — full-rigor 7-stage playbook when the refactor is multi-slice or high blast radius.
 - `WORKFLOW.md` — the lean L mandate (plan + phased execution) still applies to substantial refactor work.
-- `KNOWLEDGE.md` §18 — practitioner refs for the SOTA voices cited (Hashimoto harness engineering, Sourcegraph/Amp completeness, Anthropic 2026 "generated code is debt").
-
-## SOTA grounding
-
-- **Hashimoto harness engineering** — every repeated soft signal becomes a guardrail (CI check, lint rule, or tool) or an accepted/documented exception. The audit is the bootstrap mechanism.
-- **Sourcegraph/Amp completeness lens** — missed callers and cross-repo surprises are drift signals; grep is not enough on large codebases.
-- **Anthropic 2026 Trends Report** — "generated code is debt until validated." Refactor is debt repayment; this audit prioritizes which debt to repay.
-- **Pi/minimal-agent counter-take** — the durable solution is making drift observable via tooling, not a recurring process. Use this skill to bootstrap guardrails, then retire its scope as guardrails mature.
+- `references/background.md` — read when justifying the audit method or checking a draft audit against the failure modes it lists: four anti-patterns that restate the rules above, the `KNOWLEDGE.md` §18 pointer for the cited practitioner voices, and the SOTA grounding.
