@@ -231,82 +231,9 @@ Two rules survive the mapping intact:
 
 Prefer **git worktrees** for parallel agent work — each agent gets its own working tree, no file conflicts. Merge only after tests pass and signoff is complete. Avoid two agents editing the same branch or working tree simultaneously.
 
-## Templates
+## Templates (read on demand)
 
-### Position template (`<agent>.md`)
-
-```md
-# Position
-Artifact type: position
-
-## Proposed Decisions
-
-1. ...
-2. ...
-3. ...
-
-## Open Questions
-
-1. ...
-2. ...
-```
-
-### Research note template (`<agent>_<topic>.md`)
-
-```md
-# <Topic> Analysis (<Agent>)
-Artifact type: research-note
-
-## Findings
-
-...
-
-## Implications for Design
-
-...
-```
-
-### Review template (`*_review.md`)
-
-```md
-# Review
-Artifact type: review
-
-Reviewed file: rounds/rN/<other>.md
-
-Observed:
-- rounds/rN/<other>.md @ <sha or timestamp>
-
-1) Point 1: agree/disagree + rationale
-2) Point 2: agree/disagree + rationale
-3) Point 3: agree/disagree + rationale
-
-Open items:
-- ...
-```
-
-### Signoff template (`signoff_*.md`)
-
-```md
-# Signoff
-Artifact type: signoff
-
-Observed:
-- rounds/rN/merged.md @ <sha or timestamp>
-
-Consistency check:
-- [ ] All referenced files exist
-- [ ] PLAN.md reflects latest merge
-- [ ] DECISIONS.md has no gaps
-- [ ] No dangling unresolved items
-
-Coverage:
-- Review point 1 -> addressed in section X
-- Review point 2 -> dropped via D-003
-- Review point 3 -> escalated via D-004
-
-Status: APPROVED
-```
+`references/templates.md` holds the position, research-note, review and signoff templates (`<agent>.md`, `<agent>_<topic>.md`, `*_review.md`, `signoff_*.md`) with their `Observed:` blocks, review-point numbering and signoff coverage checklist. Read it when writing or reviewing a round artifact; the Artifact Taxonomy, Rules and Completion Gate above are enough to run the protocol without it.
 
 ## Practical Guidance
 
@@ -314,16 +241,11 @@ Status: APPROVED
 - Prefer explicit disagreement over vague "looks good" reviews.
 - Converge in signoff, not by ad-hoc edits to the other agent's docs.
 - In Live Mode, don't force artificial round boundaries. Log decisions as they happen, merge when stable.
-- If the user makes a decision, log it to DECISIONS.md immediately — don't wait.
 
 ## Anti-Patterns
 
 - Building complex lock infra for human turn-taking.
 - Requiring frontmatter/tooling metadata no one actually parses.
 - Forcing artificial review quotas instead of addressing actual points.
-- Letting both agents edit the same draft/review file.
-- Declaring done without explicit signoff coverage.
-- Deferring DECISIONS.md updates to "later" or signoff time.
-- Maintaining parallel plan documents that drift apart.
 - Writing merged.md before the round's scope has settled.
 - Working around protocol friction instead of fixing the protocol itself.
