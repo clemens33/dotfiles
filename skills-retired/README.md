@@ -6,7 +6,7 @@ Nothing here is linked, installed or scanned: `install.conf.yaml` has no mapping
 
 ## Restore
 
-Prefer reverting the whole group commit that retired the skill. It restores the directories, their `install.conf.yaml` mappings and every reference and routing fixture changed with them, so no active skill is left pointing at a still-retired sibling. Find it with `git log --diff-filter=R --format=%h -- skills-retired/<name>`, then `git revert <sha>` and resolve any conflict with later edits.
+Prefer reverting the whole group commit that retired the skill: it restores the directories, their `install.conf.yaml` mappings and the references and routing fixtures changed with them. It is not a guaranteed clean rollback. Later retirements can overlap, so a group revert may need conflict resolution and caller repairs: a restored skill can still name siblings that stay retired, and reverting the first group also removes this guide (keep it). Audit the restored references, then restore the sibling groups they need or repair their callers. Find the commit with `git log --diff-filter=R --format=%h -- skills-retired/<name>`, then `git revert <sha>`.
 
 Restoring a single skill from a group is a manual change. Before it goes live:
 
