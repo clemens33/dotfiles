@@ -51,7 +51,7 @@ Use the `grill-with-docs` skill against `CONTEXT.md`, `docs/adr/`, and existing 
 
 If you can already write a clean one-sentence "done" definition, skip this stage — the language is already settled. That does **not** reclassify the work. A clear done definition lowers *uncertainty*; it leaves effort and blast radius exactly where they were, and the bucket is the worst of the three (`WORKFLOW.md`). A well-understood change to a shared contract is still L.
 
-**For greenfield features without a spec yet:** add a pre-stage using `to-prd` to write the spec, then grill against it. This repo's vendored Matt-Pocock pipeline is `to-prd` → `scope` → `to-issues`. (Upstream Matt-Pocock also offers `prd-to-plan` / `plan-from-prd` for finer-grained planning steps; those are not vendored here.)
+**For greenfield features without a spec yet:** add a pre-stage that writes the spec (a short PRD), then grill against it. The pipeline here is spec → `scope` → slices. (Upstream Matt-Pocock also offers `to-prd`, `to-issues`, `prd-to-plan` / `plan-from-prd` for these steps; `to-prd` and `to-issues` are archived in `skills-retired/`, the others were never vendored.)
 
 ## Stage 1 — Plan + cross-model plan critique 🅐 🅛
 
@@ -74,11 +74,11 @@ Hashimoto's "planning/execution split" applies: do all the planning before you w
 
 ## Stage 2 — Decompose into vertical tracer-bullet slices 🅐
 
-**Strongly SOTA-supported.** Matt Pocock's `to-issues` skill is the canonical shape. ai-hero.dev's argument:
+**Strongly SOTA-supported.** Matt Pocock's `to-issues` skill (upstream; archived in `skills-retired/`) is the canonical shape. ai-hero.dev's argument:
 
 > *"AI wants to produce complete solutions all at once… Force the agent to think small, build end-to-end, get feedback, and move forward with confidence."*
 
-Use the `to-issues` skill to produce a slice list. Each slice must:
+Produce a slice list. Each slice must:
 
 - **Cut through every relevant layer** (schema/data → service → API → UI → tests) — vertical, not horizontal
 - **Be demoable or verifiable on its own** — not "the API is done, UI next sprint"
@@ -287,7 +287,6 @@ Everything else is documented practitioner pattern or research-backed adjacent (
 - `WORKFLOW.md` — the operating doctrine. This playbook is an optional deep path for L features.
 - `KNOWLEDGE.md` §18 (References / Practitioner references) — cited SOTA voices
 - `shared/AGENTS.md` — the cross-model collaboration contract that Stages 1 and 5 enforce
-- `skills/to-issues/` — Matt Pocock's vertical-slice decomposition (Stage 2)
 - `skills/tdd/` — Matt Pocock's TDD loop (Stage 3 core)
 - `skills/grill-with-docs/` — Stage 0
 - `skills/scope/` — Stage 1 plan production
@@ -300,7 +299,7 @@ Everything else is documented practitioner pattern or research-backed adjacent (
 
 ## Sources
 
-- Matt Pocock — `to-issues`, `tdd`, `to-prd` skills (vendored); `tracer-bullets`, `prd-to-plan`, `plan-from-prd` upstream-only, not vendored here [C]
+- Matt Pocock — `tdd` skill (vendored); `to-issues`, `to-prd` skills (archived in `skills-retired/`); `tracer-bullets`, `prd-to-plan`, `plan-from-prd` upstream-only, not vendored here [C]
 - ai-hero.dev — "Tracer Bullets: Keeping AI Slop Under Control" [C]
 - Simon Willison — Agentic Engineering Patterns / Red-Green TDD [C]
 - Tweag — Agentic Coding Handbook, TDD workflow — https://tweag.github.io/agentic-coding-handbook/WORKFLOW_TDD/ [C]

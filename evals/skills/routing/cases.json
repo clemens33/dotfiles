@@ -55,21 +55,12 @@
       "note": "Adjacent negative: explanation request explicitly without a diagram."
     },
     {
-      "id": "setup-agent-skills-new-repo",
-      "lane": "setup",
-      "prompt": "This is a fresh repo. Set up the '## Agent skills' block in AGENTS.md and the docs/agents/ layout so the triage and to-issues skills know we use GitHub issues and our label vocabulary.",
-      "expect": ["setup-matt-pocock-skills"],
-      "allow": [],
-      "forbid": ["manage-skills", "triage", "to-issues"],
-      "note": "Repo wiring for the engineering skills; not skill authoring, not issue work."
-    },
-    {
       "id": "bugfix-failing-test-no-setup",
       "lane": "setup",
       "prompt": "tests/test_parser.py::test_nested_quotes started failing after the last refactor of tokenize(). Find the cause and fix it.",
       "expect": ["diagnose"],
       "allow": ["tdd"],
-      "forbid": ["setup-matt-pocock-skills", "triage", "to-issues", "scope"],
+      "forbid": ["scope"],
       "note": "Bug-shaped ordinary work: diagnose; no setup detour."
     },
     {
@@ -78,17 +69,17 @@
       "prompt": "Add a --json flag to the CLI's list command and update the README usage section.",
       "expect": [],
       "allow": ["tdd", "scope"],
-      "forbid": ["setup-matt-pocock-skills", "to-issues", "triage", "manage-skills", "large-feature"],
+      "forbid": ["manage-skills", "large-feature"],
       "note": "Small ordinary feature: no process skill required."
     },
     {
       "id": "triage-create-issue",
       "lane": "setup",
       "prompt": "Create an issue on this project's tracker for the flaky login test and label it needs-triage.",
-      "expect": ["triage"],
+      "expect": [],
       "allow": [],
-      "forbid": ["setup-matt-pocock-skills", "jira", "jira-agent", "to-issues"],
-      "note": "Issue workflow on the project tracker, not MIC Jira, not repo setup."
+      "forbid": ["jira", "jira-agent"],
+      "note": "Project-tracker issue work: not MIC Jira. No skill serves the issue workflow itself since triage was retired."
     },
     {
       "id": "grafana-remote-latency",

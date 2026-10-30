@@ -40,8 +40,6 @@ ROUTE_TABLE = [
     (r"promote .* skill|as a reusable skill|save .* skill", ["manage-skills"]),
     (r"split it|lint body budget|compress", ["skill-reducer"]),
     (r"failing|slower|find the cause", ["diagnose"]),
-    (r"create an issue|needs-triage", ["triage"]),
-    (r"agent skills", ["setup-matt-pocock-skills"]),
     (r"FAKE_STRAY", ["caveman"]),
     (r"FAKE_FORBIDDEN", ["grafana-agent"]),
 ]

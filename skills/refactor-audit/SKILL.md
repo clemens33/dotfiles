@@ -203,7 +203,7 @@ These move drift from "agent has to notice" to "CI surfaces it." Over time, the 
 
 - **Cadence-without-signal busywork** — don't run the audit on a calendar if no signals fired; you'll either find nothing (waste) or invent something (worse).
 - **Refactoring during feature work** — keep Stage 3 micro-refactor inside the slice; use this audit's recommendation for *separate* structural refactor.
-- **Big-bang structural refactor** — if recommendation is L, slice it via `to-issues` like any other L feature.
+- **Big-bang structural refactor** — if recommendation is L, slice it like any other L feature (`large-feature` Stage 2).
 - **Refactor without test coverage in the affected area** — coverage gap is itself a guardrail candidate; address before structural work.
 - **"Clean up while I'm here" smuggling** — anything beyond the slice's scope goes into a separate refactor task driven by this audit.
 - **Treating tooling-gap signals as fired** — they're not measured yet. They count toward guardrail candidates, not toward the decision rule.

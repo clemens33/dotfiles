@@ -121,7 +121,7 @@ Plus the spec-first rule from the AGENTS.md universal principles: normally the s
 
 **Recommended before execution:**
 - **Grill the plan** with the `grill-with-docs` skill (or a cross-model plan critique) — catches handwaves before they cost you code.
-- **`to-issues`** if the work needs to be broken into independently-grabbable tracer-bullet slices (especially when handing off to another agent or a teammate).
+- **Break it into independently-grabbable tracer-bullet slices** if the work needs it (especially when handing off to another agent or a teammate); slice rules are in `large-feature` Stage 2.
 
 **Use as needed (context-dependent):**
 - **Subagent split** (planner / implementer / reviewer fan-out) if work parallelizes. Skip if you can hold the plan in your head.
@@ -286,7 +286,7 @@ When the bucket says "use this," reach for these:
 | Any bug-shaped task | `diagnose` |
 | M with non-trivial diff | `code-review` after implementation |
 | L planning | `scope`, then `grill-with-docs` for plan validation |
-| L → break into shareable issues | `to-issues` |
+| L → break into shareable issues | `large-feature` (Stage 2 slicing) |
 | L touching system structure | `arch-docs`, optionally `adr` |
 | Architecture drift / should we refactor? | `refactor-audit` first (evidence + routing); then `improve-codebase-architecture` if structural work warranted; `zoom-out` for in-session reflection |
 | Periodic reflection in long-running | `zoom-out` |

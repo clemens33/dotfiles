@@ -159,13 +159,9 @@
     ~/.claude/skills/refactor-audit: skills/refactor-audit
     ~/.claude/skills/scope: skills/scope
     ~/.claude/skills/security-review: skills/security-review
-    ~/.claude/skills/setup-matt-pocock-skills: skills/setup-matt-pocock-skills
     ~/.claude/skills/skill-reducer: skills/skill-reducer
     ~/.claude/skills/tdd: skills/tdd
     ~/.claude/skills/test-audit: skills/test-audit
-    ~/.claude/skills/to-issues: skills/to-issues
-    ~/.claude/skills/to-prd: skills/to-prd
-    ~/.claude/skills/triage: skills/triage
     ~/.claude/skills/viz: skills/viz
     ~/.claude/skills/zoom-out: skills/zoom-out
 
@@ -194,13 +190,9 @@
     ~/.agents/skills/refactor-audit: skills/refactor-audit
     ~/.agents/skills/scope: skills/scope
     ~/.agents/skills/security-review: skills/security-review
-    ~/.agents/skills/setup-matt-pocock-skills: skills/setup-matt-pocock-skills
     ~/.agents/skills/skill-reducer: skills/skill-reducer
     ~/.agents/skills/tdd: skills/tdd
     ~/.agents/skills/test-audit: skills/test-audit
-    ~/.agents/skills/to-issues: skills/to-issues
-    ~/.agents/skills/to-prd: skills/to-prd
-    ~/.agents/skills/triage: skills/triage
     ~/.agents/skills/viz: skills/viz
     ~/.agents/skills/zoom-out: skills/zoom-out
 
