@@ -155,7 +155,6 @@
     ~/.claude/skills/improve-codebase-architecture: skills/improve-codebase-architecture
     ~/.claude/skills/large-feature: skills/large-feature
     ~/.claude/skills/manage-skills: skills/manage-skills
-    ~/.claude/skills/quiz-diff: skills/quiz-diff
     ~/.claude/skills/refactor-audit: skills/refactor-audit
     ~/.claude/skills/scope: skills/scope
     ~/.claude/skills/security-review: skills/security-review
@@ -186,7 +185,6 @@
     ~/.agents/skills/improve-codebase-architecture: skills/improve-codebase-architecture
     ~/.agents/skills/large-feature: skills/large-feature
     ~/.agents/skills/manage-skills: skills/manage-skills
-    ~/.agents/skills/quiz-diff: skills/quiz-diff
     ~/.agents/skills/refactor-audit: skills/refactor-audit
     ~/.agents/skills/scope: skills/scope
     ~/.agents/skills/security-review: skills/security-review

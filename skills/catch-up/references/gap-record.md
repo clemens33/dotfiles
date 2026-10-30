@@ -1,6 +1,7 @@
 # Gap record
 
-Reuse the LOCATION and general format of `quiz-diff`'s gap record, but
+Use the LOCATION and general format of the shared comprehension log (set by
+the retired `quiz-diff` skill, archived in `skills-retired/quiz-diff/`), but
 this is not a diff.
 
 ## Storage
@@ -26,9 +27,10 @@ one JSON object per run:
   time. Skip hash-staleness checks when git fields are null.
 - Store the gap (what his picture missed), not his raw answer text.
 
-## Compatibility with quiz-diff
+## Compatibility with quiz-diff entries
 
-A quiz-diff reader that ignores unknown keys (`skill`, `sessions`) reads
-catch-up entries as gap records with null git fields. quiz-diff entries
-keep their git fingerprint and are unaffected. The two skills share one
-log; the `skill` key tells them apart.
+The log may still hold entries written by the retired `quiz-diff` skill. A
+reader that ignores unknown keys (`skill`, `sessions`) reads catch-up
+entries as gap records with null git fields. quiz-diff entries keep their
+git fingerprint and are unaffected. Both kinds share one log; the `skill`
+key tells them apart.

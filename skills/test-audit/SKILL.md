@@ -44,8 +44,8 @@ which is why contextual smells are review candidates here, never findings).
 ## Scope resolution
 
 Default: **merge-base of the target branch through the current worktree**,
-including uncommitted and untracked test/CI/config files (same resolution as
-quiz-diff; never hard-code `main`). Announce base, head, dirty-state, file
+including uncommitted and untracked test/CI/config files (never
+hard-code `main`). Announce base, head, dirty-state, file
 counts. Record a scope hash.
 
 - Mutation targets = **changed production lines/modules**.

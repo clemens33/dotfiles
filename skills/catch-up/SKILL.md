@@ -8,7 +8,7 @@ description: >
   are we",
   "what are you working on", "what did I miss", "where are we", "I was
   away / I am a bit lost / its a new day", or drops an idea ("idea:",
-  "spark", "note/park this"). Not for diff quizzes — use `quiz-diff`.
+  "spark", "note/park this"). Not for diff quizzes.
 metadata:
   category: preference
 
