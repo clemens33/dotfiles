@@ -43,9 +43,7 @@ Size parallel test/build/lint runs with `jobs-budget` (a job count from the CPU 
 
 ## Skills
 
-You have access to skills - those are extra knowledge defined in separate markdown files. Typically you know where to find them or load them - please  use them frequently!
-
-* You have the option to adapt or improve those skills or even create new ones if this emerges during a conversation!
+Skills are extra knowledge in separate markdown files; you typically know where to find and load them. Use them frequently. You may adapt or improve them, or create new ones, if that emerges during a conversation.
 
 ## Improving ae
 
@@ -96,10 +94,10 @@ A single model has predictable blind spots. Use a different model provider for a
 
 ### When to use a second model
 
-* **Planning** — have the second model review your implementation plan before you start building
-* **Research** — cross-validate findings, especially when you're unsure or the stakes are high
-* **Code review** — mandatory before committing significant changes (see threshold below)
-* **Debugging** — when stuck, a different model often spots what you're missing
+* **Planning** — the second model reviews your implementation plan before you build
+* **Research** — cross-validate findings, especially when unsure or the stakes are high
+* **Code review** — mandatory before committing significant changes (threshold below)
+* **Debugging** — when stuck, a different model often spots what you miss
 * **Architecture decisions** — get a second opinion on trade-offs before committing to an approach
 
 ### Code review threshold (mandatory)
@@ -136,8 +134,8 @@ because they bind before the skill loads:
 
 ### Fallback
 
-* For **non-mandatory** collaboration (planning, research, debugging): if the other tool is not installed or fails, note it and proceed.
-* For **mandatory code review**: if the other tool is not available, do not commit. Inform the user and wait for explicit approval to proceed without cross-model review.
+* **Non-mandatory** collaboration (planning, research, debugging): if the other tool is missing or fails, note it and proceed.
+* **Mandatory code review**: if the other tool is unavailable, do not commit. Inform the user and wait for explicit approval to proceed without cross-model review.
 
 ## Operating Doctrine
 
@@ -168,12 +166,4 @@ Field knowledge (September 2026 SOTA, source-tiered references): `~/projects/cle
 
 ### Where doctrine lives
 
-| File | Role | Visibility |
-|---|---|---|
-| `shared/AGENTS.md` (this file) | Contract — rules to never break | Rendered, not linked: `scripts/render-contract.sh` concatenates this file with the private overlay's `AGENTS-MIC.md` into the global instruction file of Claude Code / Codex / OpenCode / Antigravity / GitHub Copilot CLI (`${COPILOT_HOME:-$HOME/.copilot}/copilot-instructions.md`). Grok via its own short pointer + Claude compatibility; Muse imports `~/.claude/CLAUDE.md` with project → Claude Code → Codex precedence |
-| `WORKFLOW.md` | Doctrine — how to approach a task | Read on demand by any tool via absolute path above |
-| `KNOWLEDGE.md` | Field knowledge — what's true in September 2026 | Read on demand by any tool via absolute path above |
-| `skills/large-feature/SKILL.md` | Full-rigor L playbook | Claude Code / OpenCode via `~/.claude/skills/`; Codex and Muse via `~/.agents/skills/` per-skill links; Grok reads `~/.claude/skills/` natively; Antigravity via `~/.gemini/config/skills` → `~/.claude/skills` |
-| `skills/diagnose/SKILL.md` | Bug-shaped task loop | Same visibility as above |
-| `skills/*/SKILL.md` (many skills) | Operational recipes + doctrine-shaped playbooks | Same discovery paths as above; all public/overlay skills linked per-skill for Claude Code and Codex via their Dotbot manifests; Codex-managed `~/.codex/skills/.system` stays separate |
-| `agents/*.md` | Claude Code-specific subagent definitions (domain-specific, typically supplied by a private overlay) | Claude Code only via `~/.claude/agents/` symlink; not available to Codex / OpenCode / Antigravity without explicit per-tool support (Grok reads ~/.claude/agents/ natively) |
+File roles and per-harness discovery paths for this contract, `WORKFLOW.md`, `KNOWLEDGE.md`, skills and agents: `~/projects/clemens33/dotfiles/README.md`, section "Where doctrine lives".
