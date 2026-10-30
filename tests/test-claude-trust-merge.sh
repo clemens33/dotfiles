@@ -369,9 +369,6 @@ installer_wires_trust_merge() {
         '    - command: scripts/claude-trust-merge.sh "$HOME/.claude.json" claude/trusted-paths.txt' \
         "$1" &&
         grep -Fqx \
-            '    - command: scripts/claude-trust-merge.sh "$HOME/.claude2/.claude.json" claude/trusted-paths.txt' \
-            "$1" &&
-        grep -Fqx \
             '    - command: scripts/claude-trust-merge.sh "$HOME/.claude-p/.claude.json" claude/trusted-paths.txt' \
             "$1"
 }
@@ -379,9 +376,13 @@ check 'Dotbot install merges the tracked list into all identities' \
     installer_wires_trust_merge "$INSTALL"
 
 installer_wiring_negative_control() {
-    sed '/scripts\/claude-trust-merge\.sh/d' "$INSTALL" \
-        >"$TMP_ROOT/install-without-trust.yaml"
-    ! installer_wires_trust_merge "$TMP_ROOT/install-without-trust.yaml"
+    for identity in '.claude.json' '.claude-p/.claude.json'; do
+        awk -v needle='scripts/claude-trust-merge.sh "$HOME/'"$identity"'"' \
+            'index($0, needle) == 0' "$INSTALL" >"$TMP_ROOT/install-without-trust.yaml"
+        if installer_wires_trust_merge "$TMP_ROOT/install-without-trust.yaml"; then
+            return 1
+        fi
+    done
 }
 check 'negative control detects missing Dotbot trust wiring' \
     installer_wiring_negative_control

@@ -305,9 +305,6 @@ installer_wires_mcp_merge() {
         '    - command: scripts/mcp-merge.sh "$HOME/.claude.json" claude/mcpServers.json' \
         "$1" &&
         grep -Fqx \
-            '    - command: scripts/mcp-merge.sh "$HOME/.claude2/.claude.json" claude/mcpServers.json' \
-            "$1" &&
-        grep -Fqx \
             '    - command: scripts/mcp-merge.sh "$HOME/.claude-p/.claude.json" claude/mcpServers.json' \
             "$1"
 }
@@ -315,9 +312,13 @@ check 'Dotbot install merges the tracked source into all identities' \
     installer_wires_mcp_merge "$INSTALL"
 
 installer_wiring_negative_control() {
-    sed '/scripts\/mcp-merge\.sh/d' "$INSTALL" \
-        >"$TMP_ROOT/install-without-mcp.yaml"
-    ! installer_wires_mcp_merge "$TMP_ROOT/install-without-mcp.yaml"
+    for identity in '.claude.json' '.claude-p/.claude.json'; do
+        awk -v needle='scripts/mcp-merge.sh "$HOME/'"$identity"'"' \
+            'index($0, needle) == 0' "$INSTALL" >"$TMP_ROOT/install-without-mcp.yaml"
+        if installer_wires_mcp_merge "$TMP_ROOT/install-without-mcp.yaml"; then
+            return 1
+        fi
+    done
 }
 check 'negative control detects missing Dotbot MCP wiring' \
     installer_wiring_negative_control

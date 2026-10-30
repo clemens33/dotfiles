@@ -115,8 +115,8 @@
       path: grok/AGENTS.md
       force: true
 
-# Additional Claude Code identities (`claude2` and `claude-p` fish functions
-# set CLAUDE_CONFIG_DIR) — isolated login per config dir (macOS: own Keychain
+# Additional Claude Code identity (`claude-p` fish function
+# sets CLAUDE_CONFIG_DIR) — isolated login per config dir (macOS: own Keychain
 # entry keyed off the dir path; Linux: per-identity .credentials.json) while
 # sharing all config with ~/.claude.
 # skills/agents dir symlinks + MCP merge happen in the shell block below
@@ -124,18 +124,8 @@
 # linked. NOT linked (rewritten per identity): .claude.json,
 # settings.local.json, projects/, history.
 - create:
-    - ~/.claude2
     - ~/.claude-p
 - link:
-    ~/.claude2/settings.json:
-      path: claude/settings.json
-      force: true
-    ~/.claude2/statusline.sh:
-      path: claude/statusline.sh
-      force: true
-    ~/.claude2/hooks/timestamp-display.sh:
-      path: claude/hooks/timestamp-display.sh
-      force: true
     ~/.claude-p/settings.json:
       path: claude/settings.json
       force: true
@@ -311,22 +301,10 @@
     # be written per repo root into the same (non-symlinkable) state file.
     - command: scripts/claude-trust-merge.sh "$HOME/.claude.json" claude/trusted-paths.txt
       description: Pre-accepting folder trust (claude)
-    # claude2 and claude-p identities: skills → the merged ~/.claude/skills real directory.
+    # claude-p identity: skills → the merged ~/.claude/skills real directory.
     # agents is NOT linked here — ~/.claude/agents is created by the private
-    # overlay, which runs after this pass and owns both identity links too. A
+    # overlay, which runs after this pass and owns the identity link too. A
     # public-only machine correctly ends up with no agents for any identity.
-    - command: |
-        dst="$HOME/.claude2/skills"
-        if [ -e "$dst" ] && [ ! -L "$dst" ]; then
-          echo "WARN: $dst exists and is not a symlink — resolve manually"
-        else
-          ln -sfn "$HOME/.claude/skills" "$dst"
-        fi
-      description: claude2 skills link
-    - command: scripts/mcp-merge.sh "$HOME/.claude2/.claude.json" claude/mcpServers.json
-      description: Merging MCP servers into claude2
-    - command: scripts/claude-trust-merge.sh "$HOME/.claude2/.claude.json" claude/trusted-paths.txt
-      description: Pre-accepting folder trust (claude2)
     - command: |
         dst="$HOME/.claude-p/skills"
         if [ -e "$dst" ] && [ ! -L "$dst" ]; then
