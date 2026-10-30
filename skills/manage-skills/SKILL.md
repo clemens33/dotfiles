@@ -1,6 +1,6 @@
 ---
 name: manage-skills
-description: Create, update, and manage Claude Code skills across the public dotfiles repo and the optional private overlay. Use when the user wants to save a workflow as a skill, update existing skills, or promote a private skill to public. Not for shrinking an oversized skill body — use skill-reducer for compression.
+description: Create, update, split, and manage Claude Code skills across the public dotfiles repo and the optional private overlay. Use when the user wants to save a workflow as a skill, update existing skills, split an oversized skill body into references, or promote a private skill to public.
 metadata:
   category: preference
 
@@ -148,7 +148,7 @@ would make a task *impossible*, it is a `capability`; if the task would still ge
 way the user does not want, it is a `preference`.
 
 Body limits: 500 lines and ~5000 estimated tokens (gate 4). Over either, do not add a waiver —
-run `skill-reducer` and split the reference material out.
+split the reference material out (see "Splitting an oversized skill" below).
 
 **Keep skills focused.** One skill = one domain. If a skill grows too broad, split it.
 
@@ -161,6 +161,42 @@ run `skill-reducer` and split the reference material out.
 Edit `SKILL.md` directly in whichever layer owns it. Re-run `./install` only if you added or removed a skill (symlinks change); pure edits within a skill take effect immediately because the file is symlinked.
 
 Commit and push in the layer that owns the skill. If you edit a private skill, also update the public submodule pointer (see private-skill workflow above).
+
+## Splitting an oversized skill
+
+Heavy skills cost tokens every time they load: subagent spawns that preload via `skills:`
+frontmatter, long sessions, agent teams that each preload the same skills. Split only a skill
+that loads heavily and is mostly reference material. Skills under ~100 lines, rarely loaded
+skills, and skills whose reference tables are needed on every run are not candidates. Pick by
+observed load cost against task importance (`wc -lc skills/<name>/SKILL.md` and the linter's
+gate-4 numbers); the skills carrying gate-4 waivers in `./scripts/lint-skills.waivers` are the standing backlog, not a
+permanent exemption.
+
+1. **Categorize** every section of `SKILL.md`. Routing (`description`), essential rules and one
+   canonical example per pattern stay. Reference tables, exhaustive examples, troubleshooting
+   walkthroughs and one-time setup move to `references/<topic>.md`. Aim for 1-3 reference files
+   grouped by purpose, not twenty tiny ones.
+2. **Apply** the split with the frontmatter `description` exactly as it is (it is the routing
+   key) and all content kept: relocate, never delete. Add a pointer block to `SKILL.md` that
+   names each reference file and what it holds.
+3. **Verify retention with before/after cases.** Reading the new `SKILL.md` cold is a smoke
+   test, not evidence. Before splitting, write down 3-5 concrete cases the skill must still
+   handle, taken from what it is actually used for. Cover both kinds of retention:
+   - **Critical behavior** — a task whose decision or output must be unchanged from `SKILL.md`
+     alone, with nothing loaded. Pick the ones where being wrong is expensive.
+   - **Reference retrieval** — a task that needs relocated content, testing whether `SKILL.md`
+     still names the file that now holds it. A split that hides its own references is a
+     regression even when every rule survived.
+
+   Run each case against the original and against the split, and record it:
+
+   | Case | Before | After | Verdict |
+   |---|---|---|---|
+   | <task> | <what it produced> | <what it produced> | same / degraded / improved |
+
+   A degraded case means content moved that should have stayed — move it back rather than
+   compensating with a longer pointer. Report the cases alongside the measured line/token
+   delta: a compression number without retention cases is not a result.
 
 ## Listing installed skills
 

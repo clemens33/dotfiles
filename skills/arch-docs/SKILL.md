@@ -647,9 +647,6 @@ components. For non-AI repos, it's noise.
   what the system *is*. Overlap is small: `AGENTS.md` may link to
   `docs/architecture/README.md` as a one-line "see also". arch-docs
   should not rewrite agent instructions.
-- **`drawio-diagrams-enhanced`**: only when polished slide-ready
-  output is needed for non-engineering audiences. Default for
-  arch-docs is Mermaid.
 
 ## Notes on detection edge cases
 

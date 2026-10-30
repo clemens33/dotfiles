@@ -153,7 +153,7 @@ When an L task spans sessions or runs unsupervised, additional patterns apply. T
 
 **Recommended:**
 - **`ae` multi-agent workspace** — use the session's full-path `spawn <name> --using <profile>` helper (for example `spawn reviewer --using <write-denied-profile>`, if that profile is configured); served providers must differ. Use session `ask` / `review` helpers or the `collab` skill for auditable handoffs. See the cross-model review section below for how this satisfies the contract.
-- **`zoom-out` skill** periodically — step back, look at the work in aggregate, check you're still on the plan. Especially after each phase merges.
+- **Step back periodically** — look at the work in aggregate, check you're still on the plan. Especially after each phase merges.
 - **Scheduled / unattended runs** via `/loop` (built-in to Claude Code) with an explicit max-iteration bound. Apply Ralph-loop discipline (`KNOWLEDGE.md` §17): mechanical work only, machine-verifiable completion criterion, hard iteration ceiling.
 
 **Watch for:**
@@ -262,7 +262,7 @@ For trivial mechanical work (typos, formatting, version bumps), any seat may cho
 - Skipping the plan at L because "I get it now" — if you got it, the one-sentence done test would have made it M
 - "Let me just finish this one more thing" mid-phase at L — abandoning the gates that made it L
 - Spawning subagents on S work — overhead exceeds work
-- Loading every skill into a subagent — preload cost compounds (see `skill-reducer`)
+- Loading every skill into a subagent — preload cost compounds (see `manage-skills`, splitting)
 
 **Review:**
 - Skipping cross-model on dual-trigger tasks because "this one's fine"
@@ -288,11 +288,10 @@ When the bucket says "use this," reach for these:
 | L planning | `scope`, then `grill-with-docs` for plan validation |
 | L → break into shareable issues | `large-feature` (Stage 2 slicing) |
 | L touching system structure | `arch-docs`, optionally `adr` |
-| Architecture drift / should we refactor? | `refactor-audit` first (evidence + routing); then `improve-codebase-architecture` if structural work warranted; `zoom-out` for in-session reflection |
-| Periodic reflection in long-running | `zoom-out` |
+| Architecture drift / should we refactor? | `refactor-audit` first (evidence + routing); then the routed structural refactor if warranted |
 | Multi-agent collab + signoffs | `collab` |
 | Security review | `security-review`, `gha-security-review` for workflows |
-| Heavy skill files inflating subagent cost | `skill-reducer` |
+| Heavy skill files inflating subagent cost | `manage-skills` (splitting) |
 | Output verbosity drift | `caveman` (`/caveman lite` / `full` / `ultra`) |
 
 ---

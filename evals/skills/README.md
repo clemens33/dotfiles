@@ -93,7 +93,7 @@ Routing case:
 ```json
 {"id": "viz-adr-sequence", "lane": "diagram",
  "prompt": "Add a sequence diagram ... to docs/adr/0007-auth-tokens.md so it renders on GitHub.",
- "expect": ["viz"], "allow": ["adr"], "forbid": ["drawio-diagrams-enhanced"], "note": "..."}
+ "expect": ["viz"], "allow": ["adr"], "forbid": ["arch-docs"], "note": "..."}
 ```
 
 * `expect`: every item must be selected; a nested list means any one of them.

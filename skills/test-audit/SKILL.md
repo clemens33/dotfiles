@@ -39,7 +39,7 @@ which is why contextual smells are review candidates here, never findings).
 4. **Never modify anything.** No installs, no config edits, no cache deletion,
    no test changes. Audit only. Report side-effect artifacts the tools create.
 5. **Advisory.** Findings route to fixes (tdd skill), structure work
-   (improve-codebase-architecture), or guardrail promotion (refactor-audit).
+   (structural refactor), or guardrail promotion (refactor-audit).
 
 ## Scope resolution
 
@@ -155,7 +155,7 @@ candidate to a finding only together with Lane 1/2/3 evidence, never alone.
   directory — call it that; a true holdout requires storage the agent cannot
   read, e.g. private CI, and is a governance decision, not a skill feature)
 - Routing: fixes → tdd; structural test friction →
-  improve-codebase-architecture; recurring signals → refactor-audit
+  structural refactor; recurring signals → refactor-audit
 
 ## Anti-patterns
 

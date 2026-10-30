@@ -75,7 +75,7 @@ inj = sys.argv[2]
 cases = [
   {"id": "v-pass", "lane": "a", "prompt": "Add a Mermaid diagram to docs/x.md", "expect": ["viz"], "allow": [], "forbid": []},
   {"id": "v-composition", "lane": "a", "prompt": "Write an ADR with a Mermaid diagram", "expect": ["adr", "viz"], "allow": [], "forbid": []},
-  {"id": "v-missing", "lane": "b", "prompt": "Create a .drawio org chart", "expect": ["viz"], "allow": ["drawio-diagrams-enhanced"], "forbid": []},
+  {"id": "v-missing", "lane": "b", "prompt": "Write an ADR for the queue choice", "expect": ["viz"], "allow": ["adr"], "forbid": []},
   {"id": "v-forbidden", "lane": "b", "prompt": "FAKE_FORBIDDEN local test is failing", "expect": ["diagnose"], "allow": [], "forbid": ["grafana-agent"]},
   {"id": "v-stray", "lane": "b", "prompt": "FAKE_STRAY add a Mermaid diagram to docs/x.md", "expect": ["viz"], "allow": [], "forbid": []},
   {"id": "v-anyof", "lane": "c", "prompt": "Check the grafana dashboards and loki logs", "expect": [["grafana-explore", "grafana-agent"]], "allow": [], "forbid": []},
@@ -172,8 +172,8 @@ check "GNU-only date -d fails the portability task" 0 "$CODE" "$OUT_TXT" "must-n
 import json, sys
 d = json.load(open(sys.argv[1]))
 for c in d["cases"]:
-    if c["id"] == "v-pass": c["expect"] = ["drawio-diagrams-enhanced"]      # will now fail -> REGRESSION
-    if c["id"] == "v-missing": c["expect"] = ["drawio-diagrams-enhanced"]   # will now pass -> FIXED
+    if c["id"] == "v-pass": c["expect"] = ["adr"]      # will now fail -> REGRESSION
+    if c["id"] == "v-missing": c["expect"] = ["adr"]   # will now pass -> FIXED
 json.dump(d, open(sys.argv[2], "w"))
 PYX
 CMP="$OUT/cmp"

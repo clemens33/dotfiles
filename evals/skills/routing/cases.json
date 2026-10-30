@@ -15,7 +15,7 @@
       "prompt": "Add a sequence diagram of the token refresh flow to docs/adr/0007-auth-tokens.md so it renders on GitHub.",
       "expect": ["viz"],
       "allow": ["adr"],
-      "forbid": ["drawio-diagrams-enhanced"],
+      "forbid": [],
       "note": "Diagram inside a versioned markdown doc: Mermaid, not a .drawio canvas."
     },
     {
@@ -24,34 +24,34 @@
       "prompt": "Write an ADR for choosing SQLite over Postgres for the desktop build and include a Mermaid diagram of the data flow in it.",
       "expect": ["adr", "viz"],
       "allow": [],
-      "forbid": ["drawio-diagrams-enhanced", "arch-docs"],
+      "forbid": ["arch-docs"],
       "note": "Correct multi-skill composition: both adr and viz are required."
     },
     {
       "id": "drawio-org-chart",
       "lane": "diagram",
       "prompt": "Create an org chart of the platform team as a .drawio file I can open in diagrams.net and rearrange for the all-hands slides.",
-      "expect": ["drawio-diagrams-enhanced"],
+      "expect": [],
       "allow": [],
       "forbid": ["viz"],
-      "note": "Editable .drawio canvas, slide-ready: not Mermaid."
+      "note": "Editable .drawio canvas, slide-ready: viz must stay out. No skill serves it since drawio-diagrams-enhanced was retired."
     },
     {
       "id": "drawio-gantt-deck",
       "lane": "diagram",
       "prompt": "Build a Gantt chart for the Q4 migration project with milestones and dependencies as a diagram file for the steering committee deck.",
-      "expect": ["drawio-diagrams-enhanced"],
+      "expect": [],
       "allow": [],
       "forbid": ["viz"],
-      "note": "PM artifact, exported file, slide-ready: drawio."
+      "note": "PM artifact (Gantt), exported file, slide-ready: viz excludes it. No skill serves it since drawio-diagrams-enhanced was retired."
     },
     {
       "id": "no-diagram-plain-text",
       "lane": "diagram",
       "prompt": "Explain in plain text how a request flows through the auth middleware in src/auth/. No diagram needed.",
       "expect": [],
-      "allow": ["zoom-out"],
-      "forbid": ["viz", "drawio-diagrams-enhanced", "arch-docs"],
+      "allow": [],
+      "forbid": ["viz", "arch-docs"],
       "note": "Adjacent negative: explanation request explicitly without a diagram."
     },
     {
@@ -150,17 +150,17 @@
       "prompt": "Save the release checklist we just walked through as a reusable skill in my dotfiles.",
       "expect": ["manage-skills"],
       "allow": [],
-      "forbid": ["skill-reducer"],
+      "forbid": [],
       "note": "Skill creation."
     },
     {
       "id": "skill-reducer-compress",
       "lane": "skills-lifecycle",
       "prompt": "The mcp-server skill is 990 lines and blows the lint body budget. Split it so the main file stays small and the templates load on demand.",
-      "expect": ["skill-reducer"],
+      "expect": ["manage-skills"],
       "allow": [],
-      "forbid": ["manage-skills"],
-      "note": "Compression via progressive disclosure, not lifecycle work."
+      "forbid": [],
+      "note": "Splitting an oversized skill via progressive disclosure: manage-skills (Splitting an oversized skill)."
     },
     {
       "id": "manage-skills-promote-private",
@@ -168,7 +168,7 @@
       "prompt": "Promote the langfuse-debug skill from the private overlay to the public dotfiles skills.",
       "expect": ["manage-skills"],
       "allow": [],
-      "forbid": ["skill-reducer", "langfuse-debug"],
+      "forbid": ["langfuse-debug"],
       "note": "Lifecycle: promotion between layers. Naming a skill is not a reason to load it."
     }
   ]

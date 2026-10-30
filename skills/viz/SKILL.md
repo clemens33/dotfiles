@@ -6,8 +6,7 @@ description: >
   markdown, and diffs cleanly. Use when the diagram belongs inside a versioned
   text document and staying version-controlled and AI-editable matters more
   than layout precision. Not for editable .drawio canvases, hand-placed layout,
-  slide-ready export, or PM artifacts such as WBS, Gantt or RACI — those use
-  `drawio-diagrams-enhanced`.
+  slide-ready export, or PM artifacts such as WBS, Gantt or RACI.
 metadata:
   category: capability
 
@@ -31,8 +30,8 @@ and is trivially editable by humans and agents alike.
 When **not** to use Mermaid:
 
 - The diagram needs >15 nodes (split it, or use C4 zoom levels — see below)
-- Pixel-perfect layout matters (a slide deck, a vendor pitch) → defer to
-  `drawio-diagrams-enhanced`
+- Pixel-perfect layout matters (a slide deck, a vendor pitch) → not
+  Mermaid's job (hand-placed layout)
 - The visualization is data-driven (charts, dashboards) → not Mermaid's job
 - The diagram would expose secrets, internal hostnames, private network
   ranges, customer-identifying flows, or non-public topology — unless the
@@ -250,9 +249,6 @@ extension. JetBrains IDEs render it natively in markdown preview.
 
 - **`adr`**: ADRs should include at least one diagram by default. This skill
   is the technique; ADR is the container.
-- **`drawio-diagrams-enhanced`**: use when the output needs to be polished
-  for non-engineering audiences (slide decks, vendor pitches, customer-
-  facing architecture overviews). Mermaid is for engineering documentation.
 - **`scope`**: scoping output is text-first. Add a diagram only when the
   phases or change surface span multiple systems.
 

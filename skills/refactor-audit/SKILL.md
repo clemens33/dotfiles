@@ -6,7 +6,7 @@ description: >
   "is this codebase getting messy?", "should we refactor?", "run a refactor
   audit", or before a release-hardening pass. Collects hard / soft /
   tooling-gap signals, compares against the previous audit, and applies a
-  two-stage decision rule to recommend improve-codebase-architecture or the
+  two-stage decision rule to recommend a structural refactor or the
   large-feature playbook. Does NOT execute the refactor itself.
 source: local-dotfiles
 metadata:
@@ -25,7 +25,7 @@ Any of:
 - Explicit user request — *"audit this codebase"*, *"are we drifting?"*, *"run a refactor audit"*
 - After completing a cluster of related feature slices (post-feature-cluster review)
 - Before a tagged release (release-hardening pass)
-- When `zoom-out` skill flags drift during long-running work
+- When a zoom-out reflection flags drift during long-running work
 - When the same agent mistake recurs across sessions (Hashimoto's harness rule)
 - When review bandwidth feels disproportionate to PR size
 
@@ -67,8 +67,8 @@ diff vs prior evidence; empty list if no prior audit or no repeats>
 
 ### Stage 2 — Workflow routing (only if Stage 1 = yes)
 <one of:
-  improve-codebase-architecture (requires-plan: no) /
-  improve-codebase-architecture (requires-plan: yes — scope first) /
+  structural-refactor (requires-plan: no) /
+  structural-refactor (requires-plan: yes — scope first) /
   large-feature playbook>
 
 ## Rationale
@@ -120,7 +120,7 @@ These rely on session notes, commit history, or agent recall.
 - "Just one more thing" responsibility creep — one module growing across unrelated features
 - Repeated cross-file edits to express one concept — coupling smell
 - Review burden disproportionate to PR size — review requires repeated clarification rounds, multiple missed-caller findings, or reviewer cannot validate a small PR without reconstructing several modules
-- `zoom-out` skill flagged drift during long-running work
+- A zoom-out reflection flagged drift during long-running work
 - Multiple recent slices needed an unplanned "fix this adjacent thing" detour
 - Missed-caller surprises during reviews (Sourcegraph/Amp lens — completeness gaps)
 
@@ -171,8 +171,8 @@ Reached only after Stage 1 says yes.
 
 | Scope shape | Recommendation |
 |---|---|
-| Bounded area, one module, no cross-cutting impact | `improve-codebase-architecture` directly |
-| Non-trivial surface or unclear shape | `improve-codebase-architecture` with `requires-plan: yes` (run `scope` first) |
+| Bounded area, one module, no cross-cutting impact | `structural-refactor` directly |
+| Non-trivial surface or unclear shape | `structural-refactor` with `requires-plan: yes` (run `scope` first) |
 | Multi-slice / high blast radius / audit-relevant / multi-session / needs defensible handoff | `large-feature` playbook (treat the refactor itself as an L feature) |
 
 Multi-slice / high blast radius / etc. **are routing choices in Stage 2, not triggers in Stage 1.** A high-blast potential refactor that has no evidence supporting it stays at `no-action`.
@@ -183,9 +183,9 @@ The recommendation routes to a workflow; it does not perform the work.
 
 - **no-action** — signals don't justify separate refactor work. Note in artifact for next audit.
 - **micro-refactor-in-slice** — surface area is small enough to be a TDD refactor step inside the current feature work. Do NOT escalate to separate refactor.
-- **improve-codebase-architecture** — invoke that skill; structural drift confirmed. Carries a `requires-plan: yes/no` flag:
-  - `requires-plan: no` — bounded area, one module. Invoke `improve-codebase-architecture` directly.
-  - `requires-plan: yes` — non-trivial surface or unclear shape. Run `scope` first to produce a phased plan, then execute via `improve-codebase-architecture`.
+- **structural-refactor** — structural drift confirmed; do the refactor as its own work (earlier audits label this class `improve-codebase-architecture`, same meaning). Carries a `requires-plan: yes/no` flag:
+  - `requires-plan: no` — bounded area, one module. Do it directly (TDD refactor steps, normal review).
+  - `requires-plan: yes` — non-trivial surface or unclear shape. Run `scope` first to produce a phased plan, then execute it.
 - **large-feature playbook** — refactor is multi-slice or high blast radius; treat as an L feature with full rigor (vertical tracer-bullet slices, per-slice red-green, cross-model at plan + merge).
 
 ## Guardrail candidates — promote soft to hard
@@ -215,10 +215,8 @@ During feature work, only do Stage 3 micro-refactor after green. If a feature sl
 
 ## Cross-references
 
-- `skills/improve-codebase-architecture/` — the HOW skill. This audit's recommendation routes to it.
 - `skills/scope/` — phased planning when the refactor is non-trivial.
 - `skills/large-feature/` — full-rigor 7-stage playbook when the refactor is multi-slice or high blast radius.
-- `skills/zoom-out/` — soft-signal source during long-running work.
 - `WORKFLOW.md` — the lean L mandate (plan + phased execution) still applies to substantial refactor work.
 - `KNOWLEDGE.md` §18 — practitioner refs for the SOTA voices cited (Hashimoto harness engineering, Sourcegraph/Amp completeness, Anthropic 2026 "generated code is debt").
 

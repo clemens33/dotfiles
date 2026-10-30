@@ -158,7 +158,7 @@ Each slice = revertable unit. Commit message names the slice and its acceptance 
 
 **Concept SOTA-supported. Fixed cadence is opinion-based — don't hard-code it.**
 
-Run `zoom-out` skill (or equivalent reflection prompt) when **any** of these fire:
+Run a zoom-out reflection (go up a layer of abstraction, map the relevant modules and callers, check against the plan) when **any** of these fire:
 
 - Phase boundary crossed (one phase of the plan is done; before starting the next)
 - About to cross a new architectural boundary (new module, new service, new external dep)
@@ -185,7 +185,7 @@ May also run periodically if the work is genuinely long-running — but trigger-
 - **Micro-refactor inside a slice (Stage 3)** is part of TDD; do it.
 - **Architecture-deepening / module-boundary refactor (this stage)** is *separate work*. It gets its own plan, its own review, and is not interleaved with feature delivery.
 
-Use `improve-codebase-architecture` skill on a backlog rhythm (e.g., after N features, or when drift becomes visible via `zoom-out`). Treat as its own L-feature workflow if substantial.
+Run an architecture-improvement pass (start from `refactor-audit`) on a backlog rhythm (e.g., after N features, or when drift becomes visible via a zoom-out reflection). Treat as its own L-feature workflow if substantial.
 
 **Anti-pattern**: "Just clean this up while I'm here" inside a feature slice. Either it's covered by the slice's micro-refactor (small, scoped), or it's separate work — never the smuggled middle.
 
@@ -290,8 +290,6 @@ Everything else is documented practitioner pattern or research-backed adjacent (
 - `skills/tdd/` — Matt Pocock's TDD loop (Stage 3 core)
 - `skills/grill-with-docs/` — Stage 0
 - `skills/scope/` — Stage 1 plan production
-- `skills/zoom-out/` — Stage 4 drift check
-- `skills/improve-codebase-architecture/` — Stage 6 architecture work
 - `skills/security-review/`, `skills/gha-security-review/` — security gate
 - `skills/diagnose/` — bug-shaped tasks (use this playbook's structure if a bug requires L-scale work)
 

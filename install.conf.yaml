@@ -147,22 +147,17 @@
     ~/.claude/skills/collab: skills/collab
     ~/.claude/skills/cross-model-review: skills/cross-model-review
     ~/.claude/skills/diagnose: skills/diagnose
-    ~/.claude/skills/drawio-diagrams-enhanced: skills/drawio-diagrams-enhanced
     ~/.claude/skills/gcp-operations: skills/gcp-operations
     ~/.claude/skills/gha-security-review: skills/gha-security-review
     ~/.claude/skills/grill-with-docs: skills/grill-with-docs
-    ~/.claude/skills/humanizer: skills/humanizer
-    ~/.claude/skills/improve-codebase-architecture: skills/improve-codebase-architecture
     ~/.claude/skills/large-feature: skills/large-feature
     ~/.claude/skills/manage-skills: skills/manage-skills
     ~/.claude/skills/refactor-audit: skills/refactor-audit
     ~/.claude/skills/scope: skills/scope
     ~/.claude/skills/security-review: skills/security-review
-    ~/.claude/skills/skill-reducer: skills/skill-reducer
     ~/.claude/skills/tdd: skills/tdd
     ~/.claude/skills/test-audit: skills/test-audit
     ~/.claude/skills/viz: skills/viz
-    ~/.claude/skills/zoom-out: skills/zoom-out
 
 # Codex skills — same per-skill pattern. The documented user scope is
 # ~/.agents/skills; ~/.codex/skills is legacy (and holds Codex's own .system
@@ -177,22 +172,17 @@
     ~/.agents/skills/collab: skills/collab
     ~/.agents/skills/cross-model-review: skills/cross-model-review
     ~/.agents/skills/diagnose: skills/diagnose
-    ~/.agents/skills/drawio-diagrams-enhanced: skills/drawio-diagrams-enhanced
     ~/.agents/skills/gcp-operations: skills/gcp-operations
     ~/.agents/skills/gha-security-review: skills/gha-security-review
     ~/.agents/skills/grill-with-docs: skills/grill-with-docs
-    ~/.agents/skills/humanizer: skills/humanizer
-    ~/.agents/skills/improve-codebase-architecture: skills/improve-codebase-architecture
     ~/.agents/skills/large-feature: skills/large-feature
     ~/.agents/skills/manage-skills: skills/manage-skills
     ~/.agents/skills/refactor-audit: skills/refactor-audit
     ~/.agents/skills/scope: skills/scope
     ~/.agents/skills/security-review: skills/security-review
-    ~/.agents/skills/skill-reducer: skills/skill-reducer
     ~/.agents/skills/tdd: skills/tdd
     ~/.agents/skills/test-audit: skills/test-audit
     ~/.agents/skills/viz: skills/viz
-    ~/.agents/skills/zoom-out: skills/zoom-out
 
 - shell:
     - command: mkdir -p ~/.config/fish
