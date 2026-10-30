@@ -25,7 +25,7 @@ flowchart TD
     BugCheck -- no --> Triage{"Triage:<br/>worst of effort × blast × uncertainty"}
 
     Triage -- low all 3 --> S["S — Small<br/>effort by seat policy<br/>agent runs test, eyeball diff<br/>direct main"]
-    Triage -- medium worst --> M["M — Medium<br/>effort by seat policy<br/>inline outline<br/>full local validation<br/>read diff before commit"]
+    Triage -- medium worst --> M["M — Medium<br/>effort by seat policy<br/>inline outline<br/>applicable repository validation<br/>read diff before commit"]
     Triage -- high any --> L["L — Large<br/>effort by seat policy<br/>plan + phased execution<br/>scope or equivalent written plan"]
 
     L -. high rigor / audit-relevant .-> Playbook["large-feature skill<br/>7-stage full-rigor playbook"]
@@ -94,9 +94,10 @@ Skill-augmented single agent for the implementation; the acceptance tests come f
 
 **Must:**
 - Brief inline outline in the prompt — one paragraph: what you're doing, what done looks like, how you'll know
-- Agent runs full local validation (tests, lint, types — whatever the repo has)
+- Run the repository's applicable checks for this slice and checkpoint, including required lint/type checks and affected contracts. Use its focused/full risk lanes; do not interpret “validation” as every available test command. Mandatory full, freeze, release and task-specific gates remain binding. Record commands, candidate identity, results and gaps.
 - You read the diff before committing
 - Spec-first tests (AGENTS.md universal principles): by default one different-provider seat authors and freezes acceptance tests, then reviews implementation; test changes retain their own cross-provider review. No additional test-author seat is required.
+- Independent authorship/review is not a requirement that every seat rerun every suite. The brief assigns execution and independent assessment separately; reviewers execute checks required by repository policy and investigate disputed or missing evidence. Test-author and implementation gates remain distinct; a verdict never gates itself.
 
 **Settings:**
 - Effort: follow the seat policy below; move worker effort only on measured outcome.
