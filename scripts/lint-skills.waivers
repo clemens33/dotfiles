@@ -1,1 +1,1 @@
-arch-docs gate4 # 650 lines/5.9k tokens — split pending (see manage-skills)
+# No active waivers. Format: <skill-name> <gate-id> # reason (see scripts/lint-skills.sh).

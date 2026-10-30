@@ -265,9 +265,38 @@ check "a nested \`\`\` inside a \`\`\`\` fence does not prematurely close it" 0 
 # ---------------------------------------------------------------------------
 # standalone-overlay layout: run from a cwd that is NOT the script's repo,
 # with no explicit flags — defaults must resolve off the script's own path.
+# The waiver probe is synthetic (a copied script with its own waivers file),
+# so it does not depend on what the live scripts/lint-skills.waivers holds.
 # ---------------------------------------------------------------------------
 OUT="$(cd /tmp && "$LINT" "$REPO_ROOT/skills" 2>&1)"; CODE=$?
-check "defaults resolve via the script's own repo root, not cwd" 0 "$CODE" "$OUT" "WAIVED:.*arch-docs"
+check "real skills lint clean from a foreign cwd with no flags" 0 "$CODE" "$OUT" ""
+
+DEF_ROOT="$TMPROOT/default-root"
+mkdir -p "$DEF_ROOT/scripts" "$DEF_ROOT/skills/probe-skill"
+cp "$LINT" "$DEF_ROOT/scripts/lint-skills.sh"
+{
+  cat <<'EOF'
+---
+name: probe-skill
+description: Synthetic default-resolution probe. Use when testing waiver defaults.
+metadata:
+  category: preference
+---
+
+EOF
+  for i in $(seq 1 520); do
+    echo "Filler line number $i of this over-budget probe skill."
+  done
+} > "$DEF_ROOT/skills/probe-skill/SKILL.md"
+cat > "$DEF_ROOT/install.conf.yaml" <<'EOF'
+- link:
+    ~/.claude/skills/probe-skill: skills/probe-skill
+EOF
+cat > "$DEF_ROOT/scripts/lint-skills.waivers" <<'EOF'
+probe-skill gate4 # synthetic fixture, deliberately over budget
+EOF
+OUT="$(cd /tmp && "$DEF_ROOT/scripts/lint-skills.sh" "$DEF_ROOT/skills" 2>&1)"; CODE=$?
+check "default waivers resolve via the script's own repo root, not cwd" 0 "$CODE" "$OUT" "WAIVED:.*probe-skill"
 
 # ---------------------------------------------------------------------------
 # standalone-overlay layout, SYNTHETIC: builds its own fake overlay (own
