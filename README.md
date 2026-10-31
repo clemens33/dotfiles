@@ -10,7 +10,7 @@ Two-layer setup:
 ## Prerequisites
 
 ```bash
-# CLI tools (apt or nix): ripgrep, fd-find, fzf, bat, delta, tmux, jq
+# CLI tools (apt or nix): ripgrep, delta, tmux, jq
 
 # WSL clipboard helper
 curl -sLo /tmp/win32yank.zip https://github.com/equalsraf/win32yank/releases/download/v0.1.1/win32yank-x64.zip

@@ -22,7 +22,6 @@ brew "flock"   # util-linux flock is absent on macOS; ae lifecycle locking needs
 brew "gh"
 brew "just"
 brew "jq"
-brew "bat"
 brew "stow"
 brew "imagemagick"
 brew "tmux"
@@ -47,19 +46,13 @@ cask "tailscale-app"
 #    These 9 came from ~/.nix-profile/bin on WSL.
 # ---------------------------------------------------------------------------
 brew "git-delta" # binary is `delta`; the formula is NOT named `delta`
-brew "fd"
-brew "fzf"
-brew "lazygit"
 brew "ripgrep" # binary is `rg`
 brew "tig"
-brew "yazi"
-brew "zoxide"
 
 # ---------------------------------------------------------------------------
 # 3) Hand-installed ~/.local/bin replacements that Homebrew can own
 # ---------------------------------------------------------------------------
 brew "shellcheck"
-brew "neovim"  # binary is `nvim`
 brew "git-cliff"
 brew "uv"      # also provides uvx; owns Python + `uv tool` installs
 brew "age"     # encrypts the migration secrets bundle (see MAC-MIGRATION.md 0.5)
