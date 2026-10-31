@@ -130,10 +130,41 @@ summary() {
   printf '%s\n' "$message" >>"$LOG_FILE"
 }
 
+# VS Code and VS Code Insiders install an ELF named copilot under a directory
+# called copilot-shim and symlink it onto PATH. That file is not the Copilot
+# CLI. Classify by the canonical path. Never execute the candidate to detect it.
+# readlink(1) without -f is the portable primitive; pwd -P canonicalizes.
+copilot_is_cli() {
+  local cmd target link seen dir base
+  cmd=$(command -v copilot 2>/dev/null) || return 1
+  case "$cmd" in
+    /*) target=$cmd ;;
+    *) return 1 ;;
+  esac
+  seen=0
+  while [ -L "$target" ]; do
+    seen=$((seen + 1))
+    [ "$seen" -le 32 ] || return 1
+    link=$(readlink "$target") || return 1
+    case "$link" in
+      /*) target=$link ;;
+      *) target=$(dirname "$target")/$link ;;
+    esac
+  done
+  dir=$(dirname "$target")
+  base=$(basename "$target")
+  dir=$(CDPATH= cd -- "$dir" 2>/dev/null && pwd -P) || return 1
+  case "$dir/$base" in
+    *copilot-shim*) return 1 ;;
+  esac
+  return 0
+}
+
 # Observe presence before another tool update changes the Node/mise runtime.
 # The marker survives that transition; check mode never creates it.
+# A copilot-shim stub does not count as a previously installed binary.
 COPILOT_EXPECTED=0
-if [ -f "$LOG_DIR/copilot-installed" ] || command -v copilot >/dev/null 2>&1; then
+if [ -f "$LOG_DIR/copilot-installed" ] || copilot_is_cli; then
   COPILOT_EXPECTED=1
 fi
 
@@ -214,7 +245,7 @@ run_step() {
   local result
   # A lost managed install is a local setup failure, not a transient network
   # error. Fail immediately rather than spending retry backoffs on it.
-  if [ "$1" = copilot ] && [ "$COPILOT_EXPECTED" -eq 1 ] && ! command -v copilot >/dev/null 2>&1; then
+  if [ "$1" = copilot ] && [ "$COPILOT_EXPECTED" -eq 1 ] && ! copilot_is_cli; then
     process_copilot
     return $?
   fi
@@ -607,7 +638,7 @@ copilot_latest() {
 
 process_copilot() {
   hash -r
-  if ! command -v copilot >/dev/null 2>&1; then
+  if ! copilot_is_cli; then
     if [ "$COPILOT_EXPECTED" -eq 1 ]; then
       summary 'copilot FAIL previously installed binary missing; restore Copilot in the active Node/mise runtime'
       return 1
@@ -1245,7 +1276,7 @@ export -f summary run_with_retry log_run npm_mode nvm_exec npm_latest npm_instal
   behind_note effective_lag \
   opencode_available run_opencode native_opencode_version opencode_latest installed_version agy_latest grok_latest muse_latest \
   check_with_npm update_native install_muse process_claude process_codex \
-  copilot_latest process_copilot process_agy process_grok process_opencode process_muse process_ae \
+  copilot_is_cli copilot_latest process_copilot process_agy process_grok process_opencode process_muse process_ae \
   process_dsh process_contract
 
 failures=0

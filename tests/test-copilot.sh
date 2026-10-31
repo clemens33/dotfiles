@@ -85,3 +85,35 @@ assert (native/'mcp-config.json').is_file()
 assert not (home/'.copilot').exists()
 print('PASS: native adapter and isolated installer contracts')
 PY
+
+# The attribution block must treat a copilot-shim symlink as absent: the
+# existing message, no `copilot config`, no installed marker, and no exec.
+python3 - "$ROOT/install.conf.yaml" "$tmp" <<'PY'
+import os, pathlib, subprocess, sys
+import yaml
+config, root = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
+blocks = [x['command'] for group in yaml.safe_load(config.read_text()) if 'shell' in group
+          for x in group['shell'] if isinstance(x, dict) and 'command' in x]
+chosen = [x for x in blocks if 'includeCoAuthoredBy' in x]
+assert len(chosen) == 1, chosen
+block = chosen[0]
+for product in ('code', 'code-insiders'):
+    home = root / f'stub-{product}'
+    shim = home / 'opt/share' / product / 'bin/copilot-shim'
+    bindir = home / '.local/bin'
+    shim.mkdir(parents=True)
+    bindir.mkdir(parents=True)
+    stub = shim / 'copilot'
+    stub.write_text('#!/bin/sh\nprintf executed\\n >>"$HOME/stub-executed"\nexit 0\n')
+    stub.chmod(0o700)
+    link = bindir / 'copilot'
+    link.symlink_to(f'../../opt/share/{product}/bin/copilot-shim/copilot')
+    env = dict(os.environ, HOME=str(home), PATH=str(bindir)+':'+os.environ['PATH'])
+    proc = subprocess.run(['/bin/sh','-ec',block], env=env, cwd=config.parent, text=True, capture_output=True)
+    assert proc.returncode == 0, (proc.returncode, proc.stdout, proc.stderr)
+    assert 'Copilot CLI absent; native attribution setting skipped' in proc.stdout, proc.stdout
+    assert 'includeCoAuthoredBy' not in proc.stdout + proc.stderr
+    assert not (home/'.local/state/harness-update/copilot-installed').exists()
+    assert not (home/'stub-executed').exists(), 'stub was executed'
+print('PASS: VS Code copilot-shim is absent during install')
+PY

@@ -220,8 +220,34 @@
     - command: scripts/copilot-mcp-merge.sh "${COPILOT_HOME:-$HOME/.copilot}/mcp-config.json" claude/mcpServers.json
       description: Reconciling native Copilot public MCP servers
     # Native key-only edit; auth/config.json and other preferences stay CLI-owned.
+    # The VS Code / Insiders copilot-shim ELF is not the CLI. Match the canonical
+    # path (readlink, then pwd -P). Do not execute the candidate to detect it.
     - command: |
-        if command -v copilot >/dev/null 2>&1; then
+        copilot_is_cli() {
+          cmd=$(command -v copilot 2>/dev/null) || return 1
+          case "$cmd" in
+            /*) target=$cmd ;;
+            *) return 1 ;;
+          esac
+          n=0
+          while [ -L "$target" ]; do
+            n=$((n + 1))
+            [ "$n" -le 32 ] || return 1
+            link=$(readlink "$target") || return 1
+            case "$link" in
+              /*) target=$link ;;
+              *) target=$(dirname "$target")/$link ;;
+            esac
+          done
+          dir=$(dirname "$target")
+          base=$(basename "$target")
+          dir=$(CDPATH= cd -- "$dir" 2>/dev/null && pwd -P) || return 1
+          case "$dir/$base" in
+            *copilot-shim*) return 1 ;;
+          esac
+          return 0
+        }
+        if copilot_is_cli; then
           copilot config includeCoAuthoredBy false || exit 1
           dir="$HOME/.local/state/harness-update"
           mkdir -p "$dir" || exit 1

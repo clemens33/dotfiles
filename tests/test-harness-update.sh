@@ -1221,5 +1221,61 @@ copilot_missing_known_install() {
 }
 check 'copilot fresh absent skips; recorded install lost after Node/mise change fails immediately' copilot_missing_known_install
 
+# VS Code and Insiders put an ELF named copilot on PATH via copilot-shim.
+# That stub is not the CLI. A symlink whose resolved path contains
+# copilot-shim must behave as "not installed", and the detector must not
+# execute it. A symlink that only textually passes through copilot-shim and
+# then canonicalizes onto a real CLI stays a CLI.
+write_copilot_stub() {
+  local home=$1
+  local product=$2
+  local shim_dir="$home/opt/share/$product/bin/copilot-shim"
+  mkdir -p "$shim_dir"
+  cat >"$shim_dir/copilot" <<'EOF'
+#!/bin/sh
+printf 'executed\n' >>"$HOME/stub-executed"
+printf 'VS Code copilot stub\n'
+exit 0
+EOF
+  chmod +x "$shim_dir/copilot"
+  rm -f "$home/.local/bin/copilot"
+  ln -s "../../opt/share/$product/bin/copilot-shim/copilot" "$home/.local/bin/copilot"
+}
+
+copilot_vscode_stub_counts_as_absent() {
+  local home product
+  for product in code code-insiders; do
+    home=$(make_copilot_home "cp-stub-$product")
+    write_copilot_stub "$home" "$product"
+    HOME="$home" "$SCRIPT" --check --only copilot >"$home/out" 2>&1 || return 1
+    grep -q 'copilot SKIP not installed' "$home/out" || return 1
+    ! grep -q 'copilot FAIL' "$home/out" || return 1
+    ! grep -q 'copilot update' "$home/out" || return 1
+    [ ! -e "$home/stub-executed" ] || return 1
+    [ ! -e "$home/update-calls" ] || return 1
+    [ ! -e "$home/.local/state/harness-update/copilot-installed" ] || return 1
+  done
+
+  home=$(make_copilot_home cp-stub-marker)
+  write_copilot_stub "$home" code
+  mkdir -p "$home/.local/state/harness-update"
+  : >"$home/.local/state/harness-update/copilot-installed"
+  if HOME="$home" "$SCRIPT" --check --only copilot >"$home/out" 2>&1; then
+    return 1
+  fi
+  grep -q 'copilot FAIL previously installed binary missing' "$home/out" || return 1
+  ! grep -q 'RETRY' "$home/out" || return 1
+  [ ! -e "$home/stub-executed" ] || return 1
+
+  home=$(make_copilot_home cp-shim-escape)
+  mv "$home/.local/bin/copilot" "$home/.local/bin/copilot-real"
+  mkdir -p "$home/tree/copilot-shim"
+  ln -s "$home/tree/copilot-shim/../../.local/bin/copilot-real" "$home/.local/bin/copilot"
+  HOME="$home" "$SCRIPT" --check --only copilot >"$home/out" 2>&1 || return 1
+  grep -q 'copilot CHECK current=1.0.103 latest=1.0.103' "$home/out"
+}
+check 'VS Code and Insiders copilot-shim stubs count as absent; a canonical real CLI does not' \
+  copilot_vscode_stub_counts_as_absent
+
 printf '%s passed, %s failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]
