@@ -61,11 +61,9 @@ fi
 
 # identity directory | target file. The identity dir gate mirrors what the
 # retired link entries did: install.conf.yaml creates ~/.claude, ~/.claude-p,
-# ~/.codex, ~/.config/opencode, ~/.gemini/config and ~/.dsh, and the overlay
+# ~/.codex, ~/.config/opencode and ~/.gemini/config, and the overlay
 # creates ~/.claude-mic. A machine without the overlay must not grow a
-# ~/.claude-mic, and a machine that has never installed the DeepSeek Harness
-# pilot must not grow a ~/.dsh: removing that directory is how the pilot is
-# rolled back, and the target then reports skipped by design.
+# ~/.claude-mic: the target then reports skipped by design.
 targets() {
     cat <<EOF
 $HOME/.claude|$HOME/.claude/CLAUDE.md
@@ -74,7 +72,6 @@ $HOME/.claude-mic|$HOME/.claude-mic/CLAUDE.md
 $HOME/.codex|$HOME/.codex/AGENTS.md
 $HOME/.config/opencode|$HOME/.config/opencode/AGENTS.md
 $HOME/.gemini/config|$HOME/.gemini/config/plugins/dotfiles/rules/AGENTS.md
-$HOME/.dsh|$HOME/.dsh/AGENTS.md
 ${COPILOT_HOME:-$HOME/.copilot}|${COPILOT_HOME:-$HOME/.copilot}/copilot-instructions.md
 EOF
 }

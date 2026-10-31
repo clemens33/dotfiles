@@ -160,47 +160,6 @@ timeout_stops_retries() {
 check 'whole-step timeout expires during backoff before attempt 2' \
   timeout_stops_retries
 
-dsh_failure_is_not_retried() {
-  local name=dsh
-  local fake_home variant status log
-  fake_home=$(make_fake_home "$name")
-  variant="$TMP_ROOT/$name/harness-update.sh"
-  awk '
-    /^# Export existing step functions/ {
-      print "process_dsh() {"
-      print "  count=$(cat \"$FAKE_DSH_STATE\")"
-      print "  count=$((count + 1))"
-      print "  printf \"%s\\n\" \"$count\" >\"$FAKE_DSH_STATE\""
-      print "  summary \"dsh FAIL forced drift\""
-      print "  return 1"
-      print "}"
-      print ""
-    }
-    { print }
-  ' "$SCRIPT" >"$variant"
-  printf '0\n' >"$TMP_ROOT/$name/dsh.state"
-
-  if env \
-    HOME="$fake_home" \
-    FAKE_DSH_STATE="$TMP_ROOT/$name/dsh.state" \
-    FAKE_SLEEP_CALLS="$TMP_ROOT/$name/sleep.calls" \
-    HARNESS_UPDATE_TIMEOUT_SECONDS=10 \
-    bash "$variant" --check --only dsh >"$TMP_ROOT/$name/output" 2>&1; then
-    return 1
-  else
-    status=$?
-  fi
-  log="$fake_home/.local/state/harness-update/$(date +%F).log"
-
-  [ "$status" -eq 1 ] &&
-    [ "$(cat "$TMP_ROOT/$name/dsh.state")" -eq 1 ] &&
-    [ "$(grep -c '^dsh FAIL forced drift$' "$log")" -eq 1 ] &&
-    ! grep -Fq 'dsh RETRY' "$log"
-}
-
-check 'dsh failing drift audit runs once without retry' \
-  dsh_failure_is_not_retried
-
 contract_failure_is_not_retried() {
   local name=contract
   local fake_home variant status log
