@@ -129,10 +129,16 @@ summary() {
 # CLI. Classify by the canonical path. Never execute the candidate to detect it.
 # readlink(1) without -f is the portable primitive; pwd -P canonicalizes.
 copilot_is_cli() {
-  local cmd target link seen dir base
+  local cmd target link seen dir base here
   cmd=$(command -v copilot 2>/dev/null) || return 1
   case "$cmd" in
     /*) target=$cmd ;;
+    */*)
+      # A relative PATH entry makes command -v relative to the working
+      # directory. A bare name is a function, builtin, or alias.
+      here=$(CDPATH= cd -- . && pwd -P) || return 1
+      target=$here/$cmd
+      ;;
     *) return 1 ;;
   esac
   seen=0

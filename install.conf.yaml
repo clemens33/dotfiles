@@ -211,6 +211,12 @@
           cmd=$(command -v copilot 2>/dev/null) || return 1
           case "$cmd" in
             /*) target=$cmd ;;
+            */*)
+              # A relative PATH entry makes command -v relative to the working
+              # directory. A bare name is a function, builtin, or alias.
+              here=$(CDPATH= cd -- . && pwd -P) || return 1
+              target=$here/$cmd
+              ;;
             *) return 1 ;;
           esac
           n=0

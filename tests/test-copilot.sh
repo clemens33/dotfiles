@@ -117,3 +117,46 @@ for product in ('code', 'code-insiders'):
     assert not (home/'stub-executed').exists(), 'stub was executed'
 print('PASS: VS Code copilot-shim is absent during install')
 PY
+
+# command -v is relative when the PATH entry is. A real CLI must still run.
+# A copilot-shim reached through that relative entry must not.
+python3 - "$ROOT/install.conf.yaml" "$tmp" <<'PY'
+import os, pathlib, subprocess, sys
+import yaml
+config, root = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
+blocks = [x['command'] for group in yaml.safe_load(config.read_text()) if 'shell' in group
+          for x in group['shell'] if isinstance(x, dict) and 'command' in x]
+block = [x for x in blocks if 'includeCoAuthoredBy' in x][0]
+work = root / 'relative-path'
+rel = work / 'relative-bin'
+rel.mkdir(parents=True)
+real = rel / 'copilot'
+real.write_text('#!/bin/sh\nprintf "%s\\n" "$*" >>"$HOME/calls"\n')
+real.chmod(0o700)
+home = work / 'home-real'
+home.mkdir()
+env = dict(os.environ, HOME=str(home), PATH='relative-bin:/usr/bin:/bin')
+proc = subprocess.run(['/bin/sh','-ec',block], env=env, cwd=work, text=True, capture_output=True)
+assert proc.returncode == 0, (proc.returncode, proc.stdout, proc.stderr)
+assert (home/'calls').read_text() == 'config includeCoAuthoredBy false\n', (home/'calls').read_text() if (home/'calls').exists() else proc.stdout
+assert (home/'.local/state/harness-update/copilot-installed').is_file()
+assert 'absent' not in proc.stdout
+
+shim = work / 'opt/share/code/bin/copilot-shim'
+shim.mkdir(parents=True)
+stub = shim / 'copilot'
+stub.write_text('#!/bin/sh\nprintf executed\\n >>"$HOME/stub-executed"\nexit 0\n')
+stub.chmod(0o700)
+real.unlink()
+(rel/'copilot').symlink_to('../opt/share/code/bin/copilot-shim/copilot')
+home = work / 'home-stub'
+home.mkdir()
+env = dict(os.environ, HOME=str(home), PATH='relative-bin:/usr/bin:/bin')
+proc = subprocess.run(['/bin/sh','-ec',block], env=env, cwd=work, text=True, capture_output=True)
+assert proc.returncode == 0, (proc.returncode, proc.stdout, proc.stderr)
+assert 'Copilot CLI absent; native attribution setting skipped' in proc.stdout, proc.stdout
+assert not (home/'calls').exists()
+assert not (home/'stub-executed').exists()
+assert not (home/'.local/state/harness-update/copilot-installed').exists()
+print('PASS: relative PATH Copilot CLI runs; relative PATH shim is absent')
+PY

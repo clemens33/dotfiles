@@ -1236,5 +1236,47 @@ copilot_vscode_stub_counts_as_absent() {
 check 'VS Code and Insiders copilot-shim stubs count as absent; a canonical real CLI does not' \
   copilot_vscode_stub_counts_as_absent
 
+# The updater builds PATH from $HOME. A relative HOME is how command -v returns
+# a relative executable (home/.local/bin/copilot). That must still be the CLI.
+# A copilot-shim reached the same way stays absent and is not executed.
+copilot_relative_home_path() {
+  local home work
+  home=$(make_copilot_home cp-rel-cli)
+  work=$(dirname "$home")
+  (
+    cd "$work" || exit 1
+    HOME=home "$SCRIPT" --check --only copilot >"$work/out" 2>&1
+  ) || return 1
+  grep -q 'copilot CHECK current=1.0.103 latest=1.0.103' "$work/out" || return 1
+  ! grep -q 'copilot SKIP not installed' "$work/out" || return 1
+
+  home=$(make_copilot_home cp-rel-stub)
+  work=$(dirname "$home")
+  write_copilot_stub "$home" code
+  (
+    cd "$work" || exit 1
+    HOME=home "$SCRIPT" --check --only copilot >"$work/out" 2>&1
+  ) || return 1
+  grep -q 'copilot SKIP not installed' "$work/out" || return 1
+  ! grep -q 'copilot FAIL' "$work/out" || return 1
+  ! grep -q 'copilot update' "$work/out" || return 1
+  [ ! -e "$home/stub-executed" ] || return 1
+  [ ! -e "$home/.local/state/harness-update/copilot-installed" ] || return 1
+
+  mkdir -p "$home/.local/state/harness-update"
+  : >"$home/.local/state/harness-update/copilot-installed"
+  if (
+    cd "$work" || exit 1
+    HOME=home "$SCRIPT" --check --only copilot >"$work/out" 2>&1
+  ); then
+    return 1
+  fi
+  grep -q 'copilot FAIL previously installed binary missing' "$work/out" || return 1
+  ! grep -q 'RETRY' "$work/out" || return 1
+  [ ! -e "$home/stub-executed" ] || return 1
+}
+check 'relative PATH Copilot CLI is real; a relative-PATH shim stays absent' \
+  copilot_relative_home_path
+
 printf '%s passed, %s failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]
