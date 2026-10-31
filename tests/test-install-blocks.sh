@@ -178,30 +178,39 @@ fi
 # Pinning a POSIX interpreter is only safe while every block IS POSIX. This is
 # the standing check: a bashism added later fails here instead of failing an
 # install on Ubuntu, where /bin/sh is dash rather than bash in POSIX mode.
-scan_node=$(command -v node || true)
-scan_prefix=${DSH_PREFIX:-$HOME/.local/share/dsh}
-if [ -n "$scan_node" ] && "$scan_node" -e \
-    'require("node:module").createRequire(process.argv[1] + "/package.json")("js-yaml")' \
-    "$scan_prefix" >/dev/null 2>&1; then
+# Same PyYAML Dotbot imports (dotbot/dotbot/cli.py). A missing parser fails
+# this guard; it does not pass.
+if ! command -v python3 >/dev/null 2>&1 || ! python3 -c 'import yaml' >/dev/null 2>&1; then
+    bad 'PyYAML via python3 is required to parse install shell blocks'
+else
     blocks=$TMP_ROOT/blocks
     mkdir -p "$blocks"
-    n_blocks=$("$scan_node" -e '
-        const { createRequire } = require("node:module")
-        const yaml = createRequire(process.argv[1] + "/package.json")("js-yaml")
-        const fs = require("node:fs")
-        let n = 0
-        for (const [tag, f] of [["pub", process.argv[3]], ["mic", process.argv[4]]]) {
-          if (!fs.existsSync(f)) continue
-          for (const b of yaml.load(fs.readFileSync(f, "utf8"))) {
-            for (const st of (Array.isArray(b.shell) ? b.shell : [])) {
-              if (typeof st?.command !== "string") continue
-              n++
-              fs.writeFileSync(`${process.argv[2]}/${tag}-${n}.sh`, st.command + "\n")
-            }
-          }
-        }
-        process.stdout.write(String(n))
-    ' "$scan_prefix" "$blocks" "$CONF" "$MIC_CONF")
+    n_blocks=$(python3 - "$blocks" "$CONF" "$MIC_CONF" <<'PY'
+import pathlib, sys
+import yaml
+dest, conf, mic = sys.argv[1:]
+n = 0
+for tag, name in (("pub", conf), ("mic", mic)):
+    path = pathlib.Path(name)
+    if not path.is_file():
+        continue
+    doc = yaml.safe_load(path.read_text()) or []
+    for group in doc:
+        shell = group.get("shell") if isinstance(group, dict) else None
+        if not isinstance(shell, list):
+            continue
+        for step in shell:
+            if not isinstance(step, dict):
+                continue
+            command = step.get("command")
+            if not isinstance(command, str):
+                continue
+            n += 1
+            text = command if command.endswith("\n") else command + "\n"
+            pathlib.Path(dest, "%s-%d.sh" % (tag, n)).write_text(text)
+sys.stdout.write(str(n))
+PY
+)
     check 'the shell blocks were extracted' test "${n_blocks:-0}" -gt 0
 
     bad_syntax=0
@@ -233,8 +242,6 @@ if [ -n "$scan_node" ] && "$scan_node" -e \
     # The pin is inert only while nothing downstream reads $SHELL.
     check 'no shell block reads $SHELL, so pinning it changes nothing else' \
         sh -c 'grep -l "SHELL" "$1"/*.sh >/dev/null 2>&1 && exit 1 || exit 0' _ "$blocks"
-else
-    ok 'shell-block POSIX scan skipped (no installed runtime to borrow js-yaml from)'
 fi
 printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]
