@@ -124,21 +124,15 @@ summary() {
   printf '%s\n' "$message" >>"$LOG_FILE"
 }
 
-# VS Code and VS Code Insiders install an ELF named copilot under a directory
-# called copilot-shim and symlink it onto PATH. That file is not the Copilot
-# CLI. Classify by the canonical path. Never execute the candidate to detect it.
-# readlink(1) without -f is the portable primitive; pwd -P canonicalizes.
-copilot_is_cli() {
-  local cmd target link seen dir base here
+# True only when copilot on PATH resolves to a VS Code/Insiders copilot-shim
+# file. A bare name, a broken link, or a symlink loop is not a shim, so callers
+# keep the old command -v behaviour. Never execute the candidate.
+# readlink(1) without -f; the final pwd -P canonicalizes relative link targets.
+copilot_is_shim() {
+  local cmd target link seen dir base
   cmd=$(command -v copilot 2>/dev/null) || return 1
   case "$cmd" in
-    /*) target=$cmd ;;
-    */*)
-      # A relative PATH entry makes command -v relative to the working
-      # directory. A bare name is a function, builtin, or alias.
-      here=$(CDPATH= cd -- . && pwd -P) || return 1
-      target=$here/$cmd
-      ;;
+    */*) target=$cmd ;;
     *) return 1 ;;
   esac
   seen=0
@@ -155,16 +149,20 @@ copilot_is_cli() {
   base=$(basename "$target")
   dir=$(CDPATH= cd -- "$dir" 2>/dev/null && pwd -P) || return 1
   case "$dir/$base" in
-    *copilot-shim*) return 1 ;;
+    *copilot-shim*) return 0 ;;
   esac
-  return 0
+  return 1
+}
+
+copilot_installed() {
+  command -v copilot >/dev/null 2>&1 && ! copilot_is_shim
 }
 
 # Observe presence before another tool update changes the Node/mise runtime.
 # The marker survives that transition; check mode never creates it.
 # A copilot-shim stub does not count as a previously installed binary.
 COPILOT_EXPECTED=0
-if [ -f "$LOG_DIR/copilot-installed" ] || copilot_is_cli; then
+if [ -f "$LOG_DIR/copilot-installed" ] || copilot_installed; then
   COPILOT_EXPECTED=1
 fi
 
@@ -245,7 +243,7 @@ run_step() {
   local result
   # A lost managed install is a local setup failure, not a transient network
   # error. Fail immediately rather than spending retry backoffs on it.
-  if [ "$1" = copilot ] && [ "$COPILOT_EXPECTED" -eq 1 ] && ! copilot_is_cli; then
+  if [ "$1" = copilot ] && [ "$COPILOT_EXPECTED" -eq 1 ] && ! copilot_installed; then
     process_copilot
     return $?
   fi
@@ -638,7 +636,7 @@ copilot_latest() {
 
 process_copilot() {
   hash -r
-  if ! copilot_is_cli; then
+  if ! copilot_installed; then
     if [ "$COPILOT_EXPECTED" -eq 1 ]; then
       summary 'copilot FAIL previously installed binary missing; restore Copilot in the active Node/mise runtime'
       return 1
@@ -938,7 +936,7 @@ export -f summary run_with_retry log_run npm_mode nvm_exec npm_latest npm_instal
   behind_note effective_lag \
   opencode_available run_opencode native_opencode_version opencode_latest installed_version agy_latest grok_latest muse_latest \
   check_with_npm update_native install_muse process_claude process_codex \
-  copilot_is_cli copilot_latest process_copilot process_agy process_grok process_opencode process_muse process_ae \
+  copilot_is_shim copilot_installed copilot_latest process_copilot process_agy process_grok process_opencode process_muse process_ae \
   process_contract
 
 failures=0

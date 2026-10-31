@@ -160,3 +160,43 @@ assert not (home/'stub-executed').exists()
 assert not (home/'.local/state/harness-update/copilot-installed').exists()
 print('PASS: relative PATH Copilot CLI runs; relative PATH shim is absent')
 PY
+
+# /bin/sh PATH=:/usr/bin:/bin prints a bare name for an executable in cwd.
+# That must run config and write the marker, as before shim detection.
+# A canonical copilot-shim path (no symlink) stays absent and is not executed.
+python3 - "$ROOT/install.conf.yaml" "$tmp" <<'PY'
+import os, pathlib, subprocess, sys
+import yaml
+config, root = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
+blocks = [x['command'] for group in yaml.safe_load(config.read_text()) if 'shell' in group
+          for x in group['shell'] if isinstance(x, dict) and 'command' in x]
+block = [x for x in blocks if 'includeCoAuthoredBy' in x][0]
+work = root / 'empty-path'
+work.mkdir()
+exe = work / 'copilot'
+exe.write_text('#!/bin/sh\nprintf "%s\\n" "$*" >>"$HOME/calls"\n')
+exe.chmod(0o700)
+home = work / 'home'
+home.mkdir()
+env = dict(os.environ, HOME=str(home), PATH=':/usr/bin:/bin')
+proc = subprocess.run(['/bin/sh','-c', block], env=env, cwd=work, text=True, capture_output=True)
+assert proc.returncode == 0, (proc.returncode, proc.stdout, proc.stderr)
+assert (home/'calls').read_text() == 'config includeCoAuthoredBy false\n'
+assert (home/'.local/state/harness-update/copilot-installed').is_file()
+assert 'absent' not in proc.stdout
+
+canon = root / 'canon-shim' / 'opt/share/code/bin/copilot-shim'
+canon.mkdir(parents=True)
+stub = canon / 'copilot'
+stub.write_text('#!/bin/sh\nprintf executed\\n >>"$HOME/stub-executed"\nexit 0\n')
+stub.chmod(0o700)
+home = root / 'canon-shim' / 'home'
+home.mkdir()
+env = dict(os.environ, HOME=str(home), PATH=str(canon)+':/usr/bin:/bin')
+proc = subprocess.run(['/bin/sh','-c', block], env=env, cwd=root/'canon-shim', text=True, capture_output=True)
+assert proc.returncode == 0, (proc.returncode, proc.stdout, proc.stderr)
+assert 'Copilot CLI absent; native attribution setting skipped' in proc.stdout, proc.stdout
+assert not (home/'stub-executed').exists()
+assert not (home/'.local/state/harness-update/copilot-installed').exists()
+print('PASS: empty PATH component runs the cwd CLI; canonical shim is absent')
+PY

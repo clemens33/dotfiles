@@ -204,19 +204,14 @@
     - command: scripts/copilot-mcp-merge.sh "${COPILOT_HOME:-$HOME/.copilot}/mcp-config.json" claude/mcpServers.json
       description: Reconciling native Copilot public MCP servers
     # Native key-only edit; auth/config.json and other preferences stay CLI-owned.
-    # The VS Code / Insiders copilot-shim ELF is not the CLI. Match the canonical
-    # path (readlink, then pwd -P). Do not execute the candidate to detect it.
+    # Positive shim check only. A resolved copilot-shim path is absent. Anything
+    # not proved a shim (bare name, broken link, loop) keeps command -v behaviour.
+    # Do not execute the candidate to detect it.
     - command: |
-        copilot_is_cli() {
+        copilot_is_shim() {
           cmd=$(command -v copilot 2>/dev/null) || return 1
           case "$cmd" in
-            /*) target=$cmd ;;
-            */*)
-              # A relative PATH entry makes command -v relative to the working
-              # directory. A bare name is a function, builtin, or alias.
-              here=$(CDPATH= cd -- . && pwd -P) || return 1
-              target=$here/$cmd
-              ;;
+            */*) target=$cmd ;;
             *) return 1 ;;
           esac
           n=0
@@ -233,11 +228,11 @@
           base=$(basename "$target")
           dir=$(CDPATH= cd -- "$dir" 2>/dev/null && pwd -P) || return 1
           case "$dir/$base" in
-            *copilot-shim*) return 1 ;;
+            *copilot-shim*) return 0 ;;
           esac
-          return 0
+          return 1
         }
-        if copilot_is_cli; then
+        if command -v copilot >/dev/null 2>&1 && ! copilot_is_shim; then
           copilot config includeCoAuthoredBy false || exit 1
           dir="$HOME/.local/state/harness-update"
           mkdir -p "$dir" || exit 1
