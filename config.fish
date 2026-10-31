@@ -128,3 +128,7 @@ end
 # Docker: colima (VM) + brew docker CLI replaced OrbStack 2026-08-07.
 # Nothing to source — the brew formulas are already on PATH and colima
 # owns the docker context. `colima start` if the VM is ever down.
+
+
+# Added by Antigravity CLI installer
+set -gx PATH "/home/ckriech/.local/bin" $PATH
