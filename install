@@ -50,15 +50,16 @@ fi
 #
 # Dotbot and everything it starts - the blocks, and any process a block starts
 # - do inherit SHELL=/bin/sh, which is the point: the blocks have to run under
-# it. It is inert beyond that because no block reads $SHELL, so nothing
-# downstream changes behaviour because of the pin. A block that later needs
-# the user's real login shell must read it from a source that is not $SHELL,
-# such as `getent passwd` or `dscl`.
+# it. It is inert beyond that because no block reads $SHELL (the suite asserts
+# this), so nothing downstream changes behaviour because of the pin. A block
+# that later needs the user's real login shell must read it from a source that
+# is not $SHELL, such as `getent passwd` or `dscl`.
 #
 # /bin/sh rather than /bin/bash because the blocks need nothing beyond POSIX
 # and /bin/sh exists on both supported platforms (dash on Ubuntu/WSL, bash in
-# POSIX mode on macOS). A bashism in a shell block fails the install on Ubuntu,
-# where /bin/sh is dash.
+# POSIX mode on macOS). tests/test-install-blocks.sh checks every block in
+# both configs against `dash -n` and shellcheck's sh dialect, so a bashism
+# added later fails the suite instead of failing an install on Ubuntu only.
 DOTBOT_SHELL="/bin/sh"
 
 # ---------------------------------------------------------------------------
