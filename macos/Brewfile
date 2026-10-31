@@ -43,7 +43,7 @@ cask "tailscale-app"
 
 # ---------------------------------------------------------------------------
 # 2) Nix-profile replacements — Nix is dropped on the Mac (lead ruling).
-#    These 9 came from ~/.nix-profile/bin on WSL.
+#    These came from ~/.nix-profile/bin on WSL.
 # ---------------------------------------------------------------------------
 brew "git-delta" # binary is `delta`; the formula is NOT named `delta`
 brew "ripgrep" # binary is `rg`
