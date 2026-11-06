@@ -264,6 +264,9 @@ For trivial mechanical work (typos, formatting, version bumps), any seat may cho
 - Spawning subagents on S work — overhead exceeds work
 - Loading every skill into a subagent — preload cost compounds (see `manage-skills`, splitting)
 
+**Dependencies:**
+- Judging an SDK major bump by its changelog — majors silently change wire defaults. Diff them from the installed source: API version header, auth header, telemetry and trace propagation, retries, CA store. Pin the old wire in the bump where the vendor still accepts it, migrate on its own ticket, and pin the wire in a test on a captured request
+
 **Review:**
 - Skipping cross-model on dual-trigger tasks because "this one's fine"
 - Treating cross-model as a rubber stamp — "LGTM, ship it" without reading findings
