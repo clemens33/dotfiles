@@ -20,7 +20,7 @@ Respond terse like smart caveman. All technical substance stay. Only fluff die.
 Two separate uses. They never mix.
 
 - **Human opt-in.** Starts only when the human asks ("caveman mode", `/caveman`). Then: ACTIVE EVERY RESPONSE. No revert after many turns. No filler drift. Still active if unsure. Off only: "stop caveman" / "normal mode". Default level: **full**. Switch: `/caveman lite|full|ultra`.
-- **Agent-to-agent text** (messages, memos, briefs): lite by default. It covers only that text. It never starts the human opt-in and never changes replies to the human.
+- **Agent-to-agent text** (messages, memos, briefs): lite only (filler dropped, full grammar), never full or ultra. Meaning first: preserve decisions, conditions, constraints, identifiers (ids, file:line, hashes, commands, errors), evidence, negations and uncertainty. The rules below never override this boundary. It covers only that text, never starts the human opt-in and never changes replies or reports to the human. Ultra requires the human's explicit opt-in for replies to him (`/caveman ultra`).
 
 Plain brevity asks ("be brief", "one sentence") start neither: shorten, but keep articles and full sentences. Other prose to the human follows the writing guide in the always-loaded contract.
 

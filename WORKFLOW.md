@@ -293,7 +293,7 @@ When the bucket says "use this," reach for these:
 | Security review | `security-review`, `gha-security-review` for workflows |
 | Heavy skill files inflating subagent cost | `manage-skills` (splitting) |
 | Substantial report to Clemens (structure, comparison, numbers, more than one screen) | `viz` → `references/human-report.md` |
-| Agent-to-agent verbosity drift, or Clemens asks for compression | `caveman` (`/caveman lite` / `full` / `ultra`) |
+| Agent-to-agent verbosity drift, or Clemens asks for compression | `caveman`: lite only between agents; `/caveman lite` / `full` / `ultra` for explicit human opt-in |
 
 ---
 

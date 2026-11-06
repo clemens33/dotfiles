@@ -23,7 +23,7 @@ Put the human back in the lead after time away. Two entry points:
 - **Capture mode**: he drops an idea mid-work; record it at once, give a
   one-line take, continue current work unless he asks to act now.
 
-He reads this tired. Plain English, no agent shorthand, no unexplained
+He reads this tired. Plain language, no agent shorthand, no unexplained
 jargon.
 
 ## Order of operations (brief mode)
