@@ -1,11 +1,12 @@
 ---
 name: viz
 description: >
-  Add Mermaid diagrams to markdown — ADRs, architecture overviews, READMEs,
-  runbooks, design notes. Mermaid renders inline on GitHub/GitLab, lives in the
-  markdown, and diffs cleanly. Use when the diagram belongs inside a versioned
-  text document and staying version-controlled and AI-editable matters more
-  than layout precision. Not for editable .drawio canvases, hand-placed layout,
+  Add Mermaid diagrams to markdown (ADRs, architecture overviews, READMEs,
+  runbooks, design notes) where they render inline and diff cleanly. Also the
+  recipe for a compact self-contained HTML report or visual for the human.
+  Use when a diagram belongs inside a versioned text document, or when
+  findings for the human are substantial (structure, flow, comparison,
+  numbers). Not for editable .drawio canvases, hand-placed layout,
   slide-ready export, or PM artifacts such as WBS, Gantt or RACI.
 metadata:
   category: capability
@@ -83,6 +84,10 @@ When in doubt for an ADR, draw the **Container** level. It captures the
 Direction modifiers (`flowchart` only — sequence diagrams ignore these):
 `TD`/`TB` (top-down), `LR` (left-right), `BT`, `RL`. For request flows in a
 flowchart, prefer `LR`; for hierarchies / decision trees, prefer `TD`.
+
+## Reports for the human (read on demand)
+
+When the content is substantial and the reader is Clemens, a Mermaid block in a markdown file is the wrong delivery: he cannot render it in chat. `references/human-report.md` holds the recipe — pick the visual, lay out summary / 1-3 visuals / collapsed evidence, keep one file self-contained and readable offline in light and dark, render the diagram instead of sending Mermaid source, and hand over the absolute path with a 2-5 line summary. Read it before building the file.
 
 ## Templates and syntax reference (read on demand)
 

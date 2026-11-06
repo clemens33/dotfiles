@@ -80,7 +80,7 @@ Hashimoto's "outsource slam dunks." Stay in minimal-harness mode.
 
 **Settings:**
 - Effort: follow the seat policy below; workers start at the vendor default.
-- Skills: none forced; caveman-lite tone is enough
+- Skills: none forced; the tone rule (`shared/AGENTS.md` rule #4) is enough
 - Subagents: none
 - Branch: direct main is fine (the "YOLO main" stance applies)
 
@@ -240,7 +240,7 @@ For trivial mechanical work (typos, formatting, version bumps), any seat may cho
 
 1. **Verify your work** — Cherny's universal rule. If the agent can't run a check, declare the verification gap explicitly. No silent assumptions.
 2. **Articulate before solving** — Hashimoto's "reproduce your own work" + Ronacher's "judgment, not abdication"; baked into the `diagnose` skill loop. If you can't state the problem in one sentence, you're not ready to fix it. Reproduce → describe → then act.
-3. **Caveman-lite output** — `shared/AGENTS.md` rule #4. Drift back to verbose = drift back to slop.
+3. **Clear, tight output** — `shared/AGENTS.md` rule #4: plain STE-based prose and a visual for substantial reports to Clemens; caveman-lite between agents. Drift back to padding = drift back to slop.
 4. **Source-tier your justifications** — `KNOWLEDGE.md` §3. Tier A/B drives, C/D suggests.
 5. **Effort follows seat policy** — interactive default `high`, `xhigh` for judgment-heavy work and for ae judgment seats via profile; worker default changes need measured outcomes. Apply the trivial-work exception above, not a blanket task-bucket override.
 6. **Don't abdicate judgment** — Ronacher. The agent does the typing, you do the thinking. Read every diff at S/M, every phase at L.
@@ -292,7 +292,8 @@ When the bucket says "use this," reach for these:
 | Multi-agent collab + signoffs | `collab` |
 | Security review | `security-review`, `gha-security-review` for workflows |
 | Heavy skill files inflating subagent cost | `manage-skills` (splitting) |
-| Output verbosity drift | `caveman` (`/caveman lite` / `full` / `ultra`) |
+| Substantial report to Clemens (structure, comparison, numbers, more than one screen) | `viz` → `references/human-report.md` |
+| Agent-to-agent verbosity drift, or Clemens asks for compression | `caveman` (`/caveman lite` / `full` / `ultra`) |
 
 ---
 

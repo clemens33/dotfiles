@@ -55,6 +55,33 @@
       "note": "Adjacent negative: explanation request explicitly without a diagram."
     },
     {
+      "id": "human-report-html-offline",
+      "lane": "human-report",
+      "prompt": "Compare the three deployment options for me in a compact self-contained HTML report with a diagram and evidence I can expand. I need to read it offline.",
+      "expect": ["viz"],
+      "allow": [],
+      "forbid": ["caveman"],
+      "note": "Substantial comparison for the human: viz carries the human-report recipe. Compression is not the answer."
+    },
+    {
+      "id": "routine-brief-reply",
+      "lane": "human-report",
+      "prompt": "Tell me in one sentence whether the config file exists. Keep the reply brief.",
+      "expect": [],
+      "allow": [],
+      "forbid": ["viz", "caveman"],
+      "note": "Routine short reply needs no graphic. Plain brevity must not start caveman mode."
+    },
+    {
+      "id": "explicit-caveman-full",
+      "lane": "human-report",
+      "prompt": "Use /caveman full for your replies.",
+      "expect": ["caveman"],
+      "allow": [],
+      "forbid": ["viz"],
+      "note": "Explicit compression request: caveman stays available as the human's override."
+    },
+    {
       "id": "bugfix-failing-test-no-setup",
       "lane": "setup",
       "prompt": "tests/test_parser.py::test_nested_quotes started failing after the last refactor of tokenize(). Find the cause and fix it.",
