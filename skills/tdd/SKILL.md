@@ -1,8 +1,8 @@
 ---
 name: tdd
 description: >
-  Builds features or fixes in vertical red-green-refactor slices, one failing
-  test at a time. Use when the user asks for TDD, test-first development or
+  Builds features or fixes bugs in vertical red-green-refactor slices, one
+  failing test at a time. Use when the user asks for TDD, test-first development or
   integration-style tests, or names red-green-refactor. Not for finding the
   cause of a bug (use `diagnose`) or auditing existing tests (use
   `test-audit`).

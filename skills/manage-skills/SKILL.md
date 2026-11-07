@@ -19,7 +19,7 @@ Create, update and manage agent skills across the two-layer dotfiles setup.
 - **Public layer** — `~/projects/clemens33/dotfiles/`: generic, shareable skills (planning, refactoring, security review, doctrine, etc.)
 - **Private overlay** (optional submodule) — `~/projects/clemens33/dotfiles/dotfiles-mic/`: org-specific skills and agents (jira, grafana, internal infra, credentials patterns). Only fetched on machines with auth to the private repo.
 
-Both layers contribute skill symlinks into `~/.claude/skills/` (a real directory, NOT a directory symlink — each skill is its own symlink). The wrapper `./install` script runs the public layer's Dotbot pass, then the private overlay's Dotbot pass if the submodule is present.
+Both layers contribute skill symlinks into the harness skill roots, `~/.claude/skills/` and `~/.agents/skills/` (real directories, NOT directory symlinks — each skill is its own symlink). The wrapper `./install` script runs the public layer's Dotbot pass, then the private overlay's Dotbot pass if the submodule is present.
 
 ## Decide which layer
 
