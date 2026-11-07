@@ -11,7 +11,14 @@
 # therefore order-independent — a later pass (e.g. the private overlay's
 # gateway injection) is not clobbered by this one, and re-running ./install in
 # any order converges. CAVEAT: deleting a server from mcpServers.json does not
-# remove it from an existing .claude.json — do that with `claude mcp remove`.
+# remove it from an existing .claude.json — do that with `claude mcp remove`,
+# or list its name in the obsolete set below so every install drops it.
+#
+# Obsolete set: names this repo once installed and retired on purpose. They are
+# deleted from the existing mcpServers BEFORE the repo servers are added, so a
+# retired name is removed on the next install while every other machine-local
+# server and all runtime state stays. Never list a name that is still in
+# claude/mcpServers.json. Retired: serena (2026-11-07, Clemens ruling).
 set -euo pipefail
 
 target="$1"
@@ -36,7 +43,10 @@ tmp="$(mktemp "$dir/.claude.json.XXXXXX")"
 trap 'rm -f "$tmp"' EXIT
 
 if [ -f "$target" ]; then
-    jq --slurpfile mcp "$servers" '.mcpServers = ((.mcpServers // {}) + $mcp[0])' "$target" > "$tmp"
+    jq --slurpfile mcp "$servers" '
+        ["serena"] as $obsolete |
+        .mcpServers = (((.mcpServers // {}) | del(.[$obsolete[]])) + $mcp[0])
+    ' "$target" > "$tmp"
 else
     jq -n --slurpfile mcp "$servers" '{mcpServers: $mcp[0]}' > "$tmp"
 fi

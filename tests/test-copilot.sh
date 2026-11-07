@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/test-copilot.XXXXXX")
 trap 'rm -rf "$tmp"' EXIT
-merge="$ROOT/scripts/copilot-mcp-merge.sh"
+merge=${COPILOT_MERGE_TEST_SCRIPT:-$ROOT/scripts/copilot-mcp-merge.sh}
 target="$tmp/mcp-config.json"
 source="$tmp/servers.json"
 printf '%s\n' '{"context7":{"type":"stdio","command":"npx","args":["-y","context7"],"env":{}}}' >"$source"
@@ -31,7 +31,8 @@ for invalid in '[]' '{"mcpServers":{}}' '{"unowned":{"command":"bad"}}' \
     '{"context7":{"command":"npx","env":null}}' \
     '{"context7":{"command":"npx","type":false}}' \
     '{"context7":{"command":"npx","env":{"KEY":42}}}' \
-    '{"context7":{"command":"npx","invented":true}}'; do
+    '{"context7":{"command":"npx","invented":true}}' \
+    '{"serena":{"type":"stdio","command":"uvx"}}'; do
     printf '%s\n' "$invalid" >"$source"
     unchanged_failure
 done

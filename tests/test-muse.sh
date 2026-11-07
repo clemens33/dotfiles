@@ -3,7 +3,7 @@
 set -eu
 
 ROOT=$(CDPATH='' cd -- "$(dirname "$0")/.." && pwd -P)
-SCRIPT=$ROOT/scripts/muse-settings-merge.sh
+SCRIPT=${MUSE_MERGE_TEST_SCRIPT:-$ROOT/scripts/muse-settings-merge.sh}
 SETTINGS=$ROOT/muse/settings.json
 SERVERS=$ROOT/claude/mcpServers.json
 INSTALL=$ROOT/install.conf.yaml
@@ -256,5 +256,14 @@ installer_wiring_negative_control() {
 check 'negative control detects missing Dotbot Muse wiring' \
     installer_wiring_negative_control
 
+# Retire Serena from either historical key spelling.
+for spelling in mcpServers mcp_servers; do
+    retired_target=$TMP_ROOT/retired-$spelling/settings.json
+    mkdir -p "$(dirname "$retired_target")"
+    jq -n --arg key "$spelling" '{runtime_nonce:"keep",($key):{serena:{command:"old"},"machine-local":{command:"local"}}}' >"$retired_target"
+    HOME=$TEST_HOME sh "$SCRIPT" "$retired_target" "$SETTINGS" "$SERVERS" >/dev/null 2>&1
+    check "Serena is retired from $spelling without deleting local state" \
+        jq -e '.runtime_nonce == "keep" and (has("mcp_servers") | not) and (.mcpServers | has("serena") | not) and .mcpServers["machine-local"].command == "local"' "$retired_target"
+done
 printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]

@@ -323,5 +323,17 @@ installer_wiring_negative_control() {
 check 'negative control detects missing Dotbot MCP wiring' \
     installer_wiring_negative_control
 
+# Serena retirement preserves unrelated installed state.
+RETIRED=$TMP_ROOT/retired/.claude.json
+mkdir -p "$(dirname "$RETIRED")"
+printf '%s\n' '{"runtime":"keep","mcpServers":{"serena":{"command":"old"},"machine-local":{"command":"local"}}}' >"$RETIRED"
+run_merge "$HOME_DIR" "$RETIRED" "$SERVERS"
+check 'retired Serena is removed while local servers and runtime state survive' \
+    jq_true "$RETIRED" '.runtime == "keep" and (.mcpServers | has("serena") | not) and .mcpServers["machine-local"].command == "local" and .mcpServers.alpha.command == "alpha-bin"'
+check 'tracked MCP source does not reinstall Serena' \
+    jq_true "$REAL_SERVERS" 'has("serena") | not'
+cp "$RETIRED" "$TMP_ROOT/retired-first"
+run_merge "$HOME_DIR" "$RETIRED" "$SERVERS"
+check 'Serena retirement is idempotent' cmp -s "$TMP_ROOT/retired-first" "$RETIRED"
 printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]

@@ -7,6 +7,12 @@
 # scripts/mcp-merge.sh, because Muse can add machine-local servers to this same
 # file; a later install must not erase them. Legacy mcp_servers entries are
 # folded into mcpServers before the unsafe snake_case key is removed.
+#
+# Obsolete set: server names this repo once installed and retired on purpose.
+# They are dropped from BOTH historical spellings before the merge, so a retired
+# name disappears on the next install while other machine-local servers stay.
+# Never list a name that is still in claude/mcpServers.json.
+# Retired: serena (2026-11-07, Clemens ruling).
 set -eu
 
 target=$1
@@ -35,8 +41,9 @@ trap 'rm -f "$tmp"' EXIT
 
 if [ -f "$target" ]; then
     jq --slurpfile managed "$settings" --slurpfile mcp "$servers" '
-        (.mcp_servers // {}) as $legacy_mcp |
-        (.mcpServers // {}) as $existing_mcp |
+        ["serena"] as $obsolete |
+        ((.mcp_servers // {}) | del(.[$obsolete[]])) as $legacy_mcp |
+        ((.mcpServers // {}) | del(.[$obsolete[]])) as $existing_mcp |
         (del(.mcp_servers) + $managed[0]) |
         .mcpServers = ($legacy_mcp + $existing_mcp + $mcp[0])
     ' "$target" >"$tmp"
