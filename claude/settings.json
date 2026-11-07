@@ -32,7 +32,8 @@
     "command": "~/.claude/statusline.sh"
   },
   "enabledPlugins": {
-    "context-mode@context-mode": true
+    "context-mode@context-mode": true,
+    "rust-analyzer-lsp@claude-plugins-official": true
   },
   "feedbackSurveyRate": 0,
   "alwaysThinkingEnabled": true,
