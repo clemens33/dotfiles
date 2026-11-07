@@ -90,7 +90,7 @@ render() {
     COPILOT_HOME="$h/.copilot" HOME=$h sh "$r/scripts/render-contract.sh" "$@"
 }
 
-PUBLIC_MARK='# SOUL.md'
+PUBLIC_MARK='# Agent contract'
 MIC_MARK='# MIC addendum'
 
 # ---------------------------------------------------------------------------
