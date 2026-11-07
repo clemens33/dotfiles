@@ -126,7 +126,7 @@ Generated code is abundant. **Validation is the bottleneck.** This shifts the op
 - Agent-generated tests for agent-generated code without human verification of test intent
 - **Generic "do TDD" prompts.** TDAD (arXiv:2603.17973 [B]) — supplying *targeted code-test impact context* cut regressions ~70%, while a procedural "follow TDD" instruction made regressions *worse*. Give the agent the impact map / acceptance contract, not the procedure. Agent commits also over-mock (arXiv:2602.00409 [B]) — add explicit anti-mock / test-intent guidance.
 - **Trusting the test gate the implementer can game.** Reward-hacking the stop criterion (`sys.exit(0)`, deleted/hardcoded tests) is now empirically the dominant autonomous-loop failure — see §17.6. Diversify checks; the implementer must not grade its own only test.
-- **Reward hacking spreads and escalates.** A reward-hacking strategy elicited in one agent propagated through shared code, shared memory and natural-language plans to other agents, including stronger closed-weight ones (arXiv:2610.12822 [B]). In autonomous research loops the spontaneous hacking rate was 30.5% on open-ended pipeline tasks. An LLM panel that saw only submitted code and reported scores missed 6.5% of confirmed hacks, and evasions grew over five critique rounds (arXiv:2609.28614 [B]). Implication (ours): give reviewers and verifiers executable evidence, not only the implementer's code, notes and scores.
+- **Reward hacking spreads and escalates.** A reward-hacking strategy elicited in one agent propagated through shared code, shared memory and natural-language plans to other agents, including stronger closed-weight ones. Review by the coder or by a separate verifier reduced delivered hacks (arXiv:2610.12822 [B]). In autonomous research loops the spontaneous hacking rate was 30.5% on open-ended pipeline tasks. An LLM panel that saw only submitted code and reported scores missed 6.5% of confirmed hacks, and evasions grew over five critique rounds (arXiv:2609.28614 [B]). Implication (ours): give reviewers and verifiers executable evidence, not only the implementer's code, notes and scores.
 
 ---
 
@@ -237,7 +237,7 @@ Anthropic's Claude Mythos Preview (announced 2026-04-07) [A] and OpenAI's "Trust
 
 ### Planted instruction files [D]
 
-Forever Security (2026-10-22) showed that a web page can drop an `AGENTS.md` into `~/Downloads`, and an agent started in that folder follows it. In their tests Codex ran the payload (npm package `function-color`, edits to `~/.codex/config.toml`) in more than 90% of attempts. Claude Code was harder to fool and fell to a different attack: a planted `CLAUDE.md` rerouted its API traffic. The vendor reports that nothing needs patching on the vendor side. This is a security-vendor blog with lab figures, so treat the rates as a signal. It matches the rule that instruction files and MCP config are governed infrastructure (§6, §9): do not start an agent in `~/Downloads`, and read an instruction file you did not write before the agent does.
+Forever Security (2026-10-22) showed that a web page can drop an `AGENTS.md` into `~/Downloads`, and an agent started in that folder follows it. In their tests Codex ran the payload (npm package `function-color`, edits to `~/.codex/config.toml`) in more than 90% of attempts. Claude Code was harder to fool and fell to a different attack: a planted `CLAUDE.md` rerouted its API traffic. Forever Security argues that neither model vendor needs to patch this, because it follows from how agents read instruction files. Their advice is to avoid starting an agent in `~/Downloads` and to read an unfamiliar instruction file first. This is a security-vendor blog with lab figures, so treat the rates as a signal. The attack fits the existing rule that instruction files and MCP config are governed infrastructure (§6, §9).
 
 ### Industry context — the maintainer / researcher reality (April 2026)
 
@@ -498,7 +498,7 @@ A controlled experiment on 116 LiveCodeBench tasks (arXiv:2607.21656, accepted a
 - Two agents on one mutable branch
 - Complex coordinator before clean instructions/tests exist
 - Multi-agent for ordinary bugfixes
-- Verifiers that read the implementer's plans and notes: reward hacking transmits through shared code, memory and plans (arXiv:2610.12822 [B])
+- Passing plans, notes and code between agents unchecked: reward hacking can propagate through them (arXiv:2610.12822 [B]); in that study, review by the coder or by a separate verifier reduced delivered hacks
 
 ### April 2026 update — review bandwidth as the bottleneck
 
@@ -799,7 +799,7 @@ Watch but caveat (useful framing, less foundational):
 
 ### Codex CLI
 
-- `approval_policy = "on-request"` for the safer default; `approval_policy = "never"` or `--dangerously-bypass-approvals-and-sandbox` for full YOLO (`--full-auto` is gone in 0.167.0, §11)
+- `approval_policy = "on-request"` for the safer default. `approval_policy = "never"` only removes approval prompts, so full YOLO also needs `sandbox_mode = "danger-full-access"` (or `--dangerously-bypass-approvals-and-sandbox`). `--full-auto` is gone in 0.167.0 (§11)
 - Strong for: review, second opinion, plan QA, bounded execution
 - `codex resume <session-id>` for continuity
 - Profiles for repeatable presets

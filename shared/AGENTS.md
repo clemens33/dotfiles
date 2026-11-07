@@ -170,7 +170,7 @@ because they bind before the skill loads:
 
 This file is the contract — rules to never break. The *full operating doctrine* (triage, S/M/L bucket mandates, anti-patterns, skill cross-reference, mermaid overview) lives in `WORKFLOW.md` at `~/projects/clemens33/dotfiles/WORKFLOW.md`. Read it when starting a non-trivial task, when choosing a workflow shape, or when in doubt.
 
-Field knowledge (September 2026 SOTA, source-tiered references): `~/projects/clemens33/dotfiles/KNOWLEDGE.md`.
+Field knowledge (current, source-tiered references): `~/projects/clemens33/dotfiles/KNOWLEDGE.md`.
 
 ### Quick rules (full detail in WORKFLOW.md)
 

@@ -222,13 +222,14 @@ Pick the provider before the harness. These permission forms do not themselves p
 
 | Harness / served model | Vendor default effort | Verification |
 |---|---|---|
-| Claude Code / Opus 5.5 | `medium` | `claude/settings.json:51` at HEAD (verified there 2026-09-22) |
-| Claude Code / Fable 5.1, Opus 5 | `high` | 2.1.263, 2026-09-07 — **unverified** for current models |
-| Codex / GPT-6.1 Sol | `low` | `codex/config.toml:3-8` at HEAD (0.159.2, 2026-09-30) |
-| Codex / GPT-6 Sol/Luna/Astra | `medium` | `codex/config.toml:3-8` at HEAD (0.159.2, 2026-09-30) |
-| Codex / GPT-5.6 Sol | `low` | `codex/config.toml:3-8` at HEAD (0.159.2, 2026-09-30) |
-| Codex / GPT-5.6 Luna, Terra | `medium` | `codex/config.toml:3-8` at HEAD (0.159.2, 2026-09-30) |
-| Grok / Grok 4.6 | `high` | 1.0.13, 2026-09-07 — **unverified** since |
+| Claude Code / Opus 5.5 | `medium` | Anthropic Opus 5.5 model page, 2026-11-07. This repo's deliberate interactive pin is `high` (`claude/settings.json:39`, per-model `:47-49`) |
+| Claude Code / Fable 5.1 | `high` | Anthropic Fable 5.1 model page, 2026-11-07 |
+| Claude Code / Opus 5 | `high` | `KNOWLEDGE.md` §2 table (launch notes; not re-checked 2026-11-07) |
+| Codex / GPT-6.1 Sol, Terra | `low` | `codex debug models` on 0.167.0, 2026-11-07 |
+| Codex / GPT-6 Sol/Luna/Astra | `medium` | `codex debug models` on 0.167.0, 2026-11-07 |
+| Codex / GPT-5.6 Sol | `low` | `codex debug models` on 0.167.0, 2026-11-07 |
+| Codex / GPT-5.6 Luna, Terra | `medium` | `codex debug models` on 0.167.0, 2026-11-07 |
+| Grok / Grok 4.7 | not stated on the vendor pages read 2026-11-07 | repo pin `high` (`grok/config.toml:22`) |
 
 **Clemens' defaults** (ruling 2026-09-30, 8f473ed): interactive/default effort is `high`; raise to `xhigh` via `/effort` for judgment-heavy work; ae judgment seats keep `xhigh` via profile. Builders/workers start at the vendor default and change that default only on measured outcome. Effort switches preserve the prompt-prefix cache only via the API mechanism OpenAI documents (configuration_update with unchanged request-level reasoning.effort; OpenAI reasoning guide 2026-09-22) — whether Codex `/effort` uses that path is **unverified**, so treat CLI mid-thread switches as cache-risky until proven. The one-effort-per-thread rule applies to pre-GPT-6 models and, conservatively, to CLI switches generally (`codex/config.toml:14-16` at HEAD records the claim, not the adoption).
 
@@ -303,7 +304,7 @@ When the bucket says "use this," reach for these:
 ## Where this fits
 
 - **`shared/AGENTS.md`** — the contract, rendered into every configured tool's global instruction file. Rules to never break (security, secrets, git commit hygiene, cross-model collaboration mandate). Those installed files are **generated**: editing one is pointless, the next `./install` overwrites it. Edit this file.
-- **`KNOWLEDGE.md`** — the field knowledge. September 2026 refresh: models, mechanisms, source tiers, practitioner consensus.
+- **`KNOWLEDGE.md`** — the field knowledge. November 2026 refresh: current model table, installed-tool probes, source tiers, practitioner consensus. Older model history is in `KNOWLEDGE-CHANGELOG.md`.
 - **`WORKFLOW.md`** (this file) — operating doctrine. How to actually approach a task: triage, bucket, execute.
 
 If these three diverge, `shared/AGENTS.md` wins (it's the contract).
