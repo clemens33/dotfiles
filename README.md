@@ -66,7 +66,7 @@ Requirements:
 - Optional, a step prints `SKIP` when missing: `shellcheck`, `fish`.
 - Optional submodules: `tests/test-install-blocks.sh` needs `git submodule update --init dotbot`. `tests/test-render-contract.sh` and `scripts/eval-skills-test.sh` need the private overlay (`git submodule update --init dotfiles-mic`). Without them the test prints `SKIP`.
 
-`render-contract.sh --check` writes the absolute source path into each installed header. From a worktree or another clone, `just contract` therefore compares body and mode, and reports `SKIP (known limit)` when only the header path differs. Body or mode drift fails with the target name. Fix drift with `./install`.
+`render-contract.sh --check` writes the absolute source path into each installed header. From a worktree or another clone, `just contract` therefore compares body and mode, and reports `SKIP (known limit)` when only the header path differs. Body or mode drift fails with the target name. Fix drift with `./install`. The same recipe checks the rendered profile settings: a symlink to this repo's `claude/settings.json` (the state before the first `./install` of the renderer) reports `SKIP (legacy symlink, run ./install)`; a stale regular file or a foreign symlink fails with the differing key paths.
 
 ## What's included
 
@@ -77,7 +77,7 @@ Requirements:
 | Git | `gitconfig` | `~/.gitconfig` |
 | Vim | `vimrc` | `~/.vimrc` |
 | Bash aliases | `bash_aliases` | `~/.bash_aliases` |
-| Claude Code | `claude/settings.json`, `claude/mcpServers.json` | `~/.claude/` |
+| Claude Code | `claude/settings.json`, `claude/mcpServers.json` | `~/.claude/`; `~/.claude-p/` and `~/.claude-mic/` get a rendered `settings.json` (see below) |
 | GitHub Copilot CLI | Native settings command + rendered instructions + merged MCP; auth/preferences remain CLI-owned | `${COPILOT_HOME:-~/.copilot}/` |
 | Codex CLI | `codex/config.toml` | `~/.codex/config.toml` |
 | OpenCode 2 | `opencode/opencode.jsonc` | `~/.config/opencode/opencode.jsonc` |
@@ -150,6 +150,19 @@ org half ships inside the file each tool already loads.
 - **Grok is unchanged**: `grok/AGENTS.md` → `~/.grok/AGENTS.md` stays a symlink
   because of grok's 10k-char rules cap, and grok picks the full contract up
   through its Claude-compatible read of `~/.claude/CLAUDE.md`.
+- **Profile settings are rendered too** (`claude-p`, `claude-mic`). Claude Code
+  loads `~/.claude/CLAUDE.md` as the ancestor project file of `$HOME`, so a
+  profile session would load the contract twice. `scripts/render-claude-settings.sh`
+  writes `~/.claude-p/settings.json` and `~/.claude-mic/settings.json` as regular
+  files: `claude/settings.json` plus a `claudeMdExcludes` entry for that one path.
+  Claude Code reads the file from `$CLAUDE_CONFIG_DIR`, so it covers every launcher,
+  including `ae`, which bypasses the fish functions. Plain `~/.claude/settings.json`
+  stays a symlink. The exclude would drop the contract from plain `claude`, where `~/.claude/CLAUDE.md` is the user memory.
+  `./install` overwrites runtime changes made inside a profile (a plugin toggle,
+  a model choice) and prints `WARN` with the differing key paths. To keep such a
+  change, promote it into `claude/settings.json` first; `scripts/render-claude-settings.sh --check`
+  and `just contract` show the same diff before you install. An edit to
+  `claude/settings.json` reaches the profiles only after `./install`.
 
 ## GitHub Copilot CLI
 

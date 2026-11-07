@@ -175,7 +175,7 @@ lint:
     else bad "skills-lint"; sed 's/^/        /' "$tmp/skills"; fi
     tally lint
 
-# contract: render in a temp HOME (always), then compare the really installed targets
+# contract: render in a temp HOME (always), then compare the really installed targets (contract files and profile settings)
 contract:
     #!/usr/bin/env bash
     {{lib}}
@@ -240,6 +240,33 @@ contract:
         fi
     else
         bad "installed-contract" "render-contract.sh exit $rc"; sed 's/^/        /' "$tmp/real"
+    fi
+    # 3. claude-p/claude-mic settings carry the claudeMdExcludes entry that keeps the contract loading once. Same two steps:
+    #    render into the throwaway HOME, then compare the really installed files (read-only). A symlink to this repository's
+    #    claude/settings.json is the state before the first ./install of the renderer: SKIP. A stale regular file or a foreign
+    #    symlink is FAIL, with the differing key paths.
+    if env HOME="$h" scripts/render-claude-settings.sh >"$tmp/srender" 2>&1 \
+        && env HOME="$h" scripts/render-claude-settings.sh --check >"$tmp/sselfcheck" 2>&1; then
+        ok "profile settings render from current sources ($(tail -n 1 "$tmp/sselfcheck"))"
+    else
+        bad "profile-settings-render"; cat "$tmp/srender" "$tmp/sselfcheck" 2>/dev/null | sed 's/^/        /'
+    fi
+    rc=0; scripts/render-claude-settings.sh --check >"$tmp/sreal" 2>&1 || rc=$?
+    summary=$(tail -n 1 "$tmp/sreal")
+    if [ "$rc" -eq 0 ]; then
+        case "$summary" in
+            'settings: 0 up to date,'*) skip "installed-settings" "optional: no claude-p/claude-mic identity found; nothing to compare" ;;
+            *) ok "installed profile settings ($summary)" ;;
+        esac
+    elif [ "$rc" -eq 1 ]; then
+        if grep -q '^stale ' "$tmp/sreal"; then
+            bad "installed-settings" "stale; this recipe never repairs, run ./install (a runtime change you want to keep belongs in claude/settings.json first)"
+            grep -v '^settings: ' "$tmp/sreal" | sed 's/^/        /'
+        else
+            skip "installed-settings" "legacy symlink, run ./install"
+        fi
+    else
+        bad "installed-settings" "render-claude-settings.sh exit $rc"; sed 's/^/        /' "$tmp/sreal"
     fi
     tally contract
 
