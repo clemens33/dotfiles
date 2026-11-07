@@ -25,14 +25,15 @@ usage() {
   cat <<'EOF'
 Usage: scripts/harness-update.sh [--check] [--only TOOL] [--include-ae]
 
-Tools: claude, codex, agy, grok, opencode, muse, copilot, ae, contract
+Tools: claude, codex, agy, grok, opencode, muse, copilot, ae, contract, settings
 
   --check       Report installed and latest versions without changing anything
   --only TOOL   Process one tool only
   --include-ae  Include ae; updates require an explicit AE_VERSION pin
 
 contract is not a CLI: it reports harness instruction files that no longer match
-the rendered contract. It never renders — run ./install for that.
+the rendered contract. settings does the same for the claude-p and claude-mic
+profile settings. Neither renders — run ./install for that.
 
 Each tool has a 300-second deadline (HARNESS_UPDATE_TIMEOUT_SECONDS overrides it).
 EOF
@@ -40,7 +41,7 @@ EOF
 
 valid_tool() {
   case "$1" in
-    claude|codex|agy|grok|opencode|muse|copilot|ae|contract) return 0 ;;
+    claude|codex|agy|grok|opencode|muse|copilot|ae|contract|settings) return 0 ;;
     *) return 1 ;;
   esac
 }
@@ -55,7 +56,7 @@ while [ "$#" -gt 0 ]; do
       ;;
     --only)
       if [ "$#" -lt 2 ] || ! valid_tool "$2"; then
-        printf 'error: --only requires one of: claude, codex, agy, grok, opencode, muse, copilot, ae, contract\n' >&2
+        printf 'error: --only requires one of: claude, codex, agy, grok, opencode, muse, copilot, ae, contract, settings\n' >&2
         usage >&2
         exit 2
       fi
@@ -250,7 +251,7 @@ run_step() {
   # Expand the positional argument in the child, not the supervising shell.
   # shellcheck disable=SC2016
   case "$1" in
-    contract)
+    contract|settings)
       with_timeout bash -c 'set -uo pipefail; "process_$1"' bash "$1"
       ;;
     *)
@@ -929,6 +930,46 @@ process_contract() {
   esac
 }
 
+# Drift only — claude-p/claude-mic settings are rendered by ./install. Exit 1
+# from the renderer's --check means stale and/or legacy targets: stale is drift,
+# a legacy symlink alone is the state before the first install (SKIP).
+process_settings() {
+  local renderer="$REPO_ROOT/scripts/render-claude-settings.sh"
+  if [ ! -x "$renderer" ]; then
+    summary 'settings SKIP renderer not found'
+    return 0
+  fi
+  local output result stale count legacy
+  output=$("$renderer" --check 2>&1)
+  result=$?
+  printf '[%s] settings --check exit=%s\n%s\n' \
+    "$(date '+%Y-%m-%dT%H:%M:%S%z')" "$result" "$output" >>"$LOG_FILE"
+  case "$result" in
+    0)
+      summary 'settings OK all profile settings match the rendered source'
+      ;;
+    1)
+      count=$(printf '%s\n' "$output" | grep -c '^stale ')
+      legacy=$(printf '%s\n' "$output" | grep -c '^legacy ')
+      if [ "$count" -eq 0 ]; then
+        summary "settings SKIP legacy symlink on $legacy target(s), run ./install"
+      else
+        stale=$(printf '%s\n' "$output" | awk -v home="$HOME" '
+          $1 == "stale" {
+            path = $2
+            if (index(path, home) == 1) { path = "~" substr(path, length(home) + 1) }
+            printf "%s ", path
+          }')
+        summary "settings STALE $count target(s), run ./install: ${stale% }"
+      fi
+      ;;
+    *)
+      summary "settings FAIL --check exited $result"
+      return 1
+      ;;
+  esac
+}
+
 # Export existing step functions so timeout can supervise a separate Bash process.
 export CHECK_ONLY INCLUDE_AE LOG_FILE LOG_DIR REPO_ROOT RETRY_ATTEMPTS CHECK_OUTDATED COPILOT_EXPECTED OPENCODE_NPM_PACKAGE OPENCODE_NATIVE_BIN
 export -f summary run_with_retry log_run npm_mode nvm_exec npm_latest npm_install_latest \
@@ -937,10 +978,10 @@ export -f summary run_with_retry log_run npm_mode nvm_exec npm_latest npm_instal
   opencode_available run_opencode native_opencode_version opencode_latest installed_version agy_latest grok_latest muse_latest \
   check_with_npm update_native install_muse process_claude process_codex \
   copilot_is_shim copilot_installed copilot_latest process_copilot process_agy process_grok process_opencode process_muse process_ae \
-  process_contract
+  process_contract process_settings
 
 failures=0
-for tool in claude codex agy grok opencode muse copilot ae contract; do
+for tool in claude codex agy grok opencode muse copilot ae contract settings; do
   if selected "$tool" && ! run_step "$tool"; then failures=1; fi
 done
 
