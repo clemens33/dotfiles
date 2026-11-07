@@ -1,9 +1,9 @@
 ---
 name: code-review
 description: >
-  Adversarial code review with structured findings. Use when you've just
-  implemented changes, before committing. Works with uncommitted diffs, staged changes,
-  or branch comparisons. Produces BLOCKER/IMPORTANT/NIT findings.
+  Adversarial review of uncommitted changes, a branch or a PR, with BLOCKER/IMPORTANT/NIT
+  findings and a verdict. Use when changes are implemented and about to be committed. Not the
+  cross-provider review gate (use `cross-model-review` for that).
 metadata:
   category: preference
 
@@ -11,14 +11,13 @@ metadata:
 
 # Code Review
 
-Adversarial, structured code review. Not a rubber stamp — find what's wrong.
+Adversarial, structured code review of a diff.
 
 ## When to use
 
 - After implementing a feature or fix, before committing
 - When reviewing someone else's changes
-- When the cross-model review in AGENTS.md triggers (significant changes)
-- Anytime you want a second pair of eyes on a diff
+- When the cross-model review in AGENTS.md triggers (significant changes): this skill supplies the findings format
 
 ## Inputs — resolve the scope, then fingerprint it
 
@@ -46,16 +45,13 @@ BASE="${REVIEW_BASE:-}"
 MERGE_BASE=$(git merge-base "$BASE" HEAD)
 ```
 
-⚠️ **Do not use `@{upstream}`.** On a feature branch it is almost always `origin/<same-branch>`,
-the pushed copy of the branch you are reviewing — not the branch you are merging into. Once the
-branch is pushed, `git merge-base '@{upstream}' HEAD` lands on the pushed tip, and every commit
-already pushed silently drops out of the review. Only treat an upstream as the base when it is
-provably the merge target, which is what step 1 is for.
-
-Reviewing `main...HEAD` in a repo whose base is `develop` reviews the wrong commits just as
-quietly, and a detached HEAD breaks the hard-coded form outright. Step 4 fails loudly on
-purpose: when nothing resolves, ask, rather than diffing against whichever branch happens to
-exist.
+**Do not use `@{upstream}`.** On a feature branch it is almost always `origin/<same-branch>`,
+the pushed copy of the branch under review, not the merge target. Once the branch is pushed,
+`git merge-base '@{upstream}' HEAD` lands on the pushed tip and every pushed commit silently
+drops out of the review. Treat an upstream as the base only when it is provably the merge
+target, which is what step 1 is for. A hard-coded `main...HEAD` reviews the wrong commits just
+as quietly in a repo based on `develop`, and breaks on a detached HEAD. Step 4 fails loudly on
+purpose: when nothing resolves, ask.
 
 ### Select untracked files deliberately
 
@@ -65,9 +61,8 @@ git ls-files --others --exclude-standard
 
 **Never sweep the whole list into the review.** Untracked space is the user's scratch area:
 `.env` files and credentials, unrelated experiments, large binaries, another agent's in-flight
-work. Read the list, pick the files that belong to the change under review, name them in the
-scope line, and leave the rest alone. When a file's relevance is unclear, ask rather than
-include it.
+work. Pick the files that belong to the change under review, name them in the scope line, and
+leave the rest alone. When relevance is unclear, ask.
 
 ### Record the scope
 
@@ -93,25 +88,23 @@ Announce before reviewing — and store this with any persisted record of the re
 Emit only the parts your resolved scope actually covers, always in that order, so the same
 scope yields the same fingerprint. For a **named-file scope** (input 3), append `-- <paths>` to
 all three `git diff` calls and list only those files in `SELECTED`; otherwise an unrelated edit
-elsewhere in the live checkout changes the fingerprint of a review that never looked at it. `git hash-object` is the hash because git is already a hard
-dependency here: `sha256sum` is absent on macOS and `shasum` is absent on some minimal Linux
-images. This is a change fingerprint for "did the reviewed content move", not a security hash.
+elsewhere in the live checkout changes the fingerprint of a review that never looked at it.
+`git hash-object` is the hash because git is already a hard dependency: `sha256sum` is absent on
+macOS and `shasum` on some minimal Linux images. It answers "did the reviewed content move", and
+is not a security hash.
 
 ## Review process
 
 ### Step 1: Understand intent
 
-Before reviewing, understand what the change is trying to do:
-- Read commit messages, PR description, or ask the user
-- Identify the category: new feature, bug fix, refactor, config change, dependency update
-- Note the expected behavior change
+Read the commit messages or PR description, or ask the user. Identify the category (feature,
+bug fix, refactor, config change, dependency update) and the expected behavior change.
 
 ### Step 2: Read the diff carefully
 
-Read every changed file. For each change:
-- Understand what the code did before and what it does now
-- Check if the change is complete (no half-done refactors, no orphaned references)
-- Look at surrounding code for context — don't review lines in isolation
+Read every changed file. For each change, understand what the code did before and what it does
+now, check that the change is complete (no half-done refactor, no orphaned reference), and read
+the surrounding code rather than the lines in isolation.
 
 ### Step 3: Analyze against checklist
 
@@ -161,12 +154,9 @@ Read every changed file. For each change:
 
 ### Step 4: Produce findings
 
-Each finding must have:
-- **Severity**: BLOCKER, IMPORTANT, or NIT
-- **Location**: file path + line number or function name
-- **What**: what's wrong (be specific)
-- **Why**: why it matters (consequence if not fixed)
-- **Fix**: concrete suggestion (not "consider improving this")
+Each finding has a severity, a location (file path + line or function), what is wrong, why it
+matters (the consequence if not fixed) and a concrete fix, not "consider improving this".
+The format is below.
 
 **Severity definitions:**
 - **BLOCKER**: Must fix before commit. Bugs, security issues, broken callers, data loss risks, incorrect behavior.
@@ -221,7 +211,7 @@ If there are no findings at all, state **"No findings"** explicitly.
 
 ## Relationship to cross-model review
 
-This skill structures a code review within a single tool session. It does **not** satisfy the mandatory cross-model review policy in AGENTS.md for significant changes. That policy requires a different AI tool (e.g. Codex reviewing Claude's work). Use this skill to structure the review prompt and findings format for both same-tool and cross-model reviews.
+This skill structures a review inside one session. It does **not** satisfy the mandatory cross-model review gate in AGENTS.md for significant changes. That gate requires a reviewer on a different model provider (by served model, not harness), for example an OpenAI-served reviewer for Anthropic-produced work. Use this skill's findings format in the review prompt for same-provider and cross-model reviews; `cross-model-review` covers how to invoke the second provider.
 
 ## Boundary with other skills
 
@@ -233,17 +223,7 @@ This skill structures a code review within a single tool session. It does **not*
 - **Be adversarial.** Your job is to find problems, not confirm the code works.
 - **Be specific.** "This could be improved" is not a finding. Say what's wrong, where, and how to fix it.
 - **Be honest.** "No findings" is a valid and respectable outcome. Don't manufacture nits to look thorough.
-- **No false positives.** Every finding must have a concrete consequence. "I don't like the style" is not IMPORTANT.
+- **No false positives.** Every finding must have a concrete consequence. A style preference is a NIT, never IMPORTANT or BLOCKER.
 - **Check callers.** Renamed a function? Changed a return type? Added a required param? `grep` for all references.
 - **Read surrounding code.** A change that looks fine in isolation may break invariants in context.
 - **Don't rewrite.** You're reviewing, not reimplementing. Suggest fixes, don't produce alternative implementations unless asked.
-
-## Anti-patterns
-
-- Rubber-stamping ("LGTM looks good")
-- Inventing findings to appear thorough
-- Reviewing only the diff without reading surrounding code
-- Marking style preferences as BLOCKER
-- Suggesting rewrites of code that wasn't changed
-- Ignoring test coverage
-- Missing broken callers after signature changes
