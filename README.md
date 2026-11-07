@@ -371,7 +371,7 @@ scripts/harness-update.sh --check
 scripts/harness-update.sh
 scripts/harness-update.sh --only codex
 
-# Report instruction files that drifted from the rendered contract
+# Report instruction files and profile settings that drifted from their rendered source
 scripts/harness-update.sh --only contract
 scripts/harness-update.sh --only settings
 ```

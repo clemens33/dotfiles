@@ -951,7 +951,12 @@ process_settings() {
     1)
       count=$(printf '%s\n' "$output" | grep -c '^stale ')
       legacy=$(printf '%s\n' "$output" | grep -c '^legacy ')
-      if [ "$count" -eq 0 ]; then
+      if [ "$count" -eq 0 ] && [ "$legacy" -eq 0 ]; then
+        # Exit 1 promises stale or legacy lines; none means the output format
+        # changed, and a drift reporter must not turn green on that.
+        summary 'settings FAIL --check exited 1 without a target'
+        return 1
+      elif [ "$count" -eq 0 ]; then
         summary "settings SKIP legacy symlink on $legacy target(s), run ./install"
       else
         stale=$(printf '%s\n' "$output" | awk -v home="$HOME" '
