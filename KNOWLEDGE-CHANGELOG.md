@@ -89,3 +89,18 @@ OpenAI's official GPT-5.5 release tables **do not publish coding benchmarks for 
 
 See §8 (Security Posture).
 
+---
+
+## References for the archived entries
+
+Moved verbatim from `KNOWLEDGE.md` §18 on 2026-11-07. Their pages were not re-checked then; the OpenAI page returned HTTP 403 to non-browser clients.
+
+- Anthropic Opus 4.7 — https://www.anthropic.com/news/claude-opus-4-7 [A]
+- OpenAI GPT-5.5 — https://openai.com/index/introducing-gpt-5-5/ [A]
+- DeepSeek V4 release — https://api-docs.deepseek.com/news/news260424 [A]
+- Anthropic Opus 4.8 launch — https://www.anthropic.com/news/claude-opus-4-8 [A]
+- Anthropic "What's new in Claude Opus 4.8" docs — https://platform.claude.com/docs/en/about-claude/models/whats-new-claude-4-8 [A]
+- Anthropic Fable 5 / Mythos 5 launch — https://www.anthropic.com/news/claude-fable-5-mythos-5 [A]
+- Anthropic Fable/Mythos access notice (2026-06-12 suspension) — https://www.anthropic.com/news/fable-mythos-access [A]
+- BenchLM, MindStudio, Verdent, byteiota, TokenMix, Kilo blog posts on Opus 4.7 / GPT-5.5 [D]
+- Fable5.app / DigitalApplied — Fable 5 usage-credit switch trackers (pricing/timeline signals; prefer Anthropic notices for normative claims) [D]

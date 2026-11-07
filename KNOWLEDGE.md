@@ -1,12 +1,13 @@
 # Agentic Coding Engineering — Research Base
 
-> Cross-validated across Claude (Opus 4.8) and Codex (GPT-5.5), June 2026.
-> July 2026 refresh: three-source sweep — Claude (web), Antigravity/agy
-> (Google-grounded), Grok (X search) — plus locally-verified tool facts.
-> September 2026 refresh: installed harness defaults, instruction/skill discovery,
-> review permissions, and current hooks reference (2026-09-07).
-> October 2026 refresh: Opus/Sonnet 5.5, GPT-6 family + GPT-6.1 Sol, Muse Wonder,
-> GPT-6 effort-switch cache behaviour, current effort defaults (2026-10-13).
+> Refreshed 2026-11-07 (November 2026 refresh): the pre-October model log is archived in
+> `KNOWLEDGE-CHANGELOG.md`; §2 holds a current model table; §9–§12 were re-probed on the
+> installed tool versions, with probed and inherited facts stamped separately; new
+> practice, security and paper evidence was added (§4, §6, §8, §9, §13, §15, §17).
+> Earlier refreshes: June 2026 (Claude Opus 4.8 and Codex GPT-5.5 cross-validation),
+> July (three-source sweep: Claude web, agy, Grok X search), September (installed
+> harness defaults, instruction and skill discovery, hooks reference), October 2026
+> (5.5 generation, GPT-6 family, Muse Wonder; 2026-10-13).
 > This document captures the state of the art in agentic coding workflows,
 > tooling, and best practices. Living document — update as the field evolves.
 > Source-tiering applies to all citations (see §3).
@@ -67,7 +68,7 @@ Use Claude Code or Codex well before you build a "system." Don't over-engineer.
 
 **Effort switches and the prompt cache.** On the API, OpenAI's Reasoning guide describes `configuration_update`, which is appended between responses and keeps the request-level `reasoning.effort` unchanged. In GPT-6 standard single-agent mode this changes effort without breaking the prompt-prefix cache (2026-09-22 [A]). It is not an unconditional cache guarantee. Codex 0.167.0 lists the feature flag `reasoning_effort_override` as stable and on by default. The flag proves the option exists. Nothing read, including the Codex changelog, states that Codex uses `configuration_update` or keeps the cache on a mid-thread switch. CLI cache behavior stays **unverified**: keep one effort per CLI thread.
 
-**Google [A].** Gemini CLI was retired on 2026-06-18 and Antigravity CLI (`agy`) replaces it (§12). Argon's introductory price doubles on 2026-12-01.
+**Google [A].** Starting 2026-06-18, Gemini CLI stopped serving requests for the Gemini Code Assist individual, Google AI Pro and Google AI Ultra tiers (Google release notes, re-read 2026-11-07). Antigravity CLI (`agy`) replaces it (§12). Other tiers were not checked. Argon's introductory price doubles on 2026-12-01.
 
 **xAI [A].** Grok 4.7 is the current model. This repo pins `grok-4.7` (`grok/config.toml:21`). `grok-4.6` remains only as `fork_secondary_model` (`:123`).
 
@@ -116,11 +117,7 @@ Generated code is abundant. **Validation is the bottleneck.** This shifts the op
 2. **Agents must run or create executable verification where feasible** — tests, type checks, linters, smoke commands.
 3. **If executable verification is not possible, the artifact must declare the verification gap explicitly.** No silent unverified output.
 4. **Review artifacts preserve**: intent, diff, tests run, residual risk, source tier of claims relied upon.
-5. **Review gates by change class**:
-   - Trivial (typo, comment, formatting): inline self-check only
-   - Single-file bug fix: agent self-test + human review
-   - Feature / multi-file: `/ultrareview` (Claude Code) or Codex review + cross-model review
-   - Architectural / security-relevant: cross-model review mandatory before merge
+5. **Review gates by change class** live in `WORKFLOW.md` (Cross-model review) and `shared/AGENTS.md` (Code review threshold). `/ultrareview` adds depth but not provider diversity (§10).
 
 ### Anti-patterns
 
@@ -139,19 +136,21 @@ Higher effort is not free. Calibrate per task class.
 
 ### Effort routing
 
-**Clemens' defaults:** interactive/default effort is `high`; raise to `xhigh` for judgment-heavy work; ae judgment seats keep `xhigh` via profile; builders/workers start at the vendor default and change that default only on measured outcome. Vendor defaults are model-specific (October 2026 [A]): Fable 5.1 / Sonnet 5.5 and Grok 4.6 `high`; **Opus 5.5 `medium`** (this repo's interactive pin stays `high`, `claude/settings.json` at HEAD); Codex GPT-6 Sol / Luna / Astra `medium`, **GPT-6.1 Sol `low`** (Codex 0.159.2 catalog, `codex/config.toml` at HEAD; GPT-5.6-era Sol `low` / Luna / Terra `medium` retired with that family). See `WORKFLOW.md` for versioned evidence and the trivial-work exception. On GPT-6 API threads, `configuration_update` effort switches preserve the prompt-prefix cache since 2026-09-22 [A]; the blanket one-effort-per-thread rule was pre-GPT-6 — but Codex CLI adoption is **unverified**, so keep one effort per CLI thread until proven.
+**Clemens' defaults:** interactive/default effort is `high`; raise to `xhigh` for judgment-heavy work; ae judgment seats keep `xhigh` via profile; builders/workers start at the vendor default and change that default only on measured outcome. Vendor defaults are model-specific; the §2 table lists them with API-versus-CLI scope (for example Opus 5.5 `medium`, while this repo's interactive pin stays `high`, `claude/settings.json:39`). `WORKFLOW.md` holds the operative cheat sheet and the trivial-work exception. For the effort-switch cache rule see §2, "Effort switches and the prompt cache": the API mechanism is documented, Codex CLI behavior is unverified, so keep one effort per CLI thread.
+
+Boris Cherny (2026-10-28, X [D]) says subagents inherit effort by default, so `xhigh` combined with workflows or agent teams burns limits fast, and `/usage` shows where a session's tokens went. This is a staff signal, not a measured default. It supports the worker-default rule above.
 
 Higher worker effort needs a measured quality gain worth its added tokens/latency. A task's S/M/L bucket determines workflow gates, not an automatic effort override.
 
 ### Budget routing
 
-- **Task budgets** (Opus 4.7 beta) — advisory full-loop budget. Set `/config task_budget 50000` for routine work, 100k–128k for long-running agentic loops. Below 20k, the model can't plan meaningfully.
+- **Task budgets** (beta since Opus 4.7, header `task-budgets-2026-03-13`; not re-verified on current models) — advisory full-loop budget. Set `/config task_budget 50000` for routine work, 100k–128k for long-running agentic loops. Below 20k, the model can't plan meaningfully.
 - **`max_tokens`** — hard ceiling on a single response. Distinct from task budgets. At `xhigh` / `max` effort, watch for `stop_reason: "max_tokens"`.
-- **GPT-5.5 Codex Fast / Priority** — only when latency materially matters; standard mode is the default.
+- **GPT fast tiers** — the Codex catalog lists a `Fast` service tier, and the API offers `service_tier: "ultrafast"` for GPT-6.1 Sol and GPT-6 Astra (§2). Use them only when latency materially matters; standard mode is the default.
 
 ### Cost-asymmetric orchestration
 
-For multi-agent setups: capable orchestrator + cheap specialized workers. Reported 40–60% cost cuts vs all-frontier-model setups [D]. Verify locally.
+For multi-agent setups: capable orchestrator + cheap specialized workers. Reported 40–60% cost cuts vs all-frontier-model setups [D; source not located in the November 2026 refresh]. Verify locally.
 
 ---
 
@@ -261,7 +260,7 @@ Every AI coding tool reads a markdown config file. AAIF stewardship means `AGENT
 |------|---------|--------|
 | `AGENTS.md` | Codex (first-class), Cursor, Grok, agy, Claude Code (fallback), most via convention | Closest to universal. AAIF-stewarded [A]. |
 | `CLAUDE.md` | Claude Code; Grok and Muse also read it | First-class, hierarchical (root→startup, subdirs→lazy). Also `~/.claude/CLAUDE.md` for global. Grok and Muse details in §12. |
-| `GEMINI.md` | Antigravity CLI (`agy`) | agy reads project `GEMINI.md` or `AGENTS.md` (§12). Gemini CLI was retired 2026-06-18. |
+| `GEMINI.md` | Antigravity CLI (`agy`) | agy reads project `GEMINI.md` or `AGENTS.md` (§12). Gemini CLI stopped serving the individual, AI Pro and AI Ultra tiers on 2026-06-18. |
 | `.cursor/rules/` | Cursor | Cursor-specific. |
 | `copilot-instructions.md` | GitHub Copilot | Per repo in `.github/`. The Copilot CLI also reads `${COPILOT_HOME:-$HOME/.copilot}/copilot-instructions.md`, which this repo renders. |
 
@@ -329,27 +328,6 @@ Permissions (allow/deny with wildcards), hooks, model config, env. Global `~/.cl
 
 `bashOutputMaxChars` defaults to **30,000 characters inline**; overflow goes to a file. Values clamp to **4,000–128,000** (default and clamp read from the settings schema in the 2.1.319 binary, 2026-11-07; the value was not exercised at runtime). Lowering it is an experiment: measure saved context and extra file rereads.
 
-### Reference layout
-
-```
-~/.claude/
-├── CLAUDE.md              # Global personal preferences
-├── settings.json          # Global permissions, hooks
-├── agents/                # Global agents
-├── skills/                # Global skills
-└── plugins/               # Installed plugins
-
-project/
-├── AGENTS.md              # Universal cross-tool contract
-├── CLAUDE.md              # Claude-specific additions
-├── .claude/
-│   ├── settings.json      # Project hooks & permissions
-│   ├── settings.local.json # Personal overrides (gitignored)
-│   ├── agents/            # Project agents
-│   ├── skills/            # Project skills
-│   └── .mcp.json          # MCP server config
-```
-
 ---
 
 ## 11. Codex CLI Configuration
@@ -376,7 +354,7 @@ project/
 
 ## 12. Antigravity CLI (agy), Grok CLI, and Muse Code Configuration
 
-> Gemini CLI died 2026-06-18 (see §2, Google). Each harness block below separates what
+> Gemini CLI stopped serving the individual, AI Pro and AI Ultra tiers on 2026-06-18 (see §2, Google). Each harness block below separates what
 > was probed on 2026-11-07 from what is inherited from an earlier version.
 
 ### Antigravity CLI (`agy`) — Gemini CLI's replacement
@@ -651,52 +629,60 @@ Recorded here so they're not lost; each is a separate, confirmable change. Still
 ### Tier A — Official docs
 
 - Claude Code docs — https://code.claude.com/docs/en/best-practices [A]
-- Codex docs — https://developers.openai.com/codex/guides/agents-md [A]
+- Codex docs (AGENTS.md discovery) — https://learn.chatgpt.com/docs/agent-configuration/agents-md [A]
 - AGENTS.md spec — https://github.com/agentsmd/agents.md (AAIF stewardship) [A]
 - `anthropics/skills` — https://github.com/anthropics/skills [A]
 - `anthropics/claude-code` — https://github.com/anthropics/claude-code (includes ralph-wiggum plugin) [A]
-- Anthropic Opus 4.7 — https://www.anthropic.com/news/claude-opus-4-7 [A]
 - Anthropic Project Glasswing — https://www.anthropic.com/project/glasswing [A]
 - Anthropic Mythos Preview — https://red.anthropic.com/2026/mythos-preview/ [A]
 - Anthropic 2026 Agentic Coding Trends Report (PDF) — https://resources.anthropic.com/hubfs/2026%20Agentic%20Coding%20Trends%20Report.pdf [A]
-- OpenAI GPT-5.5 — https://openai.com/index/introducing-gpt-5-5/ [A]
-- DeepSeek V4 release — https://api-docs.deepseek.com/news/news260424 [A]
 - Linux Foundation AAIF — https://www.linuxfoundation.org/press/linux-foundation-announces-the-formation-of-the-agentic-ai-foundation [A]
-- Anthropic Opus 4.8 launch — https://www.anthropic.com/news/claude-opus-4-8 [A]
-- Anthropic "What's new in Claude Opus 4.8" docs — https://platform.claude.com/docs/en/about-claude/models/whats-new-claude-4-8 [A]
 - Anthropic Opus 5 launch — https://www.anthropic.com/news/claude-opus-5 [A]
-- Anthropic models overview (Opus 5 row, IDs, pricing) — https://platform.claude.com/docs/en/about-claude/models/overview [A]
+- Anthropic models overview (IDs, pricing) — https://platform.claude.com/docs/en/models/overview [A]
+- Claude Haiku 5.5 launch — https://www.anthropic.com/news/claude-haiku-5-5 [A]
+- Claude message threads (beta) — https://platform.claude.com/docs/en/build-with-claude/message-threads [A]
 - Claude Code model config (aliases incl. fable -> 5.1, effort defaults, category fallback, fast mode) — https://code.claude.com/docs/en/model-config [A]
 - Anthropic Fable 5.1 model page — https://platform.claude.com/docs/en/models/fable-5-1/overview [A]
 - Anthropic Opus 5.5 model page (ID, pricing, default effort `medium`) — https://platform.claude.com/docs/en/models/opus-5-5/overview [A]
 - Anthropic Sonnet 5.5 model page (ID, pricing, default effort `high`) — https://platform.claude.com/docs/en/models/sonnet-5-5/overview [A]
-- OpenAI API changelog (GPT-6 Astra 2026-09-03, Sol/Luna 2026-09-22, GPT-6.1 Sol 2026-09-29) — https://developers.openai.com/api/docs/changelog [A]
+- OpenAI API changelog (GPT-6 Astra 2026-09-03, Sol/Luna 2026-09-22, GPT-6.1 Sol 2026-09-29, GPT-6.1 Terra 2026-10-26) — https://developers.openai.com/api/docs/changelog [A]
 - OpenAI model catalog (GPT-6 family pricing, context, efforts) — https://developers.openai.com/api/docs/models [A]
-- OpenAI "Better prompt caching for GPT-6" (effort switches preserve cache, 2026-09-22) — https://openai.com/index/better-prompt-caching-for-gpt-6/ [A]
+- OpenAI "Better prompt caching for GPT-6" (effort switches preserve cache, 2026-09-22) — https://openai.com/index/better-prompt-caching-for-gpt-6/ [A] (HTTP 403 to non-browser clients; not opened in the November 2026 refresh)
 - OpenAI Reasoning guide — change reasoning mid-conversation (`configuration_update`, API mechanism; no Codex CLI adoption stated) — https://developers.openai.com/api/docs/guides/reasoning [A]
 - Anthropic effort guide (per-model recommendations) — https://platform.claude.com/docs/en/build-with-claude/effort [A]
-- Anthropic Fable 5 / Mythos 5 launch — https://www.anthropic.com/news/claude-fable-5-mythos-5 [A]
-- Anthropic Fable/Mythos access notice (2026-06-12 suspension) — https://www.anthropic.com/news/fable-mythos-access [A]
 - Claude Code Dynamic Workflows docs — https://code.claude.com/docs/en/workflows [A]
 - Claude Code changelog — https://code.claude.com/docs/en/changelog [A]
 - Claude Agent SDK — agent loop (`max_turns`, `max_budget_usd`, auto-compaction) — https://code.claude.com/docs/en/agent-sdk/agent-loop [A]
 - Anthropic "Harness design for long-running application development" — https://www.anthropic.com/engineering/harness-design-long-running-apps [A]
 - Anthropic "Natural emergent misalignment from reward hacking" — https://www.anthropic.com/research/emergent-misalignment-reward-hacking [A]
-- Codex changelog (Goal mode GA, app-server, automations, devtools) — https://developers.openai.com/codex/changelog [A]
+- Codex changelog (Goal mode GA, app-server, automations, devtools) — https://learn.chatgpt.com/docs/changelog [A]
 - Codex Goals cookbook (lifecycle, budget-stop) — https://developers.openai.com/cookbook/examples/codex/using_goals_in_codex [A]
 - OpenAI "Building self-improving tax agents with Codex" (evidence-backed improvement loop) — https://openai.com/index/building-self-improving-tax-agents-with-codex/ [A]
-- Google Gemini Code Assist / Antigravity release notes — https://developers.google.com/gemini-code-assist/resources/release-notes [A]
+- Google Gemini Code Assist / Antigravity release notes (Gemini CLI stopped serving three tiers 2026-06-18) — https://docs.cloud.google.com/gemini/docs/codeassist/release-notes [A]
 - OpenAI Codex team — "Unrolling the Codex Agent Loop" (engineering notes on agent loop) — https://openai.com/index/unrolling-the-codex-agent-loop/ [A]
 - OpenAI Codex team — "Harness Engineering" (notes on harness design) — https://openai.com/index/harness-engineering/ [A]
 - Anthropic / Claude.com — "Eight trends defining how software gets built in 2026" — https://claude.com/blog/eight-trends-defining-how-software-gets-built-in-2026 [A]
 - Sourcegraph blog — "Why Sourcegraph and Amp are becoming independent companies" — https://sourcegraph.com/blog/why-sourcegraph-and-amp-are-becoming-independent-companies [A]
 - Sourcegraph blog — "A new era for Sourcegraph: the intelligence layer for AI coding agents and developers" — https://sourcegraph.com/blog/a-new-era-for-sourcegraph-the-intelligence-layer-for-ai-coding-agents-and-developers [A]
 - Pi documentation — https://pi.dev/docs/latest [A]
-- OpenAI Codex model catalog (GPT-5.6 Sol/Terra/Luna, efforts) — https://developers.openai.com/codex/models [A]
+- OpenAI Codex model catalog — https://learn.chatgpt.com/docs/models [A]
+- OpenAI Codex skills docs (locations, same-name skills, symlinks) — https://learn.chatgpt.com/docs/build-skills [A]
 - Google Antigravity CLI docs — https://antigravity.google/docs/cli-overview [A]
-- Google Gemini 3.8 Flash migration guide (GA, default/recommended effort) — https://ai.google.dev/gemini-api/docs/generate-content/latest-model [A]
+- Google Gemini API latest-model page (3.8 Flash and 4 Argon: IDs, default effort, pricing) — https://aistudio.google.com/docs/latest-model?generate-content=true [A]
+- Google Gemini 4 Argon model page — https://aistudio.google.com/docs/models/gemini-4-argon [A]
+- Google Gemini 4 Argon announcement — https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-4-argon/ [A]
 - xAI Grok Build overview — https://docs.x.ai/build/overview [A]
 - xAI Grok Build announcement — https://x.ai/news/grok-build-cli [A]
+- xAI Grok 4.7 announcement — https://x.ai/news/grok-4-7 [A]
+- xAI models page (Grok 4.7 context and price) — https://docs.x.ai/developers/models [A]
+- Meta "Build with Muse Spark Open" — https://dev.meta.ai/resources/blog/build-with-muse-spark-open [A]
+- Moonshot Kimi K3.1 Pro model card — https://huggingface.co/moonshotai/Kimi-K3.1-Pro [A]
+- DeepSeek V4.1 Flash-1017 release — https://api-docs.deepseek.com/news/news261017 [A]
+- Zhipu GLM-5.3-Flash model card — https://huggingface.co/zai-org/GLM-5.3-Flash [A]
+- Anthropic "Donating Agent Skills to the Agentic AI Foundation" (2026-10-22) — https://www.anthropic.com/news/donating-agent-skills-to-the-agentic-ai-foundation [A]
+- Linux Foundation — AAIF adds Agent Skills, Open Responses, OpenEnv, OpenSandbox — https://www.linuxfoundation.org/press/agentic-ai-foundation-announces-four-new-projects-agent-skills-open-responses-openenv-and-opensandbox [A]
+- Anthropic "How we built our multi-agent research system" (~15× tokens) — https://www.anthropic.com/research/multi-agent-research-system [A]
+- Claude Code scheduled tasks and `/loop` (seven-day expiry) — https://code.claude.com/docs/en/scheduled-tasks [A]
 - Microsoft Agent Framework BUILD 2026 (Agent Harness, CodeAct, Hosted Agents) — https://devblogs.microsoft.com/agent-framework/microsoft-agent-framework-at-build-2026-announce/ [A]
 
 ### Tier B — Academic / research
@@ -716,6 +702,13 @@ Recorded here so they're not lost; each is a separate, confirmable change. Still
 - METR time-horizon + uplift-study redesign (horizons >16h unreliable; "~20% slowdown" qualified on selection-bias grounds) — https://metr.org [B]
 - Anthropic infra-noise / benchmark config sensitivity (sub-3pp deltas are noise; Terminal-Bench swings ~6pp on hardware config) — Anthropic engineering [A]
 - "Stop Hand-Holding Your Coding Agent: Engineering the Loops that Replace Step-by-Step Prompting" — arXiv:2607.00038 [B]
+- "Reward Hacking as a Transmissible Strategy in Multi-Agent Coding Systems" — arXiv:2610.12822 [B]
+- "Reward Hacking Challenges Oversight of Autonomous Research Agents" — arXiv:2609.28614 [B]
+- "Cross-Model LLM Code Review: Should you use Claude to review Codex or vice versa?" — arXiv:2607.21656 [B]
+- "Evaluating AGENTS.md: Are Repository-Level Context Files Helpful for Coding Agents?" — arXiv:2602.11988 [B]
+- "Do Coding Agents Follow AGENTS.md? The Effect of Policy Wording on Instruction Compliance" — arXiv:2611.04367 [B] (short paper, under review)
+- "SWE-Bench Pro V2: A Cleaner, Harder-to-Game Coding Benchmark" — arXiv:2610.24206 [B]
+- "On the estimation and validity of AI time horizons — a statistical look at the METR plot" — arXiv:2610.12466 [B]
 - "Harness Engineering for Agentic AI Coding Tools: An Exploratory Study" — AIware '26 (arXiv ID unverified — locate before citing formally) [B]
 - "Proof-or-Stop: Loop Engineering for Verifiable Evidence-Gated Lifecycle Control" — arXiv, July 2026 (ID unverified) [B]
 - METR predeployment evaluation of GPT-5.6 Sol (highest detected reward-hacking rate of any public model assessed) — https://metr.org [B]
@@ -748,16 +741,15 @@ Recorded here so they're not lost; each is a separate, confirmable change. Still
 
 Cite as signals only. Audit periodically.
 
-- BenchLM, MindStudio, Verdent, byteiota, TokenMix, Kilo blog posts on Opus 4.7 / GPT-5.5 [D]
 - `awesome-agent-skills` and similar curated directories [D]
 - VentureBeat — Boris Cherny / Claude Code workflow coverage — https://venturebeat.com/technology/the-creator-of-claude-code-just-revealed-his-workflow-and-developers-are [D]
 - InfoQ — Carlini / Claude Code Linux vulnerability discovery — https://www.infoq.com/news/2026/04/claude-code-linux-vulnerability/ [D]
 - Ars Technica — "Overrun with AI slop, curl scraps bug bounties" (Stenberg / maintainer-side reality) — https://arstechnica.com/security/2026/01/overrun-with-ai-slop-curl-scraps-bug-bounties-to-ensure-intact-mental-health/ [D]
 - Tom's Hardware — Greg Kroah-Hartman using Framework Desktop + local AI to hunt kernel bugs — https://www.tomshardware.com/software/linux/linux-kernels-second-in-command-uses-framework-desktop-to-hunt-bugs-with-local-ai [D]
 - TechCrunch — OpenClaw creator (Peter Steinberger) joins OpenAI — https://techcrunch.com/2026/02/15/openclaw-creator-joins-openai/ [D]
+- Forever Security — "Hijacking AI agents via the Downloads folder" (2026-10-22; security-vendor blog with lab figures) — https://forever.security/blog/hijacking-ai-agents-via-downloads-folder/ [D]
 - ADTmag — "Loop Engineering Emerges as Developers Put AI Coding Agents on Repeat" (2026-07-01) — https://adtmag.com/articles/2026/07/01/loop-engineering-emerges-as-developers-put-ai-coding-agents-on-repeat.aspx [D]
 - LangChain "State of Agent Engineering" report (57% of orgs with agents in production) — June 2026 [D]
-- Fable5.app / DigitalApplied — Fable 5 usage-credit switch trackers (pricing/timeline signals; prefer Anthropic notices for normative claims) [D]
 - VentureBeat — Muse Wonder / Wonder Full launch + Artificial Analysis Index (2026-10-12) — https://venturebeat.com/technology/metas-new-muse-wonder-and-muse-wonder-full-models-achieve-frontier-performance-but-only-the-weaker-one-is-available-via-api [D]
 - Artificial Analysis — Muse Wonder evaluation (Index v4.3, pricing, availability) — https://artificialanalysis.ai/articles/muse-wonder [D]
 
@@ -831,4 +823,4 @@ Watch but caveat (useful framing, less foundational):
 
 ---
 
-*Last updated: 2026-10-13 (October 2026 model refresh: Opus/Sonnet 5.5, GPT-6 family + GPT-6.1 Sol, Muse Wonder, GPT-6 cache behaviour, current effort defaults). Historical research sections retain their own dates.*
+*Last updated: 2026-11-07 (November 2026 refresh: pre-October model log archived, current model table, installed tools re-probed with probed/inherited stamps, new practice, security and paper evidence). Earlier refresh: 2026-10-13. Historical research sections retain their own dates.*
