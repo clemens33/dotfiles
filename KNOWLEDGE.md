@@ -17,7 +17,7 @@
 
 The March 2026 thesis still holds at the headline: a strong workflow with a mid-tier model beats a weak workflow with the frontier model.
 
-**April 2026 layered update**: frontier models (Opus 4.7, GPT-5.5) are now good enough at long autonomous execution that the bottleneck **shifted from "can the agent do it" to "can you trust and afford what it produced"**. The new pressure points:
+**April 2026 layered update**: the frontier models of April 2026 were good enough at long autonomous execution that the bottleneck **shifted from "can the agent do it" to "can you trust and afford what it produced"**. The pressure points since then:
 
 - **Verification** — generated code is abundant, validated code is scarce
 - **Budgets** — autonomy without spend caps invites runaway loops
@@ -32,20 +32,62 @@ Use Claude Code or Codex well before you build a "system." Don't over-engineer.
 
 ## 2. Model-Era Update
 
-> Dated section. Rotates as the field moves. Older facts archive to the changelog,
-> not this section.
+> Dated section, state of 2026-11-07. It rotates as the field moves. Entries from
+> September 2026 and older are archived verbatim in `KNOWLEDGE-CHANGELOG.md`.
 
-### October 2026 — 5.5 generation, GPT-6.1 Sol, Muse Wonder [A/D]
+### Current models
 
-**Claude Opus 5.5 shipped 2026-09-22 [A]** — API ID `claude-opus-5-5`, $4/$20 per Mtok (down from Opus 5's $5/$25; cache reads 5% of base input = $0.20), 1M context / 128k output, knowledge cutoff June 2026. Adaptive thinking is always on and cannot be disabled. Effort ladder `low→medium→high→xhigh→max`; **vendor default is `medium`** — the first Opus flagship not to default `high` — and Anthropic says to set effort explicitly and re-run your sweep rather than carry an Opus 5 setting over, since 5.5 thinks more per turn at the same level. Claude Code's `opus` alias resolves to 5.5 since CC 2.1.280; this repo pins interactive `high` deliberately (`claude/settings.json` at HEAD, verified 2026-09-22). **Claude Sonnet 5.5 shipped 2026-09-28 [A]** — ID `claude-sonnet-5-5`, $2/$10 per Mtok (cache reads 5% = $0.10), 1M / 128k, cutoff June 2026, default effort **`high`**. Haiku 5.5 completes the 5.5 lineup (from $0.10/$0.50, default `medium`) [A]. Fable 5.1 stays the credit-billed tier above Opus 5.5 at $10/$50, default `high` [A].
+"API" values come from the vendor model page. "CLI" values come from the installed harness catalog (Codex 0.167.0, `codex debug models`, 2026-11-07). They differ for some models. `—` means a page was read and does not state the value. `unverified` means the value was looked for and not found. Prices are USD per million tokens, input / output. Tier markers follow §3.
 
-**GPT-6 family completed, then GPT-6.1 Sol [A]** — GPT-6 Astra released 2026-09-03 (`gpt-6-astra`, $10/$50, 1.05M API context / 128k output, efforts `low→max` with no `none`, cutoff 2026-04-30); GPT-6 Sol and Luna followed 2026-09-22 (Sol $2/$10, cached $0.20; Luna $0.10/$0.50, cached $0.01, efforts incl. `none`). **GPT-6.1 Sol shipped 2026-09-29 [A]** — `gpt-6.1-sol`, $2/$10 with cached input halved to $0.10, positioned as near-Astra coding/computer-use at one-fifth of Astra's price; it is the Codex default in this repo (`codex/config.toml` at HEAD). Codex catalog facts stay CLI-scoped: 0.159.2 (2026-09-30) gives GPT-6.1 Sol a 272k window (95% effective) and default effort **`low`** — press coverage says `medium`, the catalog wins locally; GPT-6 Sol/Luna/Astra default `medium` in the same catalog. **Cache rule retired on the API [A]**: OpenAI's 2026-09-22 GPT-6 prompt-caching update plus the Reasoning guide's `configuration_update` mechanism (appended between responses, request-level `reasoning.effort` unchanged, GPT-6 standard single-agent mode) lets API callers switch effort while preserving the prompt-prefix cache — so the pre-GPT-6 one-effort-per-thread rule no longer applies to GPT-6 API threads. Codex CLI adoption of that mechanism is **unverified** (2026-10-13; `codex/config.toml:14-16` is a comment, not client evidence) — keep one effort per CLI thread until a Codex source proves otherwise — see the superseded note in the September entry below.
+| Model (ID) | Released | Price | Context / max output | Default effort | Cutoff | Source |
+|---|---|---|---|---|---|---|
+| Fable 5.1 (`claude-fable-5-1`) | 2026-09-01 | 10 / 50 | 1M / 128k | `high` | Jun 2026 | Anthropic model page [A] |
+| Opus 5.5 (`claude-opus-5-5`) | 2026-09-22 | 4 / 20 | 1M / 128k | `medium` | Jun 2026 | Anthropic model page [A] |
+| Sonnet 5.5 (`claude-sonnet-5-5`) | 2026-09-28 | 2 / 10 | 1M / 128k | `high` | Jun 2026 | Anthropic model page [A] |
+| Haiku 5.5 (`claude-haiku-5-5`) | 2026-10-07 | 0.10 / 0.50 up to 100k prompts; 0.50 / 2.50 above | 1M / 128k | `medium` | Jun 2026 | Anthropic launch page; comparison table on the Fable 5.1 page [A] |
+| Opus 5 (`claude-opus-5`), legacy | 2026-07-24 | 5 / 25 | 1M / 128k | `high` | May 2026 | archive; not re-checked [A] |
+| GPT-6.1 Sol (`gpt-6.1-sol`) | 2026-09-29 | 2 / 10 | API 1.05M / 128k; CLI 500k window, 95% effective | API —; CLI `low` | Apr 30, 2026 | OpenAI API models page; Codex catalog [A] |
+| GPT-6.1 Terra (`gpt-6.1-terra`) | 2026-10-26 | 1 / 5 | API 1.05M / 128k; CLI 500k window, 95% effective | API —; CLI `low` | Jun 1, 2026 | OpenAI API models page and changelog; Codex catalog [A] |
+| GPT-6 Astra (`gpt-6-astra`) | 2026-09-03 | 10 / 50 | API 1.05M / 128k; CLI 272k window, 95% effective | API —; CLI `medium` | Apr 30, 2026 | OpenAI API models page; Codex catalog [A] |
+| Gemini 4 Argon (`gemini-4-argon`) | announced 2026-09-30 | 2 / 10 through 2026-11-30, then 4 / 20 | 1,048,576 unified; output 65,536, up to 1,048,576 with long decode | `medium` (`low`, `medium`, `high`) | unverified | Google blog; AI Studio model and latest-model pages [A] |
+| Gemini 3.8 Flash (`gemini-3.8-flash`) | 2026-09-02 | — | — | `medium`; repo agy pin `High` | — | archive; `agy models` 1.5.3 [A] |
+| Grok 4.7 (`grok-4.7`) | 2026-09-21 | 2 / 6 | 500k | —; repo pin `high` | unverified | xAI news; docs.x.ai models page [A] |
+| Muse Spark 1.3 (`muse-spark-1.3`, `-contributor`) | — | — | 1,007,997 / 128,000 | CLI default `high`; repo pin `max` | unverified | local catalog, Muse Code 1.2.1 snapshot [A, local] |
+| Muse Wonder (`muse-wonder-1.0`; `-full-1.0` is subscription-only) | 2026-10-12 | 4 / 20 for Wonder; no per-token price for Full | 1,007,997 / 128,000 | unverified | unverified | local catalog, Muse Code 1.4.7; VentureBeat [D] |
+| Muse Spark Open (`Muse-Spark-Open-816B-A42B`), open weights | 2026-10-15 | — | 1M; 816B total, 42B active | — | — | Meta developer blog [A] |
+| Kimi K3.1 Pro (`moonshotai/Kimi-K3.1-Pro`), open weights | weights 2026-11-04 [D] | — | 1M; 2.8T total, 104B active | — | — | Hugging Face model card [A]; date from the Moonshot X post [D] |
+| DeepSeek V4.1 Flash-1017, open weights | 2026-10-17 | — | — | — | — | DeepSeek API docs [A] |
+| GLM-5.3-Flash (`zai-org/GLM-5.3-Flash`), open weights, MIT | 2026-08 | — | — | — | — | Hugging Face model card [A] |
 
-**Meta Muse Wonder + Wonder Full shipped 2026-10-12 [A/D]** — Meta's first frontier-class pair. IDs `muse-wonder-1.0` and `muse-wonder-full-1.0`, each with a `-contributor` variant, verified in the local Muse Code 1.4.7 provider catalog (2026-10-13): 1,007,997-token context, 128k output, efforts `minimal→low→medium→high→xhigh→max`. Only the standard Wonder is on the pay-as-you-go Meta Model API ($4/$20 per Mtok, cached $0.20 [D]); Wonder Full is Muse Code-subscription-only with no per-token API price [D]. Artificial Analysis Intelligence Index (via VentureBeat, 2026-10-12 [D]): Wonder Full **56**, Wonder **52**, vs Opus 5.5 58, Sonnet 5.5 56, Fable 5.1 53, GPT-6 Astra 53 — frontier-adjacent, not in front. The contributor tier still trains on input ("may be used for product improvement" in the catalog); locally the catalog default is now the clean `muse-wonder-1.0`, unlike the Spark-era contributor default in §12 — pin explicitly regardless. Knowledge cutoff and vendor default effort for both Wonder models: **unverified** (no Tier A page found 2026-10-13).
+### Notes, October and November 2026
+
+**Claude [A].** Adaptive thinking is always on for Opus 5.5 and Fable 5.1 and cannot be disabled. The effort ladder is `low→medium→high→xhigh→max`. Anthropic says to set effort explicitly on Opus 5.5 and to re-run your sweep instead of carrying over an Opus 5 setting, because 5.5 thinks more per turn at the same level. The Claude Code `opus` alias resolves to 5.5 since 2.1.280 and `fable` to 5.1 since 2.1.255 (carried from earlier checks, not re-run on 2.1.319). This repo pins interactive `high` on purpose (`claude/settings.json:39`, per-model entries `:41-48`). Fable 5.1 is credit-billed. Anthropic's guidance is to start with Opus 5.5 and use Fable 5.1 for demanding long-horizon work, or when Opus 5.5 at higher effort still misses your evals.
+
+**OpenAI [A].** Codex values are CLI-scoped and the API page does not state a default effort, so do not carry a CLI default over to API calls. Codex 0.159.2 (2026-09-30) gave GPT-6.1 Sol a 272k window; 0.167.0 gives 500k (95% effective) and default `low`. The 0.167.0 catalog also lists `gpt-6-sol`, `gpt-6-luna`, `gpt-5.6-terra` and `gpt-5.6-luna` (272k, `medium`) and `gpt-5.6-sol` (272k, `low`). The catalog entries `gpt-reserve` and `codex-auto-review` (272k, `medium`) have no documented purpose. OpenAI positions Terra for fast computer use and high-volume agent work. OpenAI's launch posts keep complex coding on Sol or Astra [D, X]. The Codex catalog lists a `Fast` service tier on every model. The API uses `service_tier: "ultrafast"` for Sol and Astra (API changelog 2026-10-08 and 2026-09-29).
+
+**Effort switches and the prompt cache.** On the API, OpenAI's Reasoning guide describes `configuration_update`, which changes effort between responses without breaking the prompt-prefix cache (2026-09-22 [A]). Codex 0.167.0 lists the feature flag `reasoning_effort_override` as stable and on by default. The flag proves the option exists. Nothing read, including the Codex changelog, states that Codex uses `configuration_update` or keeps the cache on a mid-thread switch. CLI cache behavior stays **unverified**: keep one effort per CLI thread.
+
+**Google [A].** Gemini CLI was retired on 2026-06-18 and Antigravity CLI (`agy`) replaces it (§12). Argon's introductory price doubles on 2026-12-01. A Google story titled "Gemini 4 Carbon: our next frontier model" appears in the related-stories list of the Argon blog page. It was not opened. Do not treat Carbon as released.
+
+**xAI [A].** Grok 4.7 is the current model. This repo pins `grok-4.7` (`grok/config.toml:21`). `grok-4.6` remains only as `fork_secondary_model` (`:123`).
+
+**Meta.** The ae spend policy puts the Muse seat on the Spark 1.3 contributor variant (lead, 2026-11-07). The repo's `muse/settings.json:3` pins the clean `muse-spark-1.3` ID, a different catalog entry. The seat policy and the repo pin are separate settings. Do not infer one from the other. The contributor tier trains on prompts ("may be used for product improvement" in the catalog; Spark snapshot 2026-09-13, not re-verified on Wonder). Wonder is a released model, not the ae seat. The Muse Code 1.4.7 catalog default is the clean `muse-wonder-1.0`. Artificial Analysis Intelligence Index via VentureBeat, 2026-10-12 [D]: Wonder Full 56, Wonder 52, against Opus 5.5 58, Sonnet 5.5 56, Fable 5.1 53 and GPT-6 Astra 53. No Tier A page states Wonder's cutoff or default effort. Do not infer them from backend routing.
+
+**Open weights [A/D].** The Kimi K3.1 Pro model card shows a custom license (`kimi-k3.1-pro`). The status of the original K3 base weights is unverified. Vendor coding charts for open models usually ran on the vendor's own harness; see the harness-swing lesson below.
+
+### Standing lessons carried from the archive
+
+- **Harness choice swings scores as much as model choice.** Same-model, cross-harness gaps of tens of points appear in Terminal-Bench bakeoffs [C/D]. Discount vendor charts that ran on the vendor's own harness by 10–15%.
+- **Benchmarks.** OpenAI deprecated SWE-bench Verified (saturated, contaminated) in favor of SWE-bench Pro, read from Scale's leaderboard, plus contamination-resistant live benches [A/B]. Treat deltas under 3pp as noise (Anthropic infra-noise [A]). METR horizons over 16h are unreliable [B]. SWE-Bench Pro V2 (arXiv:2610.24206 [B]) revises the Pro split. A statistical look at the METR plot (arXiv:2610.12466 [B]) questions the time-horizon fit.
+- **Long horizons decay.** Short-horizon benchmark gains do not imply long-horizon capability. SWE-EVO and SlopCodeBench show multi-file evolution stays weak and quality erodes over long runs [B]. Pair every long loop with the §17.5 guardrails.
+- **Fast mode is separate from effort.** Fast mode trades price for speed. Effort sets reasoning depth. Both can run together.
+- **Access can change overnight.** Fable 5 was suspended on 2026-06-12 by government directive and later moved to prepaid credits. Keep a fallback route and pin versioned IDs.
+- **Pro tiers are not proven better for coding.** See §20.
+- **Open-model "drop into any harness" claims are usually overclaimed [C].** Kimi K3 needed preserved thinking history, and third-party harnesses reported fragmentation and heavy rate-limit burn.
 
 ### Earlier history
 
-September 2026 and older model entries (GPT-6 Astra in Codex, Fable 5.1, Opus 5, the July tier shuffle and CLI landscape, the June frontier moves, Opus 4.7, GPT-5.5, DeepSeek V4, Mythos Preview) moved to `KNOWLEDGE-CHANGELOG.md` on 2026-11-07.
+Entries from September 2026 and older (GPT-6 Astra in Codex, Fable 5.1, Opus 5, the July tier shuffle and CLI landscape, the June frontier moves, Opus 4.7, GPT-5.5, DeepSeek V4, Mythos Preview) are in `KNOWLEDGE-CHANGELOG.md`. The Mythos and Glasswing material that still guides this repo is in §8.
 
 ---
 
