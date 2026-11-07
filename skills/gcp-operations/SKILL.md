@@ -1,11 +1,10 @@
 ---
 name: gcp-operations
 description: >
-  Install or operate Google Cloud safely with gcloud and bq: select explicit
-  projects, authenticate with user credentials, ADC, or federation, control
-  BigQuery query cost, configure FOCUS billing exports, and choose Vertex AI
-  or the Gemini API. Use when setting up the Google Cloud CLI or working with
-  Google Cloud resources, billing data, BigQuery, or Gemini/Vertex AI APIs.
+  Operate Google Cloud safely with gcloud and bq: explicit projects and identity, ADC and
+  federation auth, BigQuery cost control, FOCUS billing exports, and Gemini API versus Vertex AI.
+  Use when installing the Google Cloud CLI or working with Google Cloud resources, billing data,
+  BigQuery, or Gemini/Vertex AI APIs. Not for other cloud providers.
 metadata:
   category: capability
 ---

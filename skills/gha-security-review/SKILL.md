@@ -1,6 +1,10 @@
 ---
 name: gha-security-review
-description: 'GitHub Actions security review for workflow exploitation vulnerabilities. Use when asked to "review GitHub Actions", "audit workflows", "check CI security", "GHA security", "workflow security review", or review .github/workflows/ for pwn requests, expression injection, credential theft, and supply chain attacks. Exploitation-focused with concrete PoC scenarios.'
+description: >
+  Review GitHub Actions workflows for vulnerabilities an external attacker can exploit (pwn
+  requests, expression injection, credential theft, supply chain), each with a concrete
+  exploitation scenario. Use when asked to review or audit GitHub Actions, .github/workflows or
+  CI security. Not for application code (use `security-review`).
 allowed-tools: Read, Grep, Glob, Bash, Task
 license: Apache-2.0
 source: https://github.com/getsentry/skills/tree/main/skills/gha-security-review

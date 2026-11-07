@@ -1,6 +1,10 @@
 ---
 name: diagnose
-description: Disciplined diagnosis loop for hard bugs and performance regressions. Reproduce → minimise → hypothesise → instrument → fix → regression-test. Use when user says "diagnose this" / "debug this", reports a bug, says something is broken/throwing/failing, or describes a performance regression.
+description: >
+  Find and fix a hard bug or performance regression by building a fast deterministic feedback
+  loop first, then testing ranked hypotheses against it. Use when the user says "diagnose this"
+  or "debug this", reports a bug, says something is broken, throwing or failing, or describes a
+  performance regression. Not for building new features (use `tdd`).
 license: MIT
 source: https://github.com/mattpocock/skills/tree/main/skills/engineering/diagnose
 metadata:
@@ -16,9 +20,9 @@ When exploring the codebase, use the project's domain glossary to get a clear me
 
 ## Phase 1 — Build a feedback loop
 
-**This is the skill.** Everything else is mechanical. If you have a fast, deterministic, agent-runnable pass/fail signal for the bug, you will find the cause — bisection, hypothesis-testing, and instrumentation all just consume that signal. If you don't have one, no amount of staring at code will save you.
+The feedback loop is the skill; everything else is mechanical. If you have a fast, deterministic, agent-runnable pass/fail signal for the bug, you will find the cause — bisection, hypothesis-testing, and instrumentation all just consume that signal. If you don't have one, no amount of staring at code will save you.
 
-Spend disproportionate effort here. **Be aggressive. Be creative. Refuse to give up.**
+Spend disproportionate effort here.
 
 ### Ways to construct one — try them in roughly this order
 
@@ -32,8 +36,6 @@ Spend disproportionate effort here. **Be aggressive. Be creative. Refuse to give
 8. **Bisection harness.** If the bug appeared between two known states (commit, dataset, version), automate "boot at state X, check, repeat" so you can `git bisect run` it.
 9. **Differential loop.** Run the same input through old-version vs new-version (or two configs) and diff outputs.
 10. **HITL bash script.** Last resort. If a human must click, drive _them_ with `scripts/hitl-loop.template.sh` so the loop is still structured. Captured output feeds back to you.
-
-Build the right feedback loop, and the bug is 90% fixed.
 
 ### Iterate on the loop itself
 
@@ -89,7 +91,7 @@ Tool preference:
 2. **Targeted logs** at the boundaries that distinguish hypotheses.
 3. Never "log everything and grep".
 
-**Tag every debug log** with a unique prefix, e.g. `[DEBUG-a4f2]`. Cleanup at the end becomes a single grep. Untagged logs survive; tagged logs die.
+**Tag every debug log** with a unique prefix, e.g. `[DEBUG-a4f2]`. Cleanup at the end becomes a single grep.
 
 **Perf branch.** For performance regressions, logs are usually wrong. Instead: establish a baseline measurement (timing harness, `performance.now()`, profiler, query plan), then bisect. Measure first, fix second.
 
