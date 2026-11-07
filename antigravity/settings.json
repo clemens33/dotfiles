@@ -21,7 +21,8 @@
     "/Users/ckriech/projects/mic/ai/assistant",
     "/Users/ckriech/projects/mic/k8s",
     "/Users/ckriech/projects/clemens33/ae-rust",
-    "/Users/ckriech/projects/clemens33/portfolio"
+    "/Users/ckriech/projects/clemens33/portfolio",
+    "/Users/ckriech/projects/clemens33/ae"
   ],
   "//mcpServers": "Pinned 2026-09-07 (bump via harness-update): @upstash/context7-mcp 4.0.5; chrome-devtools-mcp 1.8.0. Same pins in codex/config.toml, claude/mcpServers.json, opencode/opencode.jsonc, grok/config.toml \u2014 bump all five together. No comment key inside mcpServers itself: every key there is a server name.",
   "mcpServers": {
