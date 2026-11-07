@@ -43,7 +43,7 @@ model_auto_compact_token_limit = 200000
 # Full override of the built-in compaction prompt (`compact_prompt`, codex
 # 0.154.0). Compacting earlier only pays off if the handoff survives it, so the
 # summary contract is explicit here. Same preservation/drop fields as the
-# `## Responses and compact instructions` section of shared/AGENTS.md, which
+# `## Compact instructions` section of shared/AGENTS.md, which
 # renders into ~/.codex/AGENTS.md.
 compact_prompt = '''
 Summarize this session as a handoff for a fresh context window. Be concise and

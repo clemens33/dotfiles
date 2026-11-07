@@ -109,7 +109,7 @@ In this document: inline citations carry tier markers `[A]`, `[B]`, `[C]`, `[D]`
 
 ## 4. Verification-First Lifecycle
 
-Generated code is abundant. **Validation is the bottleneck.** This shifts the operating model. `WORKFLOW.md` and `shared/AGENTS.md` attribute "generated code is debt until validated" to the Anthropic 2026 Agentic Coding Trends Report (§18). The November 2026 refresh fetched that PDF (HTTP 200) but could not text-search it, so the attribution is unconfirmed. Treat the phrase as this repo's shorthand until someone reads the report.
+Generated code is abundant. **Validation is the bottleneck.** This shifts the operating model. `WORKFLOW.md` attributes "generated code is debt until validated" to the Anthropic 2026 Agentic Coding Trends Report (§18). The November 2026 refresh fetched that PDF (HTTP 200) but could not text-search it, so the attribution is unconfirmed. Treat the phrase as this repo's shorthand until someone reads the report.
 
 ### Operating rules
 
@@ -117,7 +117,7 @@ Generated code is abundant. **Validation is the bottleneck.** This shifts the op
 2. **Agents must run or create executable verification where feasible** — tests, type checks, linters, smoke commands.
 3. **If executable verification is not possible, the artifact must declare the verification gap explicitly.** No silent unverified output.
 4. **Review artifacts preserve**: intent, diff, tests run, residual risk, source tier of claims relied upon.
-5. **Review gates by change class** live in `WORKFLOW.md` (Cross-model review) and `shared/AGENTS.md` (Code review threshold). `/ultrareview` adds depth but not provider diversity (§10).
+5. **Review gates by change class** live in `WORKFLOW.md` (Cross-model review) and `shared/AGENTS.md` (Cross-model review). `/ultrareview` adds depth but not provider diversity (§10).
 
 ### Anti-patterns
 

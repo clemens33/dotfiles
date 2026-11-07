@@ -83,7 +83,7 @@ For each slice:
 - Test behavior through the slice's **public interface**, not implementation shape
 - Test must fail for the right reason (not import error, not undefined symbol)
 - Tests are written against the slice's **acceptance contract** (template at the end) — not invented behavior
-- **Spec-first (default at M/L):** a **different-provider** agent authors and freezes the acceptance tests before implementation; the TDD loop governs implementer-level tests inside that frame. The author works strictly from the acceptance contract plus domain docs, and challenges tests that encode implementation shape (imagined behavior, accidental API shape). A waiver names the triage reason. Contract: `shared/AGENTS.md` → Universal principles → **Spec-first for M/L**.
+- **Spec-first (default at M/L):** a **different-provider** agent authors and freezes the acceptance tests before implementation; the TDD loop governs implementer-level tests inside that frame. The author works strictly from the acceptance contract plus domain docs, and challenges tests that encode implementation shape (imagined behavior, accidental API shape). A waiver names the triage reason. Contract: `shared/AGENTS.md` → Engineering principles → **Spec-first for M/L**.
 - **Strict isolation red|green.** Different-provider authorship is the default form; the context-clear fallback applies only under a named waiver.
 
 **Targeted test selection:** tell the agent which tests the change impacts; that beats a generic "run tests".

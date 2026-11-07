@@ -68,5 +68,5 @@ Everything else is a documented practitioner pattern or research-backed adjacent
 - Boris Cherny — "Always give Claude a way to verify its work" [A]
 - Armin Ronacher — judgment-not-abdication; manual QA / taste pass [C]
 - Anthropic 2026 Agentic Coding Trends Report [A]
-- `shared/AGENTS.md` Cross-Model Collaboration section [L]
+- `shared/AGENTS.md` Cross-model review section [L]
 - `WORKFLOW.md` L bucket + Long-running mode [L]
