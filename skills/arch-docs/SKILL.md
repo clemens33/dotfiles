@@ -1,13 +1,10 @@
 ---
 name: arch-docs
 description: >
-  Living architecture documentation in the repo. arc42-lite + C4 model,
-  Mermaid-first. Captures the current system: what exists, how it's
-  composed, how it runs, what invariants it must preserve. Distinct from
-  ADRs (frozen decisions). Distinct from agent orientation
-  (CLAUDE.md/AGENTS.md, which describes how to *work in* the repo). Use
-  when the user says "document the architecture", "create arch docs",
-  "update architecture docs", or "ARCHITECTURE.md".
+  Write and maintain living architecture documentation (arc42-lite, C4 via Mermaid): what the
+  system is, how it is composed and runs, its trust boundaries and invariants. Use when the user
+  asks to document the architecture, create or update arch docs, or write ARCHITECTURE.md. Not
+  for frozen decisions (use `adr`) or agent orientation (CLAUDE.md / AGENTS.md).
 metadata:
   category: preference
 
@@ -19,22 +16,12 @@ Living architecture documentation. Describes the *current* system: what
 exists, how it's composed, how it runs, what trust boundaries it has, and
 what invariants must not break. Evolves with the code. Reviewable in PRs.
 
-Three things `arch-docs` is **not**:
-
-- An ADR. ADRs capture frozen *decisions* and their rationale. Architecture
-  docs describe *current state*. Link, don't duplicate.
-- Agent orientation. `CLAUDE.md` / `AGENTS.md` tells an agent how to work
-  in the repo (commands, conventions, gotchas). `arch-docs` tells anyone
-  what the system *is*.
-- A tutorial or how-to. Architecture docs are Diátaxis Explanation +
-  Reference. Tutorials and runbooks live elsewhere.
+It is not an ADR (frozen decisions and rationale: link, don't duplicate),
+not agent orientation (`CLAUDE.md` / `AGENTS.md` say how to *work in* the repo,
+arch docs say what the system *is*), and not a tutorial or how-to (Diátaxis
+Explanation + Reference; tutorials and runbooks live elsewhere).
 
 ## When to use
-
-Trigger phrases: "document the architecture", "create/update arch docs",
-"ARCHITECTURE.md", "system overview", "C4 diagram for this repo".
-
-Use when:
 
 - A repo has no architecture documentation and the system is non-trivial
   (more than a single file or single-purpose CLI)
@@ -84,10 +71,6 @@ Recon the actual code/config before writing:
 - Find the auth/trust boundaries (auth middleware, JWT verification, CORS
   config, network policies)
 
-Cite evidence in your output. Architecture docs must be **evidence-backed**:
-every node and edge in a diagram traces to a real file, service, or config.
-No invented infrastructure.
-
 ### Step 2: Decide doc shape
 
 Pick the smallest shape that fits:
@@ -136,7 +119,7 @@ Globs and directories are allowed. Watch the **smallest set** that, if
 changed, would invalidate the doc.
 
 Staleness check (run on every invocation in a repo with existing arch
-docs):
+docs, over the whole file, not only the section you touched):
 
 1. **Soft signal — git history.** For each doc, compare the last commit
    touching any watched path vs the last commit touching the doc. If
@@ -179,7 +162,7 @@ docs):
    recent than the doc's last-commit time.
 
    Do **not** use filesystem mtimes — they break on clone, checkout,
-   rebase, branch switches, and don't survive shallow clones.
+   rebase, branch switches, and shallow clones.
 
 2. **Hard signal — broken references.** Scan the doc's prose and Mermaid
    diagrams for references that no longer exist:
@@ -236,8 +219,9 @@ unrelated work in progress.
 
 ## Optional addendum: AI systems
 
-This addendum is **opt-in**. Add it only when recon finds at least one
-of these unambiguous signals (or two weak signals):
+Opt-in. Add an `### AI architecture` section to the overview (skeleton in
+`references/templates.md`) only when recon finds at least one strong signal
+or two weak ones. For non-AI repos it is noise.
 
 **Strong signals (one is enough):**
 - LLM/agent SDK imports: `anthropic`, `openai`, `litellm`, `langchain`,
@@ -257,14 +241,8 @@ of these unambiguous signals (or two weak signals):
 - A vector DB client (`pinecone`, `weaviate`, `qdrant`, `chroma`,
   `pgvector`)
 
-Do **not** add the addendum just because the word "prompt" appears in
-the codebase. Generic prompt files in shell tools, UI code, or
-documentation are not AI-system signals.
-
-If the system is AI-related, add an `### AI architecture` section to the overview (skeleton in `references/templates.md`).
-
-This section is **opt-in** — only add it when the repo actually has AI
-components. For non-AI repos, it's noise.
+The word "prompt" alone is not a signal: generic prompt files in shell tools,
+UI code, or documentation do not make a repo an AI system.
 
 ## Mermaid conventions for arch-docs
 
@@ -273,8 +251,6 @@ components. For non-AI repos, it's noise.
 - Use **`flowchart` with `subgraph`** for C4 diagrams. Mermaid has a C4
   beta syntax — don't use it unless the repo already does. Flowchart is
   more portable and widely renderable.
-- Cap each diagram at ~15 nodes. If you need more, you're at the wrong
-  zoom level — split.
 - Label every edge with the protocol or intent (`HTTPS`, `SQL`,
   `enqueue`, `OIDC`).
 - Mark trust boundaries with `subgraph` named after the boundary
@@ -285,29 +261,29 @@ components. For non-AI repos, it's noise.
 - **Code is truth.** If the doc contradicts the source, fix the doc or
   supersede it. Never the other way around.
 - **Evidence-backed.** Every node, edge, and prose claim traces to a
-  real file, service, or config. List the files you inspected when
-  reporting.
+  real file, service, or config. No invented infrastructure. List the files
+  you inspected when reporting.
 - **Current state only.** Planned features go to roadmap or scope
   documents, not architecture docs. If documenting a migration in
   progress, label `Current` and `Target` explicitly.
 - **Lean by default.** Overview ~200 lines (350 hard cap). Subsystems
-  ~150 (250 hard cap). Diagrams ≤15 nodes. Runtime scenarios ≤3.
+  ~150 (250 hard cap). Diagrams ≤15 nodes (more means the wrong zoom
+  level: split). Runtime scenarios ≤3. Split a growing doc by bounded context.
 - **Include diagrams by default.** L1 (or Consumer Context for
   libraries), L2, Deployment (when applicable), and up to 2-3 sequence
   diagrams for critical flows. Per `viz` skill rules. Library/SDK
   escapes (`No L1: library package`, `No deployment view`) defined in
   the overview template (`references/templates.md`) are valid; use them, don't ignore them.
-- **Diátaxis boundary.** Architecture docs are Explanation + Reference.
-  No tutorials, no how-to, no runbooks inline. Link to those if they
-  exist elsewhere.
 - **ADR linkage rule.** Link related ADRs; do not repeat the decision
   rationale. If current architecture contradicts an Accepted ADR, flag
   it and suggest a superseding ADR.
 - **Status field discipline.** A doc is `Current`, `Migrating to X`, or
   `Stale`. If you can't honestly mark it `Current`, fix it or note the
   gaps.
-- **No AI/co-author trailers** in commits or files. Matches the user's
-  global git policy.
+- **Do not leak topology in public docs.** Internal hostnames, IPs,
+  network ranges and customer flows in a public README are a security
+  smell.
+- **No AI/co-author trailers** in commits or files.
 
 ## Anti-patterns
 
@@ -317,39 +293,25 @@ components. For non-AI repos, it's noise.
 - **Architecture-as-wiki.** Docs that read like a tour ("first this
   happens, then that…") instead of a reference. Architecture docs are
   for skimming and lookup, not narrative.
-- **Mega-doc.** Everything in one 1500-line file. Split by bounded
-  context.
-- **Aspirational drift.** Documenting features that aren't merged yet.
-  If it's not in the code, it's not architecture.
 - **Diagram spam.** A diagram per paragraph. Use a diagram when it
   carries information prose can't.
-- **Inventing components.** A box on the diagram that has no
-  corresponding code or config.
-- **Stale doc shipping.** Updating one section while leaving the rest
-  contradicting current code. If you touch a doc, run the staleness
-  check on the whole file.
 - **Documenting trivial structure.** "The `utils/` folder contains
   utility functions" — not architecture, just labels.
-- **Using diagrams to leak topology** for public docs. Internal
-  hostnames, IPs, network ranges, customer flows in a public README is
-  a security smell.
 
 ## Boundary with other skills
 
 - **`adr`**: frozen decisions and why they were made. Link from arch
-  docs, don't repeat. If architecture contradicts an Accepted ADR,
-  that's an ADR-superseding event.
+  docs. If architecture contradicts an Accepted ADR, that's an
+  ADR-superseding event.
 - **`viz`**: Mermaid technique. arch-docs is the *what to draw* and
   *where it lives*; viz is the *how to draw it*.
 - **`scope`**: implementation plan for upcoming work. arch-docs is
-  current state. A scoped change can refer to arch docs as "current"
-  and describe the "target" — but the actual update to arch docs
-  happens after the change ships.
-- **`init` / `CLAUDE.md` / `AGENTS.md`**: agent orientation — how to
-  work in this repo (commands, conventions, repo map). arch-docs:
-  what the system *is*. Overlap is small: `AGENTS.md` may link to
-  `docs/architecture/README.md` as a one-line "see also". arch-docs
-  should not rewrite agent instructions.
+  current state: a scoped change can refer to arch docs as "current" and
+  describe the "target", and the arch docs update happens after the change
+  ships.
+- **`init` / `CLAUDE.md` / `AGENTS.md`**: agent orientation. `AGENTS.md`
+  may link to `docs/architecture/README.md` as a one-line "see also".
+  arch-docs should not rewrite agent instructions.
 
 ## Notes on detection edge cases
 

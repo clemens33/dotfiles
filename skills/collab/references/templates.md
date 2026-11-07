@@ -1,6 +1,6 @@
 # Collab — templates
 
-Relocated verbatim from `SKILL.md`. Read when writing or reviewing a round artifact. The artifact taxonomy, rules, decision log and completion gate stay in `SKILL.md`.
+Read when writing or reviewing a round artifact. The artifact taxonomy, rules, decision log and completion gate stay in `SKILL.md`.
 
 ### Position template (`<agent>.md`)
 

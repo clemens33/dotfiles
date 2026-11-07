@@ -102,7 +102,7 @@ codex exec -s read-only -c approval_policy="never" -o .local/<output>.md "<PROMP
 # ONLY when codex must apply changes itself — never concurrently with another
 # agent editing the same checkout (one writer per file); prefer an isolated
 # git worktree for this:
-codex exec -s workspace-write -o .local/<output>.md "<PROMPT>"
+codex exec -s workspace-write -c approval_policy="never" -o .local/<output>.md "<PROMPT>"
 ```
 
 A write-enabled sandbox grants write access to the checkout it runs in. A reviewer invoked

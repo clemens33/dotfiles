@@ -1,12 +1,10 @@
 ---
 name: adr
 description: >
-  Write an Architecture Decision Record capturing the why behind a decision —
-  the constraints, alternatives ruled out, and trade-offs accepted. Use when
-  the user says "create an ADR", "document this decision", "write this up as
-  an ADR", or after a design discussion that resolved with a clear choice.
-  Code captures what; an ADR captures why future-you and future-teammates
-  would have made the same call.
+  Write an Architecture Decision Record: the constraints, alternatives ruled out and trade-offs
+  accepted behind a resolved decision. Use when the user asks for an ADR, asks to document a
+  decision, or after a design discussion that reached a clear choice. Not for describing the
+  current system (use `arch-docs`).
 metadata:
   category: preference
 
@@ -14,14 +12,11 @@ metadata:
 
 # ADR
 
-Architecture Decision Records preserve the reasoning behind decisions across
-time and team turnover. The code shows what got built — an ADR shows why this
-option won, what was ruled out, and what trade-offs were accepted on purpose.
+An ADR preserves the reasoning behind a decision across time and team turnover. The code shows
+what got built; an ADR shows why this option won, what was ruled out, and which trade-offs were
+accepted on purpose.
 
 ## When to use
-
-Trigger phrases: "create an ADR", "write this up as an ADR", "document this
-decision", "ADR for this", "this is ADR-worthy".
 
 Write an ADR when:
 
@@ -89,9 +84,8 @@ If not found:
 Before writing, verify the input qualifies:
 
 - **Is it resolved?** "We should consider X" is a TODO, not an ADR. Push back
-  if the conversation didn't reach a clear conclusion.
-- **Is it architectural?** Variable names and lint rules don't get ADRs.
-  Boundaries, protocols, technology choices, and trade-offs do.
+  if the conversation didn't reach a clear conclusion; a decision that was
+  never made is worse than no record.
 - **Is there a meaningful "why"?** Capture at least one of: an alternative
   considered, a rejected baseline, or a forcing constraint (compliance,
   vendor, migration, safety, compatibility). A "constraint-forced
@@ -100,20 +94,15 @@ Before writing, verify the input qualifies:
   survived. The status-quo "do nothing" option is a valid alternative if
   applicable.
 
-If the input fails the "resolved" or "architectural" gates, tell the user
-and don't write the ADR. If alternatives are absent, write the ADR with the
-constraint that forced the call (and use "Only viable option because
-\<constraint>" in Decision Outcome).
+If the input is unresolved or not architectural, tell the user and don't write the ADR. If
+alternatives are absent, write the ADR with the constraint that forced the call (and use "Only
+viable option because \<constraint>" in Decision Outcome).
 
 ### Step 3: Gather inputs
 
-**From the conversation, without re-asking:**
-
-- The decision being made
-- Alternatives that were discussed and rejected
-- File paths, modules, or systems that were touched or referenced
-- Constraints mentioned (deadlines, compliance, performance, compatibility)
-- Tickets, prior ADRs, or external docs that came up
+**From the conversation, without re-asking:** the decision, the alternatives discussed and
+rejected, the file paths, modules or systems touched, the constraints mentioned (deadlines,
+compliance, performance, compatibility), and any tickets, prior ADRs or external docs.
 
 **Ask the user only for what's missing or unclear:**
 
@@ -125,15 +114,14 @@ constraint that forced the call (and use "Only viable option because
 - Status: usually "Proposed" unless the decision is already shipped, in which
   case "Accepted"
 
-Don't fabricate alternatives that weren't actually considered. Don't invent
-constraints that weren't mentioned. If a section would be guesswork, leave it
-short and honest rather than padding it.
+Don't fabricate alternatives that weren't actually considered, and don't invent constraints
+that weren't mentioned. If a section would be guesswork, leave it short and honest rather than
+padding it.
 
 ### Step 4: Add a visualization (default ON)
 
-**Every ADR includes at least one Mermaid diagram by default.** The whole
-point of an ADR is to give a future reader the mental model — and a diagram
-does that faster than three paragraphs of prose. Use the `viz` skill for
+**Every ADR includes at least one Mermaid diagram by default.** It hands the
+future reader the mental model faster than prose. Use the `viz` skill for
 technique and templates.
 
 Pick the diagram type from what the decision is *about*:
@@ -162,16 +150,12 @@ explicitly in the ADR — write "No diagram: <reason>"):
 - The decision is about a single function or data field with no system
   context
 
-If you find yourself reaching for the exception list, prefer to draw
-something small over skipping. A 3-node diagram beats no diagram.
+When in doubt, draw something small: a 3-node diagram beats no diagram.
 
 ### Step 5: Write the ADR
 
 Compute the next number from existing files. Use the imperative title as the
-slug. Write the file.
-
-If using the repo's existing template, fill it in. If using the MADR fallback,
-use the template in `references/madr-template.md`.
+slug. Fill in the repo's template, or the fallback in `references/madr-template.md`.
 
 ### Step 6: Report next steps
 
@@ -188,10 +172,9 @@ Print:
 Committing follows the repository's standing authorization, not a rule in
 this skill. If the session or the repo's `AGENTS.md` / `CLAUDE.md` already
 authorizes committing completed work, commit the ADR with the message above
-and say so in the report. If no such authorization is in context, leave the
-file uncommitted and report the proposed message instead. Either way, stage
-only the ADR and any index file you touched — never the user's unrelated
-work in progress.
+and say so in the report; otherwise leave the file uncommitted and report the
+proposed message. Either way, stage only the ADR and any index file you
+touched — never the user's unrelated work in progress.
 
 ## MADR-inspired fallback template
 
@@ -205,6 +188,8 @@ work in progress.
   not how the conversation unfolded. No quotes, no chronology, no recap of
   the design discussion. The reader doesn't need the journey, they need
   the destination.
+- **Rejected alternatives get a name and one line on why they lost.** Don't
+  paste the rejected design.
 - **Code is truth.** If the ADR contradicts the source, fix the ADR or
   supersede it — never the other way around. `Accepted` status implies the
   decision is reflected in the current code.
@@ -214,50 +199,25 @@ work in progress.
 - **One decision per ADR.** If you find yourself writing "and also we
   decided to…" — that's a second ADR.
 - **Imperative titles.** "Use X for Y", not "X adoption" or "Decision on Y".
-- **Always include a Mermaid diagram.** A diagram is the fastest way to
-  hand a future reader the mental model. Skip only when one of the narrow
-  exceptions in Step 4 applies, and say so explicitly. See the `viz` skill
-  for technique and templates.
 - **The negative consequences section is the most valuable.** A future
   reader asking "why did they do this?" needs to see the trade-offs that
-  were accepted on purpose. Don't soften them.
+  were accepted on purpose. Don't soften them, and be specific: "may have
+  performance implications" is not a consequence — name it or delete the line.
 - **Link to code, don't restate it.** Full paths to affected components.
   Don't paste code blocks unless the snippet itself is the decision.
+- **No implementation steps.** "Phase 1: do X. Phase 2: do Y." belongs in
+  `scope`, not an ADR.
 - **Status is a lifecycle, not a label.** `Proposed` → `Accepted` →
   `Deprecated` or `Superseded by ADR-NNNN`. Don't edit Accepted ADRs to
   reverse them — write a new one that supersedes.
-- **No AI/co-author trailers in the file or commit.** Matches the user's
-  global git policy.
-
-## Anti-patterns
-
-- **Dumping the conversation.** Quoting Slack threads, reproducing the
-  chat that led to the decision, or narrating "first we considered X, then
-  John said Y, then we realized Z." The ADR is the *output*, not the
-  transcript.
-- **Reproducing rejected proposals in detail.** Name the alternative, give
-  one line on why it lost, move on. Don't paste the rejected design.
-- **Including implementation steps.** "Phase 1: do X. Phase 2: do Y." That
-  belongs in `scope`, not an ADR.
-- **Inventing components, services, or protocols** not evidenced by the
-  repo or conversation.
-- **Writing an ADR for a decision that was never actually made.**
-  Fabricated decisions are worse than no record.
-- **Padding alternatives with options nobody considered**, just to fill the
-  template.
-- **Vague consequences:** "may have performance implications" → be specific
-  or delete the line.
-- **Documenting *what* the code does** instead of *why* this option won.
-- **Writing ADRs for trivial or already-obvious choices.**
-- **Restating the codebase:** an ADR is not architecture documentation,
-  it's a decision record.
-- **Editing an Accepted ADR to flip the decision** instead of superseding
-  it.
+- **No AI/co-author trailers in the file or commit.**
 
 ## Boundary with other skills
 
 - **`viz`**: the technique for drawing the diagrams every ADR includes by
   default. ADR is the container, viz is the diagrammer.
+- **`arch-docs`**: describes the current system. An ADR records one decision
+  and its why; link to architecture docs, don't restate the codebase.
 - **`scope`**: plans how to implement. **`adr`**: records why this approach
   was chosen over alternatives. Often used together — scope a phase, then
   ADR the architectural choices the scope assumed.

@@ -1,6 +1,6 @@
 # ADR — MADR-inspired fallback template
 
-Relocated verbatim from `SKILL.md`. Use only when Step 1 found no repo ADR template. Numbering (`0001-`) and filename (`NNNN-imperative-kebab-case-title.md`) are set in Step 1; the Rules in `SKILL.md` apply to this template as to any repo template.
+Use only when Step 1 found no repo ADR template. Numbering (`0001-`) and filename (`NNNN-imperative-kebab-case-title.md`) are set in Step 1; the Rules in `SKILL.md` apply to this template as to any repo template.
 
 ## MADR-inspired fallback template
 

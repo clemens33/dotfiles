@@ -1,41 +1,33 @@
 ---
 name: collab
-description: Structured research and collaboration protocol for one or more agents. Use when running design sessions, research tasks, or multi-agent collaboration with auditable decisions and a shared plan. Works solo with a second agent joining later.
+description: >
+  Run a structured, auditable research or design collaboration between agents: positions,
+  reviews, merge and signoff files, a decision log and one authoritative plan. Use when two
+  agents must converge on a design, when research needs auditable decisions, or when a solo run
+  may gain a second agent later; works in batch rounds or live with the user. Not for reviewing
+  a diff (use `code-review`).
 metadata:
   category: preference
 
 ---
 
-# Structured Research & Collaboration Protocol (V3)
+# Structured Research & Collaboration Protocol
 
-Reusable protocol for structured research, design, and multi-agent collaboration in any repo.
-
-Use this when:
-- two agents work on the same topic
-- you need auditable decisions and explicit convergence
-- you want it to work in both sequential and parallel runs
-- you start with one agent and may add a second agent later
-
-Born from real collaboration sessions. V3 adds Live Mode for continuous user-driven sessions, based on retro from the CLI mode design collaboration.
+Reusable protocol for structured research, design, and multi-agent collaboration in any repo. It
+works in sequential and parallel runs, and with one agent when a second may join later.
 
 ## Two Operating Modes
 
-### Round Mode (batch convergence)
+**Round Mode (batch convergence).** Use when agents work asynchronously or need formal agreement
+on architecture-level changes. Flow: draft → review → merge → signoff.
 
-Use when agents work asynchronously or need formal agreement on architecture-level changes.
+**Live Mode (continuous collaboration).** Use when the user is actively driving the session,
+decisions emerge in conversation, and direction changes frequently. Flow: research notes →
+decisions logged immediately → signoff when direction stabilizes. Don't force artificial round
+boundaries.
 
-Flow: draft → review → merge → signoff (same as V2).
-
-### Live Mode (continuous collaboration)
-
-Use when the user is actively driving the session, decisions emerge in conversation, and direction changes frequently.
-
-Flow: research notes → decisions logged immediately → signoff when direction stabilizes.
-
-**When to use which:**
-- **Live Mode**: user is present, fast-moving design discussion, decisions made in real-time
-- **Round Mode**: offline review, major redesign checkpoint, formal disagreement resolution
-- You can switch between modes within a session. A live session can trigger a mini-round when there's real disagreement.
+You can switch between modes within a session. A live session can trigger a mini-round when
+there's real disagreement.
 
 ## Workspace Location
 
@@ -181,23 +173,14 @@ Minor fixes to `merged.md` (typos, formatting) can be updated in place. If the s
 
 ## Single-Agent Bootstrap Mode
 
-If only one agent is active, the protocol still works.
+If only one agent is active, the protocol still works with provisional artifacts in the same
+layout:
 
-Use the same folder layout with provisional artifacts:
+- `rounds/r1/<agent>.md` (a numbered draft)
+- `rounds/r1/<agent>_self_review.md` (addresses every numbered point critically)
+- `rounds/r1/merged.md` and `rounds/r1/signoff_<agent>.md`, both marked `Status: PROVISIONAL`
 
-- `rounds/r1/<agent>.md`
-- `rounds/r1/<agent>_self_review.md`
-- `rounds/r1/merged.md` (marked `Status: PROVISIONAL`)
-- `rounds/r1/signoff_<agent>.md` (marked `Status: PROVISIONAL`)
-
-Rules in single-agent mode:
-
-1. Write a numbered draft.
-2. Write a self-review that addresses every numbered point critically.
-3. Record non-trivial tradeoffs in `DECISIONS.md`.
-4. Mark outputs as `PROVISIONAL` until a second agent reviews.
-
-When a second agent joins later:
+Record non-trivial tradeoffs in `DECISIONS.md`. When a second agent joins later:
 
 1. The second agent writes `rounds/r1/<other>.md` and review file.
 2. The original agent reviews the new draft.
@@ -239,13 +222,7 @@ Prefer **git worktrees** for parallel agent work — each agent gets its own wor
 
 - Keep rounds short and concrete.
 - Prefer explicit disagreement over vague "looks good" reviews.
-- Converge in signoff, not by ad-hoc edits to the other agent's docs.
-- In Live Mode, don't force artificial round boundaries. Log decisions as they happen, merge when stable.
-
-## Anti-Patterns
-
-- Building complex lock infra for human turn-taking.
-- Requiring frontmatter/tooling metadata no one actually parses.
-- Forcing artificial review quotas instead of addressing actual points.
-- Writing merged.md before the round's scope has settled.
-- Working around protocol friction instead of fixing the protocol itself.
+- Don't build complex lock infrastructure for human turn-taking.
+- Don't require frontmatter or tooling metadata no one actually parses.
+- Don't force artificial review quotas instead of addressing actual points.
+- Fix protocol friction in the protocol itself instead of working around it.

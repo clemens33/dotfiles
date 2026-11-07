@@ -1,6 +1,6 @@
 # Arch Docs — templates
 
-Relocated verbatim from `SKILL.md`. Read before writing or restructuring an architecture doc. The size limits (overview ~200 lines / 350 hard cap, subsystem ~150 / 250, diagrams <=15 nodes, runtime scenarios <=3), the library escapes and the AI-addendum signal gate stay in `SKILL.md`.
+Read before writing or restructuring an architecture doc. The size limits (overview ~200 lines / 350 hard cap, subsystem ~150 / 250, diagrams <=15 nodes, runtime scenarios <=3), the library escapes and the AI-addendum signal gate stay in `SKILL.md`.
 
 ## Overview template (`README.md` or `ARCHITECTURE.md`)
 
