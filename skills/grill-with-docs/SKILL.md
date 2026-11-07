@@ -1,6 +1,11 @@
 ---
 name: grill-with-docs
-description: Grilling session that challenges your plan against the existing domain model, sharpens terminology, and updates documentation (CONTEXT.md, ADRs) inline as decisions crystallise. Use when user wants to stress-test a plan against their project's language and documented decisions.
+description: >
+  Interviews the user one question at a time to stress-test a plan against the
+  project's domain model, sharpening terminology and updating CONTEXT.md and
+  ADRs as decisions settle. Use when the user wants a plan grilled against the
+  project's language and documented decisions. Not for drafting an ADR outside a
+  grilling session (use `adr`) or producing a phased plan (use `scope`).
 license: MIT
 source: https://github.com/mattpocock/skills/tree/main/skills/engineering/grill-with-docs
 metadata:
@@ -10,7 +15,7 @@ metadata:
 
 <what-to-do>
 
-Interview me relentlessly about every aspect of this plan until we reach a shared understanding. Walk down each branch of the design tree, resolving dependencies between decisions one-by-one. For each question, provide your recommended answer.
+Interview me about every aspect of this plan until we reach a shared understanding. Walk down each branch of the design tree, resolving dependencies between decisions one-by-one. For each question, provide your recommended answer.
 
 Ask the questions one at a time, waiting for feedback on each question before continuing.
 

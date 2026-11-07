@@ -1,6 +1,10 @@
 ---
 name: manage-skills
-description: Create, update, split, and manage Claude Code skills across the public dotfiles repo and the optional private overlay. Use when the user wants to save a workflow as a skill, update existing skills, split an oversized skill body into references, or promote a private skill to public.
+description: >
+  Creates, updates, reviews, splits and promotes skills across the public
+  dotfiles repo and the optional private overlay. Use when the user wants to
+  save a workflow as a skill, update or review an existing skill, split an
+  oversized skill body into references, or promote a private skill to public.
 metadata:
   category: preference
 
@@ -8,21 +12,14 @@ metadata:
 
 # Manage Skills
 
-Create, update, and manage Claude Code skills (slash commands) across the two-layer dotfiles setup.
+Create, update and manage agent skills across the two-layer dotfiles setup.
 
 ## Two-layer model
 
-AI coding tool configs live in two repos:
+- **Public layer** — `~/projects/clemens33/dotfiles/`: generic, shareable skills (planning, refactoring, security review, doctrine, etc.)
+- **Private overlay** (optional submodule) — `~/projects/clemens33/dotfiles/dotfiles-mic/`: org-specific skills and agents (jira, grafana, internal infra, credentials patterns). Only fetched on machines with auth to the private repo.
 
-- **Public layer** — `~/projects/clemens33/dotfiles/`
-  - Remote: `git@github.com:clemens33/dotfiles.git`
-  - Generic, shareable skills (planning, refactoring, security review, doctrine, etc.)
-- **Private overlay** (optional submodule) — `~/projects/clemens33/dotfiles/dotfiles-mic/`
-  - Remote: `git@github.com:clemens33/dotfiles-mic.git`
-  - Org-specific skills + agents (jira, grafana, internal infra, credentials patterns)
-  - Only fetched on machines with auth to the private repo
-
-Both layers contribute skill symlinks into `~/.claude/skills/` (real directory, NOT a directory symlink — each skill is its own symlink). The wrapper `./install` script runs the public layer's Dotbot pass, then optionally runs the private overlay's Dotbot pass if the submodule is present.
+Both layers contribute skill symlinks into `~/.claude/skills/` (a real directory, NOT a directory symlink — each skill is its own symlink). The wrapper `./install` script runs the public layer's Dotbot pass, then the private overlay's Dotbot pass if the submodule is present.
 
 ## Decide which layer
 
@@ -36,64 +33,16 @@ Both layers contribute skill symlinks into `~/.claude/skills/` (real directory, 
 
 When in doubt: start public. Move to private only if leak-checking surfaces internal content.
 
-## Creating a new public skill
+## Creating a skill
 
 ```bash
-cd ~/projects/clemens33/dotfiles
 mkdir -p skills/<skill-name>
 $EDITOR skills/<skill-name>/SKILL.md
 ```
 
-Start from the canonical template below — it is the only skill template in this repo, and it
-is written to pass `lint-skills.sh` on the first run.
+Run it in `~/projects/clemens33/dotfiles` for a public skill, or in `~/projects/clemens33/dotfiles/dotfiles-mic` for a private one. Start from the canonical template below — it is the only skill template in this repo, and it is written to pass `lint-skills.sh` on the first run.
 
-**Add a symlink entry in the public `install.conf.yaml`** for both Claude Code (`~/.claude/skills/<skill-name>: skills/<skill-name>`) and Codex (`~/.agents/skills/<skill-name>: skills/<skill-name>`). Codex user-scope skills live in `~/.agents/skills`; `~/.codex/skills` is legacy and holds Codex's own `.system` set.
-
-Re-run install to pick up the new symlinks:
-
-```bash
-./install
-```
-
-Commit + push:
-
-```bash
-git add -- skills/<skill-name>/ install.conf.yaml
-git commit -m "add <skill-name> skill"
-git push
-```
-
-Stage the **skill directory**, not just `SKILL.md`: any `references/`, `scripts/` or `assets/`
-you created alongside it would otherwise stay untracked, and the skill would land broken for
-everyone else. Never `git add -A` — other lanes' work is in this checkout too.
-
-## Creating a new private skill
-
-```bash
-cd ~/projects/clemens33/dotfiles/dotfiles-mic
-mkdir -p skills/<skill-name>
-$EDITOR skills/<skill-name>/SKILL.md
-```
-
-Same template as above. Add symlink entries in the **private overlay** `install.conf.yaml`. Re-run install from the public root:
-
-```bash
-cd ~/projects/clemens33/dotfiles
-./install
-```
-
-Commit + push in the private repo first, then update the public submodule pointer:
-
-```bash
-cd dotfiles-mic
-git add -- skills/<skill-name>/ install.conf.yaml
-git commit -m "add <skill-name> skill"
-git push
-cd ..
-git add dotfiles-mic
-git commit -m "submodule: bump dotfiles-mic"
-git push
-```
+Add symlink entries to the `install.conf.yaml` of the layer that owns the skill. A public skill needs one for Claude Code (`~/.claude/skills/<skill-name>: skills/<skill-name>`) and one for Codex (`~/.agents/skills/<skill-name>: skills/<skill-name>`). Codex user-scope skills live in `~/.agents/skills`; `~/.codex/skills` is legacy and holds Codex's own `.system` set. Then run `./install` from the public root to pick up the new symlinks. Commit and push as in "Lifecycle order".
 
 ## Canonical skill template
 
@@ -150,17 +99,17 @@ way the user does not want, it is a `preference`.
 Body limits: 500 lines and ~5000 estimated tokens (gate 4). Over either, do not add a waiver —
 split the reference material out (see "Splitting an oversized skill" below).
 
+**Write the description in third person.** Front-load what the skill does, add a Not-for boundary only for a real adjacent skill, and keep stage lists and synonym piles out; process detail belongs in the body.
+
 **Keep skills focused.** One skill = one domain. If a skill grows too broad, split it.
 
-**Include runnable commands.** Claude will use these directly — make them copy-paste ready with placeholders clearly marked.
+**Include runnable commands.** The agent will use these directly — make them copy-paste ready with placeholders clearly marked.
 
-**Include decision guidance.** Tell Claude when to take which action (e.g. "suppress if X, fix if Y").
+**Include decision guidance.** Tell the agent when to take which action (e.g. "suppress if X, fix if Y").
 
 ## Updating an existing skill
 
-Edit `SKILL.md` directly in whichever layer owns it. Re-run `./install` only if you added or removed a skill (symlinks change); pure edits within a skill take effect immediately because the file is symlinked.
-
-Commit and push in the layer that owns the skill. If you edit a private skill, also update the public submodule pointer (see private-skill workflow above).
+Edit `SKILL.md` directly in whichever layer owns it. Pure edits take effect immediately because the skill is symlinked; re-run `./install` only when a skill is added or removed. Commit and push as in "Lifecycle order".
 
 ## Splitting an oversized skill
 
@@ -198,22 +147,9 @@ permanent exemption.
    compensating with a longer pointer. Report the cases alongside the measured line/token
    delta: a compression number without retention cases is not a result.
 
-## Listing installed skills
-
-```bash
-ls -la ~/.claude/skills/    # all installed skills (both layers merge here)
-ls -la ~/.agents/skills/    # the same set, linked for Codex
-```
-
 ## When to create a skill
 
-Create a skill when you discover a **repeatable workflow** during a session:
-
-- API interactions with specific services (URLs, auth, endpoints)
-- Deployment procedures with specific commands and checks
-- Troubleshooting runbooks with diagnostic steps
-- Tool-specific triage/review workflows
-- Doctrine-shaped guidance that repeats across projects
+Create a skill when you discover a **repeatable workflow** during a session: API interactions with specific services (URLs, auth, endpoints), deployment procedures, troubleshooting runbooks, tool-specific triage/review workflows, or doctrine-shaped guidance that repeats across projects.
 
 Don't create a skill for one-off tasks or things already well-documented elsewhere.
 
@@ -260,9 +196,22 @@ this order:
 2. **Cross-provider review** — the semantic checklist above, through `cross-model-review`.
    Apply BLOCKER, apply IMPORTANT unless you can say why not, and send the fixes back to the
    same reviewer.
-3. **Install** — `./install` only when symlinks changed (a new or removed skill). Pure edits
-   to an existing `SKILL.md` take effect immediately through the existing symlink.
+3. **Install** — `./install` only when symlinks changed (a new or removed skill).
 4. **Commit and push** — following the session's standing authorization, in the layer that owns
-   the skill; private first, then the public gitlink bump. Stage the whole skill directory plus
-   the `install.conf.yaml` you touched (`git add -- skills/<name>/ install.conf.yaml`) and
-   nothing else. Never `git add -A`.
+   the skill. Stage the whole skill directory plus the `install.conf.yaml` you touched
+   (`git add -- skills/<name>/ install.conf.yaml`) and nothing else: a bare `SKILL.md` add would leave
+   `references/`, `scripts/` or `assets/` untracked and the skill would land broken for everyone
+   else. Never `git add -A` — other lanes' work is in this checkout too.
+
+   A private skill goes private first, then the public gitlink bump:
+
+   ```bash
+   cd dotfiles-mic
+   git add -- skills/<skill-name>/ install.conf.yaml
+   git commit -m "add <skill-name> skill"
+   git push
+   cd ..
+   git add dotfiles-mic
+   git commit -m "submodule: bump dotfiles-mic"
+   git push
+   ```

@@ -5,8 +5,7 @@ description: >
   non-trivial design or a result that must stay defensible after shipping.
   Use when invoked as /large-feature, for multi-day work needing
   cross-provider review and per-phase test gates, or when the lean L bucket in
-  WORKFLOW.md is not enough. Not for S/M work (use `scope`) or bugs (use
-  `diagnose`).
+  WORKFLOW.md is not enough. Not for S/M work, or for bugs (use `diagnose`).
 metadata:
   category: preference
 
