@@ -1,13 +1,10 @@
 # Agentic Engineering Workflow
 
-Operating doctrine for how to actually approach a task with an agent in this
-repo. Sibling to `KNOWLEDGE.md` (field knowledge — what's true) and
-`shared/AGENTS.md` (the contract rendered into every tool's global
-instruction file — what to never do). This file answers *what to do*.
-
-Synthesized from the practitioner shortlist in `KNOWLEDGE.md` §18
-(References / Practitioner references) and stress-tested via the
-`grill-with-docs` skill. Source tier discipline (`KNOWLEDGE.md` §3) applies.
+Operating doctrine for how to approach a task with an agent. Sibling to
+`KNOWLEDGE.md` (field knowledge — what's true) and `shared/AGENTS.md` (the
+contract rendered into every tool's global instruction file; it wins on
+conflict). This file answers *what to do*. Source tier discipline
+(`KNOWLEDGE.md` §3) applies.
 
 ---
 
@@ -24,7 +21,7 @@ flowchart TD
     BugCheck -- yes --> Diag[diagnose skill loop<br/>reproduce → minimise → fix]
     BugCheck -- no --> Triage{"Triage:<br/>worst of effort × blast × uncertainty"}
 
-    Triage -- low all 3 --> S["S — Small<br/>effort by seat policy<br/>agent runs test, eyeball diff<br/>direct main"]
+    Triage -- low all 3 --> S["S — Small<br/>effort by seat policy<br/>agent runs test, eyeball diff<br/>direct to default branch"]
     Triage -- medium worst --> M["M — Medium<br/>effort by seat policy<br/>inline outline<br/>applicable repository validation<br/>read diff before commit"]
     Triage -- high any --> L["L — Large<br/>effort by seat policy<br/>plan + phased execution<br/>scope or equivalent written plan"]
 
@@ -72,25 +69,25 @@ If the task is "something is broken / regressing / failing": route through the *
 
 ## S — Small
 
-Hashimoto's "outsource slam dunks." Stay in minimal-harness mode.
+Obvious, low-risk work. Stay in minimal-harness mode.
 
 **Must:**
 - Agent runs the relevant test / lint / type check
 - You eyeball the diff before committing
 
 **Settings:**
-- Effort: follow the seat policy below; workers start at the vendor default.
-- Skills: none forced; the tone rule (`shared/AGENTS.md` rule #4) is enough
+- Effort: see § Effort level cheat sheet.
+- Skills: none forced; the tone rule (`shared/AGENTS.md` rule 4, "Anti-fluff, two registers") is enough
 - Subagents: none
-- Branch: direct main is fine (the "YOLO main" stance applies)
+- Branch: direct to the default branch is fine
 
-**Skip:** plans, `scope`, `/ultrareview`, cross-model — unless a trigger below fires.
+**Skip:** plans, `scope`, `/code-review ultra`, cross-model — unless a trigger below fires.
 
 ---
 
 ## M — Medium
 
-Skill-augmented single agent for the implementation; the acceptance tests come from an independent agent of a different provider. Cherny's "always give Claude a way to verify."
+Skill-augmented single agent for the implementation; the acceptance tests come from an independent agent of a different provider, so the implementer always has a way to verify.
 
 **Must:**
 - Brief inline outline in the prompt — one paragraph: what you're doing, what done looks like, how you'll know
@@ -100,10 +97,10 @@ Skill-augmented single agent for the implementation; the acceptance tests come f
 - Independent authorship/review is not a requirement that every seat rerun every suite. The brief assigns execution and independent assessment separately; reviewers execute checks required by repository policy and investigate disputed or missing evidence. Test-author and implementation gates remain distinct; a verdict never gates itself.
 
 **Settings:**
-- Effort: follow the seat policy below; move worker effort only on measured outcome.
+- Effort: see § Effort level cheat sheet.
 - Skills: domain skills as needed (load from a private overlay if applicable). Consider `code-review` after implementation for non-trivial diffs.
 - Subagents: `Explore` for codebase recon *only if* the change surface is unclear; the acceptance-test author is normally the pair's reviewer, not an additional seat. Authorship grants no extra write authority: a write-denied author supplies frozen test content for authorized byte-identical installation; review remains read-only.
-- Branch: feature branch + PR for shared repos; direct main for personal/dotfiles
+- Branch: feature branch + PR for shared repos; direct to the default branch for personal/dotfiles
 
 **Cross-model at M:** spec-first already makes different-provider implementation review the default — the acceptance-test author reviews the implementation (Must list above), and that pass satisfies the slice's cross-model gate. The dual-trigger rule below governs work not already reviewed (plan critique, integrated delta), not a second pass on the same implementation.
 
@@ -111,7 +108,7 @@ Skill-augmented single agent for the implementation; the acceptance tests come f
 
 ## L — Large
 
-Plan-first. Phased execution. Osmani's long-running-agents discipline.
+Plan-first. Phased execution.
 
 **Must (only two):**
 1. **Written plan first** — `scope` skill produces a phased plan with test gates *before* code. If `scope` feels heavy, write the equivalent to `.local/plan.md` by hand.
@@ -130,17 +127,17 @@ Plus the spec-first rule from the AGENTS.md universal principles: normally the s
 - **`arch-docs` update** if the change touches the living architecture (new module, new boundary, new invariant). Not for every L task.
 
 **Settings:**
-- Effort: interactive default `high`, raised to `xhigh` for judgment-heavy phases; ae judgment seats keep `xhigh` via profile; builders follow the vendor-default policy below.
+- Effort: see § Effort level cheat sheet (`xhigh` for judgment-heavy phases).
 - Branch: feature branch minimum. Worktree if you need to context-switch.
 - Commits: per-phase. Each phase = revertable unit.
 
-**Full-rigor option:** for L features that are multi-session, multi-slice, high blast radius, audit-relevant, or need a defensible handoff, see the **`large-feature` skill** — a 7-stage playbook covering grill → plan+critique → vertical tracer-bullet slices → per-slice red-green-refactor with phase isolation → trigger-based drift checks → integrated review → separate architecture refactor cadence. Invoke via `/large-feature` or *"use the large-feature playbook."* The lean two-mandate L shape above remains the default; the skill is the opinionated deeper path.
+**Full-rigor option:** for L features that are multi-session, multi-slice, high blast radius, audit-relevant, or need a defensible handoff, see the optional **`large-feature` skill** (7-stage playbook). Invoke via `/large-feature` or *"use the large-feature playbook."* The lean two-mandate L shape above remains the default.
 
 ---
 
 ## L → Long-running mode (overlay)
 
-When an L task spans sessions or runs unsupervised, additional patterns apply. This is the Osmani / Hashimoto long-running-agents territory — and where the multi-agent `ae` workspace shines.
+When an L task spans sessions or runs unsupervised, additional patterns apply; the multi-agent `ae` workspace fits here.
 
 **Must (additional) — repo-visible state is primary:**
 - **Session-state file** in `.local/session-state.md` capturing what's done, what's in-flight, what's next. Updated at the end of each session, read at the start of the next. (`.local/` is gitignored but repo-visible.)
@@ -149,7 +146,7 @@ When an L task spans sessions or runs unsupervised, additional patterns apply. T
 - **Durable decisions** as ADRs in `docs/adr/` (or repo-visible equivalents). Code, plans, and decisions all live as repo files — that's the agent's memory per `shared/AGENTS.md`.
 
 **Optional (tool-specific mirror, not primary):**
-- `~/.claude/memory/` — Claude-only, not visible to Codex/OpenCode/Antigravity (`agy`), not versioned. Use only when (a) you're solo-on-Claude *and* (b) you want auto-memory's surfacing across unrelated sessions. Do not put anything load-bearing here that another tool would need to read.
+- Claude Code auto-memory (default `<config-dir>/projects/<project>/memory/`; configurable) — Claude-only, not visible to Codex/OpenCode/Antigravity (`agy`), not versioned. Use only when (a) you're solo-on-Claude *and* (b) you want auto-memory's surfacing across unrelated sessions. Do not put anything load-bearing here that another tool would need to read.
 
 **Recommended:**
 - **`ae` multi-agent workspace** — use the session's full-path `spawn <name> --using <profile>` helper (for example `spawn reviewer --using <write-denied-profile>`, if that profile is configured); served providers must differ. Use session `ask` / `review` helpers or the `collab` skill for auditable handoffs. See the cross-model review section below for how this satisfies the contract.
@@ -158,7 +155,7 @@ When an L task spans sessions or runs unsupervised, additional patterns apply. T
 
 **Watch for:**
 - Drift — the plan from one session may no longer match what's actually built later. Re-run `grill-with-docs` against the current state.
-- Hidden state — anything load-bearing that lives in `~/.claude/memory/` and another tool needs to read. Promote to `.local/` or repo file.
+- Hidden state — anything load-bearing that lives in Claude Code auto-memory and another tool needs to read. Promote to `.local/` or repo file.
 - Unsupervised offensive operations — never. Defensive scanning/fixing only (`KNOWLEDGE.md` §8).
 
 ---
@@ -166,8 +163,8 @@ When an L task spans sessions or runs unsupervised, additional patterns apply. T
 ## Cross-model review (decoupled from bucket)
 
 `shared/AGENTS.md` requires that significant changes be reviewed by **a
-different AI architecture** — not just by another pane, another pass, or a
-specialized skill running on the same model. Workflow keeps that invariant
+different model provider** (served model, not harness) — not just by another
+pane, another pass, or a specialized skill running on the same model. Workflow keeps that invariant
 strict and separates "review depth" from "cross-model satisfied."
 
 ### When to trigger
@@ -191,7 +188,7 @@ Only review by a **different model provider** than the producer counts. Classify
 
 These add review depth but stay on the same model — useful, but do not waive the cross-model requirement:
 
-- **`/ultrareview`** — multi-pass review does not establish provider diversity. Follow with cross-provider review if the trigger fired and diversity is still unmet.
+- **`/code-review ultra`** (only the human starts it; it may be billed) — multi-pass review does not establish provider diversity. Follow with cross-provider review if the trigger fired and diversity is still unmet.
 - **`security-review` / `gha-security-review` / Trail of Bits `fp-check`** — adds security-specific depth, same model.
 - **`code-review` skill** — structured adversarial review, same model.
 
@@ -222,16 +219,16 @@ Pick the provider before the harness. These permission forms do not themselves p
 
 | Harness / served model | Vendor default effort | Verification |
 |---|---|---|
-| Claude Code / Opus 5.5 | `medium` | Anthropic Opus 5.5 model page, 2026-11-07. This repo's deliberate interactive pin is `high` (`claude/settings.json:39`, per-model `:47-49`) |
+| Claude Code / Opus 5.5 | `medium` | Anthropic Opus 5.5 model page, 2026-11-07. This repo's deliberate interactive pin is `high` (`claude/settings.json` `effortLevel`, per-model `modelSettings.<id>.effortLevel`) |
 | Claude Code / Fable 5.1 | `high` | Anthropic Fable 5.1 model page, 2026-11-07 |
 | Claude Code / Opus 5 | `high` | `KNOWLEDGE.md` §2 table (launch notes; not re-checked 2026-11-07) |
 | Codex / GPT-6.1 Sol, Terra | `low` | `codex debug models` on 0.167.0, 2026-11-07 |
 | Codex / GPT-6 Sol/Luna/Astra | `medium` | `codex debug models` on 0.167.0, 2026-11-07 |
 | Codex / GPT-5.6 Sol | `low` | `codex debug models` on 0.167.0, 2026-11-07 |
 | Codex / GPT-5.6 Luna, Terra | `medium` | `codex debug models` on 0.167.0, 2026-11-07 |
-| Grok / Grok 4.7 | not stated on the vendor pages read 2026-11-07 | repo pin `high` (`grok/config.toml:22`) |
+| Grok / Grok 4.7 | not stated on the vendor pages read 2026-11-07 | repo pin `high` (`grok/config.toml` `default_reasoning_effort`) |
 
-**Clemens' defaults** (ruling 2026-09-30, 8f473ed): interactive/default effort is `high`; raise to `xhigh` via `/effort` for judgment-heavy work; ae judgment seats keep `xhigh` via profile. Builders/workers start at the vendor default and change that default only on measured outcome. Effort switches preserve the prompt-prefix cache only via the API mechanism OpenAI documents (configuration_update with unchanged request-level reasoning.effort; OpenAI reasoning guide 2026-09-22) — whether Codex `/effort` uses that path is **unverified**, so treat CLI mid-thread switches as cache-risky until proven. The one-effort-per-thread rule applies to pre-GPT-6 models and, conservatively, to CLI switches generally (`codex/config.toml:14-16` at HEAD records the claim, not the adoption).
+**Clemens' defaults:** interactive/default effort is `high`; raise to `xhigh` via `/effort` for judgment-heavy work; ae judgment seats keep `xhigh` via profile. Builders/workers start at the vendor default and change that default only on measured outcome. Effort switches preserve the prompt-prefix cache only via the API mechanism OpenAI documents (configuration_update with unchanged request-level reasoning.effort; OpenAI reasoning guide 2026-09-22) — whether Codex `/effort` uses that path is **unverified**, so treat CLI mid-thread switches as cache-risky until proven. The one-effort-per-thread rule applies to pre-GPT-6 models and, conservatively, to CLI switches generally (a comment in `codex/config.toml` records the claim, not the adoption).
 
 For trivial mechanical work (typos, formatting, version bumps), any seat may choose `low`/`medium` per task; worker default changes still need measured outcomes, and on pre-GPT-6 models effort is still chosen only at thread start (same caution for CLI `/effort` switches on GPT-6 until the cache-preserving path is verified). Claude `max` is session-only for the single hardest L phase; only `CLAUDE_CODE_EFFORT_LEVEL` persists it.
 
@@ -239,12 +236,12 @@ For trivial mechanical work (typos, formatting, version bumps), any seat may cho
 
 ## Universal principles (every bucket)
 
-1. **Verify your work** — Cherny's universal rule. If the agent can't run a check, declare the verification gap explicitly. No silent assumptions.
-2. **Articulate before solving** — Hashimoto's "reproduce your own work" + Ronacher's "judgment, not abdication"; baked into the `diagnose` skill loop. If you can't state the problem in one sentence, you're not ready to fix it. Reproduce → describe → then act.
-3. **Clear, tight output** — `shared/AGENTS.md` rule #4: plain STE-based prose and a visual for substantial reports to Clemens; caveman-lite between agents. Drift back to padding = drift back to slop.
+1. **Verify your work.** If the agent cannot run a check, declare the verification gap explicitly. No silent assumptions.
+2. **Articulate before solving** — baked into the `diagnose` skill loop. If you cannot state the problem in one sentence, you are not ready to fix it. Reproduce → describe → then act.
+3. **Clear, tight output** — `shared/AGENTS.md` rule 4 ("Anti-fluff, two registers"): plain STE-based prose and a visual for substantial reports to Clemens; caveman-lite between agents.
 4. **Source-tier your justifications** — `KNOWLEDGE.md` §3. Tier A/B drives, C/D suggests.
-5. **Effort follows seat policy** — interactive default `high`, `xhigh` for judgment-heavy work and for ae judgment seats via profile; worker default changes need measured outcomes. Apply the trivial-work exception above, not a blanket task-bucket override.
-6. **Don't abdicate judgment** — Ronacher. The agent does the typing, you do the thinking. Read every diff at S/M, every phase at L.
+5. **Effort follows seat policy** — see § Effort level cheat sheet; apply its trivial-work exception, not a blanket task-bucket override.
+6. **Do not abdicate judgment.** The agent does the typing, you do the thinking. Read every diff at S/M, every phase at L.
 7. **Generated code is debt until validated** — Anthropic Trends Report. Test coverage caps real throughput.
 8. **Stop at done** — once the requested outcome is verified and required findings are resolved, stop. One provider-diverse review per required gate, then one focused recheck of BLOCKER/IMPORTANT fixes; no new full pass after a clean verdict. No speculative edge cases or polish past diminishing returns. Required = BLOCKER/IMPORTANT per the severity contract; NIT stays apply-if-quick.
 
@@ -260,7 +257,7 @@ For trivial mechanical work (typos, formatting, version bumps), any seat may cho
 **Process:**
 - Forcing every worker to `xhigh` without measured quality gains
 - Switching effort mid-thread on pre-GPT-6 models and losing the prefix cache (GPT-6 preserves it only via the documented API mechanism; CLI behavior unverified — see cheat sheet)
-- Skipping the plan at L because "I get it now" — if you got it, the one-sentence done test would have made it M
+- Skipping the plan at L because "I get it now" — a clear done test lowers only uncertainty; effort or blast radius can still make it L
 - "Let me just finish this one more thing" mid-phase at L — abandoning the gates that made it L
 - Spawning subagents on S work — overhead exceeds work
 - Loading every skill into a subagent — preload cost compounds (see `manage-skills`, splitting)
@@ -271,11 +268,11 @@ For trivial mechanical work (typos, formatting, version bumps), any seat may cho
 **Review:**
 - Skipping cross-model on dual-trigger tasks because "this one's fine"
 - Treating cross-model as a rubber stamp — "LGTM, ship it" without reading findings
-- Running duplicate cross-model review when a different-provider pass already happened on the same change (`ae review` / `collab` signoff from a different provider, or a prior read-only CLI pass outside ae). Note: `/ultrareview` and same-model review skills add depth but do *not* satisfy the cross-model requirement — see the Cross-Model Review section.
+- Running duplicate cross-model review when a different-provider pass already happened on the same change (`ae review` / `collab` signoff from a different provider, or a prior read-only CLI pass outside ae). Note: `/code-review ultra` and same-model review skills add depth but do *not* satisfy the cross-model requirement — see the Cross-Model Review section.
 
 **Long-running:**
 - Unsupervised autonomous loops without max-iteration bounds
-- Letting `~/.claude/memory/` calcify with stale exploration history
+- Letting Claude Code auto-memory calcify with stale exploration history
 - Resuming a session without reading the session-state file you wrote
 - Drift: running session 5 against the plan from session 1 without re-grilling
 
@@ -303,13 +300,8 @@ When the bucket says "use this," reach for these:
 
 ## Where this fits
 
-- **`shared/AGENTS.md`** — the contract, rendered into every configured tool's global instruction file. Rules to never break (security, secrets, git commit hygiene, cross-model collaboration mandate). Those installed files are **generated**: editing one is pointless, the next `./install` overwrites it. Edit this file.
-- **`KNOWLEDGE.md`** — the field knowledge. November 2026 refresh: current model table, installed-tool probes, source tiers, practitioner consensus. Older model history is in `KNOWLEDGE-CHANGELOG.md`.
+- **`shared/AGENTS.md`** — the contract, rendered into every configured tool's global instruction file (security, secrets, git commit hygiene, cross-model collaboration mandate). Those installed files are **generated**: editing one is pointless, the next `./install` overwrites it. Edit `shared/AGENTS.md`.
+- **`KNOWLEDGE.md`** — the field knowledge: current model table, installed-tool probes, source tiers, practitioner consensus. Older model history is in `KNOWLEDGE-CHANGELOG.md`.
 - **`WORKFLOW.md`** (this file) — operating doctrine. How to actually approach a task: triage, bucket, execute.
 
 If these three diverge, `shared/AGENTS.md` wins (it's the contract).
-
----
-
-*Last updated: 2026-10-13 (spec-first review satisfies slice gate, agent-behaviour review trigger, interactive `high` / judgment `xhigh` effort ruling, GPT-6 cache claim scoped to documented API mechanism with CLI unverified, effort cheat-sheet refreshed from HEAD configs). Update as the workflow evolves.*
-*This doc was iteratively grilled via the `grill-with-docs` skill, then cross-model reviewed by codex:coworker via `ae review` per its own dual-trigger rule (touches shared agent behavior + embeds judgment calls). Findings applied before commit.*
