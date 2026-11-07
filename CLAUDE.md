@@ -11,6 +11,15 @@ Personal dotfiles for Ubuntu WSL (Windows host) and macOS (Apple Silicon), fish 
 ## Commands
 
 ```bash
+# Checks and maintenance via just (README "Commands (just)"): `just` lists the recipes.
+just check      # lint + contract + test; offline, read-only; what CI runs
+just lint       # shell/fish syntax, shellcheck, tracked config parse, skill lint
+just test       # tests/test-*.sh and scripts/*-test.sh (submodule-gated tests SKIP when the submodule is absent)
+just contract   # render into a temp HOME, then compare the installed harness files
+just versions   # installed harness versions, read-only (never runs muse)
+just outdated   # explicit, network: installed vs latest harness versions
+just update     # explicit, network, harness-only: scripts/harness-update.sh "$@"; `just brew` is the macOS Brewfile step
+
 # Install/update all dotfiles (creates symlinks to home directory)
 ./install
 

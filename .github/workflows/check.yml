@@ -1,0 +1,33 @@
+name: Check
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # just, shellcheck, jq and PyYAML come from the Ubuntu archive. No curl | sh.
+      - name: Install just, shellcheck, jq and PyYAML
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends just shellcheck jq python3-yaml
+
+      # The public dotbot submodule lets tests/test-install-blocks.sh run. The
+      # private dotfiles-mic overlay stays out: its tests print SKIP.
+      - name: Fetch the public dotbot submodule
+        run: git submodule update --init --depth 1 dotbot
+
+      - name: Run all offline checks
+        run: just check

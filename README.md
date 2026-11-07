@@ -41,6 +41,33 @@ git submodule update --init dotfiles-mic
 
 The wrapper install script detects the overlay submodule and runs its Dotbot pass automatically when present.
 
+## Commands (just)
+
+[`just`](https://github.com/casey/just) is the entry point for checks and maintenance. `just` alone lists the recipes. Every recipe runs under bash, not under the login shell.
+
+| Recipe | What it does | Network / writes |
+|---|---|---|
+| `just check` | Runs `lint`, `contract` and `test`, names each failed gate, exits 1 if any failed. CI runs exactly this | none, temp dirs only |
+| `just lint` | Shell syntax, fish syntax, shellcheck, parse of tracked JSON / JSONC / TOML / YAML and `gitconfig`, skill lint | none |
+| `just test` | `tests/test-*.sh` and `scripts/*-test.sh`, serially | none, temp dirs only |
+| `just contract` | Renders the contract into a temp HOME, then compares the installed harness files | none |
+| `just versions` | Installed harness versions (`<tool> --version` only, never `muse`); informational | none |
+| `just outdated` | Installed versus latest harness versions (`scripts/harness-update.sh --check`) | network, a log in `~/.local/state` |
+| `just update [args]` | Updates the harnesses, harness-only: arguments go to `scripts/harness-update.sh` (`--only TOOL`, `--check`, `--include-ae`) | network, installs |
+| `just brew` | macOS only: `brew bundle --file macos/Brewfile` | network, installs |
+| `just install [args]` | `./install` | symlinks, fetches the dotbot submodule |
+
+`check`, `lint`, `test`, `contract` and `versions` never write tracked files and never call the network. `update`, `brew`, `install` and `outdated` run only when you name them.
+
+Requirements:
+
+- `just`, `bash`, `git`, `jq` (`brew install just`, or `sudo apt install just` on Ubuntu 24.04 and newer).
+- `python3` with PyYAML, and `tomllib` (Python 3.11+) or `tomli`. The recipes pick the first of `$PYTHON`, `python3`, `/opt/homebrew/bin/python3`, `/usr/bin/python3` that has both. If none does, run `uv run --no-project --python 3.12 --with pyyaml==6.0.3 just check`.
+- Optional, a step prints `SKIP` when missing: `shellcheck`, `fish`.
+- Optional submodules: `tests/test-install-blocks.sh` needs `git submodule update --init dotbot`. `tests/test-render-contract.sh` and `scripts/eval-skills-test.sh` need the private overlay (`git submodule update --init dotfiles-mic`). Without them the test prints `SKIP`.
+
+`render-contract.sh --check` writes the absolute source path into each installed header. From a worktree or another clone, `just contract` therefore compares body and mode, and reports `SKIP (known limit)` when only the header path differs. Body or mode drift fails with the target name. Fix drift with `./install`.
+
 ## What's included
 
 | Config | Source | Symlinks to |
