@@ -51,7 +51,7 @@ Use Claude Code or Codex well before you build a "system." Don't over-engineer.
 | GPT-6 Astra (`gpt-6-astra`) | 2026-09-03 | 10 / 50 | API 1.05M / 128k; CLI 272k window, 95% effective | API —; CLI `medium` | Apr 30, 2026 | OpenAI API models page; Codex catalog [A] |
 | Gemini 4 Argon (`gemini-4-argon`) | announced 2026-09-30 | 2 / 10 through 2026-11-30, then 4 / 20 | 1,048,576 unified; output 65,536, up to 1,048,576 with long decode | `medium` (`low`, `medium`, `high`) | unverified | Google blog; AI Studio model and latest-model pages [A] |
 | Gemini 3.8 Flash (`gemini-3.8-flash`) | 2026-09-02 | — | — | `medium`; repo agy pin `High` | — | archive; `agy models` 1.5.3 [A] |
-| Grok 4.7 (`grok-4.7`) | 2026-09-21 | 2 / 6 | 500k | —; repo pin `high` | unverified | xAI news; docs.x.ai models page [A] |
+| Grok 4.7 (`grok-4.7`) | 2026-09-21 | 2 / 6 | API 500k; CLI 256k or 500k, default not established (`grok/config.toml:19-20`) | —; repo pin `high` | unverified | xAI news; docs.x.ai models page [A] |
 | Muse Spark 1.3 (`muse-spark-1.3`, `-contributor`) | — | — | 1,007,997 / 128,000 | CLI default `high`; repo pin `max` | unverified | local catalog, Muse Code 1.2.1 snapshot [A, local] |
 | Muse Wonder (`muse-wonder-1.0`; `-full-1.0` is subscription-only) | 2026-10-12 | 4 / 20 for Wonder; no per-token price for Full | 1,007,997 / 128,000 | unverified | unverified | local catalog, Muse Code 1.4.7; VentureBeat [D] |
 | Muse Spark Open (`Muse-Spark-Open-816B-A42B`), open weights | 2026-10-15 | — | 1M; 816B total, 42B active | — | — | Meta developer blog [A] |
@@ -61,7 +61,7 @@ Use Claude Code or Codex well before you build a "system." Don't over-engineer.
 
 ### Notes, October and November 2026
 
-**Claude [A].** Adaptive thinking is always on for Opus 5.5 and Fable 5.1 and cannot be disabled. The effort ladder is `low→medium→high→xhigh→max`. Anthropic says to set effort explicitly on Opus 5.5 and to re-run your sweep instead of carrying over an Opus 5 setting, because 5.5 thinks more per turn at the same level. The Claude Code `opus` alias resolves to 5.5 since 2.1.280 and `fable` to 5.1 since 2.1.255 (carried from earlier checks, not re-run on 2.1.319). This repo pins interactive `high` on purpose (`claude/settings.json:39`, per-model entries `:41-48`). Fable 5.1 is credit-billed. Anthropic's guidance is to start with Opus 5.5 and use Fable 5.1 for demanding long-horizon work, or when Opus 5.5 at higher effort still misses your evals.
+**Claude [A].** Adaptive thinking is always on for Opus 5.5 and Fable 5.1 and cannot be disabled. The effort ladder is `low→medium→high→xhigh→max`. Anthropic says to set effort explicitly on Opus 5.5 and to re-run your sweep instead of carrying over an Opus 5 setting, because 5.5 thinks more per turn at the same level. The Claude Code `opus` alias resolves to 5.5 since 2.1.280 and `fable` to 5.1 since 2.1.255 (carried from earlier checks, not re-run on 2.1.319). This repo pins interactive `high` on purpose (`claude/settings.json:39`, per-model entries `:41-49`). Fable 5.1 is credit-billed. Anthropic's guidance is to start with Opus 5.5 and use Fable 5.1 for demanding long-horizon work, or when Opus 5.5 at higher effort still misses your evals.
 
 **OpenAI [A].** Codex values are CLI-scoped and the API page does not state a default effort, so do not carry a CLI default over to API calls. Codex 0.159.2 (2026-09-30) gave GPT-6.1 Sol a 272k window; 0.167.0 gives 500k (95% effective) and default `low`. The 0.167.0 catalog also lists `gpt-6-sol`, `gpt-6-luna`, `gpt-5.6-terra` and `gpt-5.6-luna` (272k, `medium`) and `gpt-5.6-sol` (272k, `low`). The catalog entries `gpt-reserve` and `codex-auto-review` (272k, `medium`) have no documented purpose. OpenAI positions Terra for fast computer use and high-volume agent work. OpenAI's launch posts keep complex coding on Sol or Astra [D, X]. The Codex catalog lists a `Fast` service tier on every model. The API uses `service_tier: "ultrafast"` for Sol and Astra (API changelog 2026-10-08 and 2026-09-29).
 
@@ -193,7 +193,7 @@ The central architectural debate in agentic coding right now. Both camps have cr
 
 ### Harness-heavy camp
 
-Skills, agents, MCP servers, hooks, permissions, subagents. Claude Code, Codex, OpenCode, Gemini CLI all default to this. Anthropic's Opus 4.7 leans further into it (`/ultrareview`, task budgets, agent teams).
+Skills, agents, MCP servers, hooks, permissions, subagents. Claude Code, Codex, OpenCode, Grok Build and agy all default to this. Claude Code leans furthest into it (`/ultrareview`, task budgets, agent teams).
 
 **Strengths**: observability, tool restriction, declarative governance, repeatable workflows, project-specific knowledge encoded in skills.
 
@@ -280,19 +280,22 @@ Every AI coding tool reads a markdown config file. AAIF stewardship means `AGENT
 
 ## 10. Claude Code Feature Stack
 
-> Defaults and output cap verified locally on Claude Code 2.1.263, 2026-09-07.
-> Hook names and blocking behavior checked against the official reference on
-> 2026-09-07; other schema examples still need a current-doc check before use.
+> Probed 2026-11-07 on Claude Code 2.1.319: all 33 hook event names below appear
+> as strings in the binary and in the hooks reference fetched the same day, and the
+> `bashOutputMaxChars` default and clamp are read from the binary's settings schema.
+> Inherited, not re-run: hook exit-code and blocking behavior (reference, 2026-09-07),
+> the agent frontmatter field list, and subagent skill inheritance. Other schema
+> examples still need a current-doc check before use.
 
 ### CLAUDE.md (deterministic — always loaded)
 
 Global `~/.claude/CLAUDE.md`, project `./CLAUDE.md`, subdirs lazy. `CLAUDE.local.md` for personal prefs (gitignored). Keep under ~200 lines per file.
 
-**Open gap G1 — instruction deduplication:** on 2026-09-07 two Sonnet/low phrase-count probes reported **2 before and 2 after** removing this repo's `@shared/AGENTS.md` import. Result **INCONCLUSIVE**: the probe did not isolate the import, and the second reported source is unknown. The redundant import stays removed because `~/.claude/CLAUDE.md` supplies the contract on Clemens' machines. No measured deduplication gain is claimed.
+**Instruction deduplication (closed as moot, 2026-11-07).** A 2026-09-07 probe of removing this repo's `@shared/AGENTS.md` import was inconclusive. The repo no longer imports that file: the contract is rendered into `~/.claude/CLAUDE.md` (`CLAUDE.md`, Architecture). No measured deduplication gain was ever shown.
 
 ### Skills (`~/.claude/skills/*/SKILL.md` or `.claude/skills/`)
 
-Reusable workflows. Lazy-loaded in main session on description match. Cross-tool compatible (also read by OpenCode at `~/.claude/skills/`). Disable model invocation with `disable-model-invocation: true` for side-effect workflows.
+Reusable workflows. Lazy-loaded in main session on description match. Cross-tool compatible: Grok and agy read the same files (§12). Whether OpenCode 2 still reads `~/.claude/skills/` is unverified. Disable model invocation with `disable-model-invocation: true` for side-effect workflows.
 
 ### Agents (`~/.claude/agents/*.md` or `.claude/agents/`)
 
@@ -302,7 +305,7 @@ Specialized subagents with own context, tools, model, permissions. Frontmatter f
 
 ### Hooks (`settings.json` — event-driven)
 
-The [official hooks reference](https://code.claude.com/docs/en/hooks.md) lists **33 events** (fetched 2026-09-07):
+The [official hooks reference](https://code.claude.com/docs/en/hooks.md) lists **33 events** (fetched 2026-09-07; all 33 names re-found in the reference and the 2.1.319 binary on 2026-11-07):
 
 - Session and instructions: `SessionStart`, `Setup`, `InstructionsLoaded`, `SessionEnd`.
 - Prompts and display: `UserPromptSubmit`, `UserPromptExpansion`, `MessageDisplay`, `Notification`.
@@ -324,7 +327,7 @@ Multi-pass review command. Adds review depth; does not establish provider divers
 
 Permissions (allow/deny with wildcards), hooks, model config, env. Global `~/.claude/settings.json`, project `.claude/settings.json`, personal `.claude/settings.local.json` (gitignored). Notable fields: `effortLevel`, `modelSettings`, `permissions.deny`, `permissions.defaultMode`, `enableAllProjectMcpServers`. Model config typically via `ANTHROPIC_MODEL` env var.
 
-`bashOutputMaxChars` defaults to **30,000 characters inline**; overflow goes to a file. Values clamp to **4,000–128,000** (bundle-verified on Claude Code 2.1.263, 2026-09-07). Lowering it is an experiment: measure saved context and extra file rereads.
+`bashOutputMaxChars` defaults to **30,000 characters inline**; overflow goes to a file. Values clamp to **4,000–128,000** (default and clamp read from the settings schema in the 2.1.319 binary, 2026-11-07; the value was not exercised at runtime). Lowering it is an experiment: measure saved context and extra file rereads.
 
 ### Reference layout
 
@@ -351,84 +354,91 @@ project/
 
 ## 11. Codex CLI Configuration
 
-> Model catalog, managed system-skill path, and model-visible user-skill discovery
-> verified locally on Codex 0.153.4, 2026-09-07. Instruction and skill discovery
-> also checked against official docs on the same date.
+> Probed 2026-11-07 on Codex 0.167.0: `--help`, `exec --help`, `features list`,
+> `debug models` and `debug prompt-input`. The instruction and skill discovery docs
+> were re-read at learn.chatgpt.com the same day. Inherited from 0.153.4
+> (2026-09-07), not re-run: skill precedence when both user roots are populated, and
+> the `trusted_hash` hook behavior (§12).
 
 - Global instructions: `~/.codex/AGENTS.md`
 - Config: `~/.codex/config.toml` — fields include `model`, `approval_policy`, `sandbox_mode`, `web_search`, `model_reasoning_effort`, `personality`, `tool_output_token_limit`. (Note: the field is `approval_policy`, not `approval_mode`.)
-- Walks from project root to cwd; each directory contributes its first available `AGENTS.override.md`, `AGENTS.md`, or configured fallback file.
-- `project_doc_fallback_filenames = ["CLAUDE.md"]` for projects without `AGENTS.md`.
-- Does not auto-discover `CLAUDE.md` by default; add it to `project_doc_fallback_filenames` when needed. The [official instruction-discovery order](https://developers.openai.com/codex/guides/agents-md) still names overrides, `AGENTS.md`, then configured fallbacks (checked 2026-09-07).
-- User skills: **`$HOME/.agents/skills`**, per-skill symlinks for the public and optional overlay layers. Codex follows skill symlinks. `~/.codex/skills/.system` is Codex-managed and stays separate. The [official skill discovery docs](https://developers.openai.com/codex/skills) say same-name skills across scopes are not merged and both can appear in selectors; the local 0.153.4 measurement below found de-duplication in the model-visible catalog across the two user roots, not an interactive selector check.
-- **G11 closed (2026-09-07):** `codex debug prompt-input` verified that 0.153.4 scans both `~/.agents/skills` and legacy `~/.codex/skills`. A unique probe confirmed the new root was scanned while both were populated; duplicate names appeared once, with the legacy root winning. Before and after migration, the catalog contained 44 user skills + 5 managed system skills, no duplicate names. The installer created the new links and retired the repository-owned legacy symlinks. No billed run was needed; these counts and precedence are version-scoped observations.
+- Instruction discovery ([official doc](https://learn.chatgpt.com/docs/agent-configuration/agents-md), re-read 2026-11-07): in the Codex home, `AGENTS.override.md` if present, else `AGENTS.md`. From the project root down to the cwd, each directory contributes its first of `AGENTS.override.md`, `AGENTS.md`, then names in `project_doc_fallback_filenames`. Files concatenate root-down; at most one file per directory.
+- `project_doc_fallback_filenames = ["CLAUDE.md"]` for projects without `AGENTS.md`. Codex does not auto-discover `CLAUDE.md` by default (`codex/config.toml:68`).
+- User skills: **`$HOME/.agents/skills`**, per-skill symlinks for the public and optional overlay layers. Codex follows skill symlinks. `~/.codex/skills/.system` is Codex-managed and stays separate. The [official skills doc](https://learn.chatgpt.com/docs/build-skills) says same-name skills are not merged and both can appear in selectors.
+- **Skill catalog re-measured on 0.167.0 (2026-11-07, `codex debug prompt-input`, cwd outside any repo):** the roots table lists `~/.agents/skills` (37 skills) and `~/.codex/skills/.system` (4 managed skills), with no duplicate names. The legacy `~/.codex/skills` root no longer appears. Whether 0.167.0 would still scan it if populated was not tested. The 44 + 5 counts and the legacy-root-wins precedence below come from 0.153.4 and are inherited.
+- **G11 (closed on 0.153.4, 2026-09-07, inherited):** `codex debug prompt-input` showed that 0.153.4 scanned both `~/.agents/skills` and legacy `~/.codex/skills`. Duplicate names appeared once, with the legacy root winning. The catalog held 44 user skills + 5 managed system skills. These counts and the precedence are version-scoped observations.
 - **Profiles** (`[profiles.<name>]`) for swappable presets — `review`, `quick`, `deep` patterns common.
-- Power-user defaults: `approval_policy = "never"` + `sandbox_mode = "danger-full-access"` for full YOLO; alternate is `approval_policy = "on-request"` + `sandbox_mode = "workspace-write"`.
-
-### GPT-5.5 access caveat [A]
-
-GPT-5.5 in Codex requires ChatGPT auth, not API-key auth, at launch. API-key users default to GPT-5.4. Verify your auth path before pinning.
+- Power-user defaults: `approval_policy = "never"` + `sandbox_mode = "danger-full-access"` for full YOLO (`codex/config.toml:22-23`); alternate is `approval_policy = "on-request"` + `sandbox_mode = "workspace-write"`. 0.167.0 `--help` lists `--dangerously-bypass-approvals-and-sandbox`, `--dangerously-bypass-hook-trust`, `--approve-for-me` and `--worktree`. `--full-auto` appears in neither `codex --help` nor `codex exec --help`.
+- Feature flags on 0.167.0 (`features list`): `goals`, `hooks`, `reasoning_effort_override`, `unified_exec` stable and on; `shell_snapshot` stable and off; `shell_snapshot_v2` under development. The `reasoning_effort_override` semantics are unverified (§2).
+- **Privacy: keep `shell_snapshot` off.** A snapshot writes Codex's inherited environment, including gateway keys, as plain `export` lines into `~/.codex/shell_snapshots`. On 2026-08-11, 24 of 25 snapshots on this machine contained the MIC gateway keys. The repo sets `shell_snapshot = false` (`codex/config.toml:74-80`) and purges legacy snapshots (`install.conf.yaml:188-200`). Flag state re-read 2026-11-07.
 
 ---
 
 ## 12. Antigravity CLI (agy), Grok CLI, and Muse Code Configuration
 
-> Gemini CLI died 2026-06-18 (see §2 Mid-July). Verification dates and
-> remaining gaps are scoped to each harness below.
+> Gemini CLI died 2026-06-18 (see §2, Google). Each harness block below separates what
+> was probed on 2026-11-07 from what is inherited from an earlier version.
 
 ### Antigravity CLI (`agy`) — Gemini CLI's replacement
 
-> Paths, settings, and live rule/skill loading verified locally on agy 1.2.2,
-> 2026-09-14 (`--help`, `agy models`, `agy changelog`, config paths, binary strings,
-> live `-p` probes incl. quota-free `/skills` JSON) plus vendor docs (CLI reference,
-> modes page, Terms — all fetched 2026-09-14).
+> Probed 2026-11-07 on agy 1.5.3: `--help`, `agy models`, `agy changelog`, a config
+> directory listing, and the repo pins. Inherited from agy 1.2.2 and 1.2.3
+> (2026-09-14 and 2026-09-15), not re-run: live `-p` rule and skill loading, hook file
+> locations, the settings key list, the MCP-in-print-mode question, and the privacy
+> state and opt-out propagation.
 
-- Rules/skills root: **`~/.gemini/config/`**, containing `config.json`, `mcp_config.json`, `plugins/`, `projects/`, and `skills` → `~/.claude/skills` (2026-09-14). `hooks.json` is on-demand config, not a shipped default — absence means unconfigured, not removed (re-verified on 1.2.3, 2026-09-15); it is read from `~/.gemini/config/hooks.json`, `<workspace>/.agents/hooks.json` (trust-gated via `trustedWorkspaces`), and `plugins/<name>/hooks.json`, and 1.2.3's changelog fixes `/hooks` having written to the legacy `~/.gemini/antigravity-cli/hooks.json`. The never-read `AGENTS.md` under `~/.gemini/antigravity-cli/` (recorded 2026-09-07) is gone.
-- Settings and runtime state remain under **`~/.gemini/antigravity-cli/`** (`settings.json`, `annotations/`, `brain/`, `cache/`). Dotbot links `antigravity/settings.json` to `~/.gemini/antigravity-cli/settings.json`; keys include `model` (display-name string), `trustedWorkspaces` (path list), `mcpServers` (Claude-style JSON), and `permissions.allow/deny` (grant strings like `command(*)`; an `ask` list also exists — cli.log 2026-09-14).
-- Rules: project `GEMINI.md` / `AGENTS.md` discovery, or plugin rules. Dotbot installs the shared contract at **`~/.gemini/config/plugins/dotfiles/rules/AGENTS.md`** with `plugin.json` (verified on disk 2026-09-14).
-- Skills: **`~/.gemini/config/skills` → `~/.claude/skills`**; project skills under `.agents/skills/`. The same skill files serve both harnesses.
-- Live loading re-check on 1.2.2: `agy -p` echoed the contract's first heading, `# SOUL.md`; quota-free `-p /skills --output-format json` inventories 49 skills — 44 repository + 5 vendor built-ins (`agy-customizations`, `antigravity-guide`, `generative_ui`, `migrate-workflows`, `permissioned-github`), 47 model-invocable, with only `setup-matt-pocock-skills` and `zoom-out` gated off (`model_invocable: false`, `disable-model-invocation: true` in frontmatter).
-- Citation reliability (historical, not re-run on 1.2.2): a narrow hooks-docs prompt once returned 5/5 valid URLs, but the earlier broader audit found 37/56 fabricated citations — treat agy citations as unverified until checked.
-- Model selection uses display-name strings (`agy models` 2026-09-14: `Gemini 3.8 Flash (High)`, `Gemini 3.1 Pro (Low)`, plus Claude Sonnet/Opus 4.6 Thinking and GPT-OSS 120B (Medium)); `--effort low|medium|high` overrides per session. Google's 3.8 Flash default is `medium` (changelog 1.1.26 also switched unselected `/model` families to medium default).
-- Permission modes: the settings key is now documented as **`toolPermission`** (vendor CLI reference, 2026-09-14): `request-review` (default) / `proceed-in-sandbox` / `always-proceed` / `strict`; cli.log confirms live reads (`CLI settings initialized: ... toolPermission=...`). Session yolo via `--dangerously-skip-permissions`; the `--mode accept-edits|plan` flag is session-scoped (vendor modes doc) and accepted with `-p` (probed 2026-09-14).
-- Print mode (`-p`) executes tools without prompting; since 1.1.28 an expired `--print-timeout` returns partial output and exits 0 instead of failing. Google-grounded `search_web` is built in (binary strings). Whether MCP servers still start only in interactive sessions is **unverified on 1.2.2** (held from the 1.1.27 check).
-- **Privacy: NOT private by default** — vendor CLI reference (2026-09-14): `enableTelemetry` default `true` ("metric collection and crash log streaming"), `showFeedbackSurvey` default `true`; repo settings pin both `false`. Remote opt-out propagation stays unverified until the next authenticated run (CLI logs only prove skip-while-logged-out). Opt-out is not retroactive (Google Terms) — past Interactions require a deletion request to antigravity-support@google.com.
+- Rules and skills root: **`~/.gemini/config/`** holds `config.json`, `mcp_config.json`, `plugins/`, `projects/` and `skills` → `~/.claude/skills` (listing 2026-11-07). No `hooks.json` is present: it is on-demand config, so absence means unconfigured (inherited: read from `~/.gemini/config/hooks.json`, `<workspace>/.agents/hooks.json` with `trustedWorkspaces`, and `plugins/<name>/hooks.json`).
+- Settings and runtime state live under **`~/.gemini/antigravity-cli/`**. Dotbot links `antigravity/settings.json` to `settings.json` there, and agy replaces the link with a normalized copy on each run (repo comment, `antigravity/settings.json:2`). Keys (inherited): `model` (display-name string), `trustedWorkspaces`, `mcpServers` (Claude-style JSON), `permissions.allow/deny`.
+- Rules: project `GEMINI.md` or `AGENTS.md`, or plugin rules; Dotbot installs the shared contract at `~/.gemini/config/plugins/dotfiles/rules/AGENTS.md` (inherited, verified on disk 2026-09-14). Skills: the same files serve both harnesses; project skills under `.agents/skills/`.
+- Models (`agy models`, 2026-11-07): Gemini 4 Argon, Gemini 3.8 Flash, Claude Opus 5.5 and Claude Sonnet 5.5, each at Low, Medium and High, plus GPT-OSS 120B (Medium). Gemini 3.1 Pro and the Claude 4.6 models are gone from the list. The repo pins `Gemini 3.8 Flash (High)` (`antigravity/settings.json:4`), a deliberate opt-up from Google's `medium` default.
+- Flags (1.5.3 `--help`): `--effort low|medium|high|xhigh|max`, `--mode accept-edits|auto|plan`, `--print-timeout` (default `0s`, wait for the turn to finish), `--sandbox`, `--remote-agent`, `acp` (Agent Client Protocol server). Inherited: since 1.1.28 an expired `--print-timeout` returns partial output and exits 0.
+- Permissions: the settings key is `toolPermission` with `request-review` (default), `proceed-in-sandbox`, `always-proceed`, `strict` (vendor CLI reference, inherited). The repo pins `always-proceed` (`antigravity/settings.json:9`). The 1.5.2 changelog says `--dangerously-skip-permissions` now blocks commands on the system denylist, and workspace `.agents/plugins.json` and `.agents/skills.json` entries load only from inside the workspace or repository root.
+- Print mode (`-p`) executes tools without prompting (inherited). Google-grounded `search_web` is built in (inherited, binary strings).
+- Citation reliability (historical): a narrow hooks-docs prompt once returned 5/5 valid URLs, but an earlier broader audit found 37/56 fabricated citations. Treat agy citations as unverified until checked.
+- **Privacy: NOT private by default** (vendor CLI reference, inherited 2026-09-14): `enableTelemetry` and `showFeedbackSurvey` default `true`. The repo pins both `false` (`antigravity/settings.json:6-7`). Remote opt-out propagation stays unverified until an authenticated run. Opt-out is not retroactive (Google Terms): past interactions need a deletion request to antigravity-support@google.com.
 
 ### Grok CLI (Grok Build)
 
-> Discovery verified locally on Grok 1.0.30, 2026-09-14 (`grok inspect`, `--help`,
-> shipped `~/.grok/README.md`, binary strings). 1.0.13-era (2026-09-07) claims
-> carried forward only where re-verified.
+> Probed 2026-11-07 on Grok 1.0.77: `--version`, `--help`, and the repo pins.
+> `grok inspect` was not run. Inherited from 1.0.30 (2026-09-14), not re-run: the
+> `grok inspect` counts and compatibility matrix, the rules-file cap, the privacy
+> and account state, and the binary-embedded config docs.
 
-- Config: `~/.grok/config.toml` — `[models] default = "grok-4.6"` (plus `models.default_reasoning_effort` to persist effort; key confirmed in the 1.0.30 binary's embedded config table; unset = track server default, whose current value is unverified since 1.0.13); `[mcp_servers.*]` in Codex-style TOML (`command`/`args`/`startup_timeout_sec`; 4 config servers + 2 from `~/.claude.json` per `grok inspect` 2026-09-14); `[features]` for `support_permission` / `telemetry` / `feedback` (all documented in the shipped README)
-- `~/.grok/config.toml` must be a **real file**: Grok's hooks-paths registry rejects symlinks — the `expected real file` error string is still in the 1.0.30 binary. Installation copies the repo config instead of linking it; Grok can also write sticky state there (observed: `[ui]` keys, `config.toml.tmp.*` siblings)
-- **Claude-compat is the headline**: `grok inspect` (1.0.30) shows 44 user skills from `~/.claude/skills/`, user agents from `~/.claude/agents/`, `~/.claude/CLAUDE.md` as global rules (~4184 tokens, tagged `[claude]`), permissions sourced from `~/.claude/settings.json` (3 loaded, 0 skipped), and MCP servers read from `~/.claude.json` — a full Claude harness setup carries over with zero re-wiring. `grok inspect` also reports a per-harness "Harness Compatibility" matrix (cursor/claude/codex toggles)
-- Rules files: `Agents.md`/`Claude.md`/`AGENT.md`/`AGENTS.md`, global in `~/.grok/`; **10k-char cap per rules file** (shipped README: "Each file is capped at 10,000 characters (truncated with a warning if exceeded)"); `~/.grok/AGENTS.md` is a short pointer (~64 tokens in `grok inspect`) and the Claude-compat path loads the full contract
-- Native X search tools (`x_keyword_search`, `x_semantic_search`) remain built in (binary strings; `x_user_search`/`x_thread_fetch` also present, no trend tool remains). Changed 1.0.13 → 1.0.30: the `--check` and `--best-of-n` CLI flags are gone from `--help`; equivalent built-ins now ship as the `best-of-n-runner` agent ("best-of-N parallel attempts" in isolated git worktrees) and `check`/`check-work` platform skills
-- **Privacy**: `[features] telemetry/feedback=false` only silences the CLI (README env aliases) — training/code-retention opt-out is *account* state (`/privacy` → `auth.json coding_data_retention_opt_out`; verified `true` on this machine 2026-09-14; binary carries `is_zdr`/`codingDataRetentionOptOut` auth fields and embedded docs that ZDR locks coding-data sharing but does not mute external OTEL or `user.email`). `[tools] disable_zdr_incompatible_tools=true` (key still present in 1.0.30) and `respect_gitignore=true` (default FALSE — 1.0.30 binary-embedded config docs: `respect_gitignore = false  # default: false`; without it built-in search/read ingests `.env` into context)
-- **Chrome DevTools MCP (any tool embedding it)**: usage statistics AND CrUX URL-upload from performance traces are ON by default — pass `--no-usage-statistics --no-performance-crux` (re-verified in chrome-devtools-mcp@1.8.0 `--help`, 2026-09-14)
+- Config: `~/.grok/config.toml` — `[models] default = "grok-4.7"` and `default_reasoning_effort = "high"` (`grok/config.toml:21-22`). `grok-4.6` remains only as `fork_secondary_model` (`:123`). `[mcp_servers.*]` use Codex-style TOML. `[features]` covers `support_permission`, `telemetry` and `feedback`, all off in the repo (`:34-36`).
+- `~/.grok/config.toml` must be a **real file** (inherited: the hooks-paths registry rejects symlinks, and Grok writes sticky state there). Installation copies the repo config instead of linking it (`install.conf.yaml:273-289`).
+- **Claude-compat is the headline** (inherited from 1.0.30): Grok reads user skills from `~/.claude/skills/`, agents from `~/.claude/agents/`, `~/.claude/CLAUDE.md` as global rules, permissions from `~/.claude/settings.json`, and MCP servers from `~/.claude.json`. A full Claude harness setup carries over with zero re-wiring.
+- Rules files: `Agents.md`/`Claude.md`/`AGENT.md`/`AGENTS.md`, global in `~/.grok/`, **10k characters per file** (shipped README, inherited). `~/.grok/AGENTS.md` is a short pointer (`grok/AGENTS.md`), and the Claude-compat path loads the full contract.
+- Native X search tools (`x_keyword_search`, `x_semantic_search`) are built in (inherited, binary strings). The `--check` and `--best-of-n` flags are gone from `--help` (absent in 1.0.30 and again in 1.0.77); equivalents ship as the `best-of-n-runner` agent and `check`/`check-work` skills (inherited). New in the 1.0.77 `--help`: `--reasoning-effort`, `--worktree`, `--max-turns`, `--sandbox <PROFILE>`.
+- **Privacy** (inherited): `[features] telemetry/feedback=false` only silences the CLI. Training and code-retention opt-out is *account* state (`/privacy`, `auth.json coding_data_retention_opt_out`, `true` on this machine 2026-09-14). `[tools] disable_zdr_incompatible_tools=true` and `respect_gitignore=true` are set in the repo (`grok/config.toml:40`, `:43`). The `respect_gitignore` default is false, so without it built-in search and read ingest `.env` into context.
+- **Chrome DevTools MCP (any tool embedding it)**: usage statistics and CrUX URL upload from performance traces are ON by default. Pass `--no-usage-statistics --no-performance-crux`. The repo already does (`grok/config.toml:111`; flags re-verified in chrome-devtools-mcp@1.8.0 `--help`, 2026-09-14).
 
-### Muse Code (pilot)
+### Muse Code
 
-> Configuration, discovery, authentication, and served model verified locally on
-> Muse Code 1.2.1 (R2847.1), 2026-09-13. Applied main-turn effort remains a gap.
+> Probed 2026-11-07: the pinned binary `~/.local/bin/muse-bin-1.4.14-R7309.1` (version
+> from the file name; the self-updating `muse` launcher was not run), its `--help`, the
+> cached model catalog and the repo pins. Inherited from Muse Code 1.2.1 (2026-09-13),
+> not re-run: install layout, authentication, skill and rule discovery, the MCP key
+> collision and the 429 retry ladder.
 
-- Installation: self-updating `muse-stable` bash launcher at `~/.local/bin/muse`, plus a pinned `~/.local/bin/muse-bin-<version>` binary.
-- Config root: `~/.config/muse/` (`settings.json`, `auth.json`, `trust.json`). State root: `~/.local/share/muse/` (`sessions/`, `model-catalog/`, `feature-config/`, `skills/bundled/`, `session-index.db`). `XDG_CONFIG_HOME` and `XDG_DATA_HOME` override both roots.
-- Authentication uses an OAuth device code against `https://auth.meta.com` (client id embedded in the launcher) and API base `https://api.meta.ai/v1`. The token is in the macOS keychain; mode-0600 `auth.json` contains only non-secret metadata.
-- The provider catalog is cached at `~/.local/share/muse/model-catalog/6d657461__p746268.json`. Its four visible models are `muse-spark-1.3`, `muse-spark-1.3-contributor` (`is_default: true`), `muse-spark-1.2`, and `muse-spark-1.2-contributor`; all advertise a 1,007,997-token context limit and 128,000-token output limit. **Update (Muse Code 1.4.7, 2026-10-13):** the catalog now leads with `muse-wonder-1.0` (`is_default: true`) and `muse-wonder-full-1.0` plus hidden `-contributor` variants (release 2026-10-12, same 1,007,997 / 128,000 limits, efforts `minimal→max`) — see §2 October 2026.
-- **Contributor tier trains on prompts, retains data for 30 days, and is not ZDR** (September Spark snapshot, 2026-09-13 — not re-verified on Wonder). The contributor variant was the vendor default in that snapshot, so an unpinned install silently landed on the training tier; the October Wonder catalog flips the default to the clean `muse-wonder-1.0` (see above). A subscription granted entitlement to the clean `muse-spark-1.3` model but did not change that default; pin the model explicitly.
-- Effort ladder: `none|minimal|low|medium|high|xhigh|max|ultra`; CLI default is `high`, while the 1.3 catalog ceiling is `max`. The tracked pin is therefore `reasoning_effort: max`.
-- User-scope skills resolve from **`$HOME/.agents/skills/<name>/SKILL.md`**, alongside about 22 bundled `built-in` skills. The binary separately names `~/.claude/skills` and `~/.codex/skills` as import sources; that import mechanism is not the active discovery path measured here.
-- User rules load from **`~/.claude/CLAUDE.md`** as a `rules_file` context message tagged `written-for="Claude Code"`; precedence is project → Claude Code → Codex. The Codex fallback is `$CODEX_HOME/AGENTS.md` (default `~/.codex/AGENTS.md`).
-- MCP servers live under the camelCase `settings.json` key **`mcpServers`** and use Claude-style stdio entries. Never leave snake_case `mcp_servers` beside it: the collision makes Muse drop the entire MCP member and silently disables every server.
-- Sandbox and approvals are on by default. Read-only reviewer form: `muse --disable-write --disable-shell`; route through ae when in a session, as for every provider.
-- **Verification gap:** `reasoning_effort: max` is verified as configured and accepted, not as applied to the main turn. `session.jsonl` records effort only for reminder sub-agents (for example `skill-reminder: low`), and `muse trace inspect` exposes no main-turn effort field.
-- A first live attempt returned HTTP 429 `rate_limited`; Muse retried transparently (`attempt 2/10`, 5000 ms backoff, maximum 10 attempts). This retry ladder is real and normal.
+- Installation: self-updating `muse-stable` bash launcher at `~/.local/bin/muse`, plus a pinned `~/.local/bin/muse-bin-<version>` binary (inherited).
+- Config root `~/.config/muse/` (`settings.json`, `auth.json`, `trust.json`) and state root `~/.local/share/muse/` (inherited). `XDG_CONFIG_HOME` and `XDG_DATA_HOME` override both roots. Authentication is an OAuth device code against `https://auth.meta.com` with the API base `https://api.meta.ai/v1`; the token is in the macOS keychain (inherited).
+- Cached catalog (`~/.local/share/muse/model-catalog/`, read 2026-11-07, nine rows): default `muse-wonder-1.0`. Visible: Wonder, Wonder Full, Spark 1.3, Spark 1.2. Hidden: the `-contributor` variants and `muse-image-1.0`. Every text model advertises a 1,007,997-token context and 128,000 output. The cache file's age was not checked.
+- Repo pins: `model` = `muse-spark-1.3` (the clean ID, not the contributor variant) and `reasoning_effort` = `max` (`muse/settings.json:3-4`). `--help` accepts `none|minimal|low|medium|high|xhigh|max|ultra` (default `high`, alias `--effort`) and lists `--disable-write`, `--disable-shell`, `usage` and `model-profile`.
+- **Contributor tier trains on prompts, retains data for 30 days, and is not ZDR** (Spark snapshot 2026-09-13, inherited, not re-verified on Wonder). An unpinned install once landed on the training tier because the contributor variant was the vendor default. The Wonder catalog now defaults to the clean model. Pin the model explicitly. The ae seat policy (§2, Meta) is a separate decision.
+- User-scope skills resolve from `$HOME/.agents/skills/<name>/SKILL.md`, alongside about 22 bundled skills (inherited). User rules load from `~/.claude/CLAUDE.md` with precedence project → Claude Code → Codex (inherited).
+- MCP servers live under the camelCase `settings.json` key **`mcpServers`**. Never leave snake_case `mcp_servers` beside it: the collision makes Muse drop the entire MCP member and silently disables every server (inherited).
+- Sandbox and approvals are on by default. Read-only reviewer form: `muse --disable-write --disable-shell` (flags re-confirmed in `--help`); route through ae when in a session, as for every provider.
+- **Verification gap (inherited):** `reasoning_effort: max` is verified as configured and accepted, not as applied to the main turn. `session.jsonl` records effort only for reminder sub-agents, and `muse trace inspect` exposes no main-turn effort field.
+- A first live attempt returned HTTP 429 `rate_limited`; Muse retried transparently (up to 10 attempts, 5000 ms backoff). The retry ladder is normal (inherited).
+
+### OpenCode and GitHub Copilot CLI
+
+- OpenCode v2.2.6 (`opencode --version`, 2026-11-07). `--help` shows a background-service model (`--standalone` runs a private server), the `service`, `run`, `plugin`, `mcp` and `acp` subcommands, and an `--auto` flag that approves permissions not explicitly denied. OpenCode 2 reads only `opencode.json(c)`; its terminal settings live in `~/.config/opencode/cli.json`, which the TUI writes and the repo leaves unmanaged (`install.conf.yaml:89-91`). Skill discovery and hook behavior on v2 are unverified.
+- GitHub Copilot CLI 1.0.107 (`copilot --version`, 2026-11-07). The repo provisions the native home `${COPILOT_HOME:-$HOME/.copilot}`: rendered instructions, an additive MCP merge for owned names, and a key-only edit that turns off commit co-author attribution (`install.conf.yaml:182-245`). Copilot behavior beyond the version was not probed.
 
 ### Hook support across harnesses
 
-> All six harnesses have hooks; matrix verified 2026-09-15 on Claude Code 2.1.272, Codex 0.154.0, Grok 1.0.30, Muse 1.3.0-R3057.1, agy 1.2.3, OpenCode 1.18.31 (evidence: `.local/hooks-*.md`, `.local/tune/doctrine/hooks.md`).
+> The matrix was verified 2026-09-15 on Claude Code 2.1.272, Codex 0.154.0, Grok 1.0.30, Muse 1.3.0-R3057.1, agy 1.2.3 and OpenCode 1.18.31 (evidence: `.local/hooks-*.md`, `.local/tune/doctrine/hooks.md`). It was **not re-run** on the versions installed 2026-11-07 (Claude Code 2.1.319, Codex 0.167.0, Grok 1.0.77, Muse 1.4.14, agy 1.5.3, OpenCode v2.2.6). Two known changes since: Codex `--help` now lists `--dangerously-bypass-hook-trust`, and the agy 1.5.3 changelog adds `PLUGIN_ROOT` and `PLUGIN_DATA` for plugin hook commands. The OpenCode row predates the 2.x rewrite.
 
 | Harness | Events | Block / modify | Trust gate | Maturity |
 |---|---|---|---|---|
@@ -782,10 +792,10 @@ Watch but caveat (useful framing, less foundational):
 
 ### Claude Code
 
-- `--dangerously-skip-permissions` or alias `claude-yolo`
+- `--dangerously-skip-permissions` (no `claude-yolo` alias exists in this repo, the fish config or the overlay, checked 2026-11-07)
 - Better: `/permissions` with wildcards: `Bash(npm run *)`, `Edit(/src/**)`
 - `effortLevel` in `settings.json`: see §5 routing
-- Default effort is `high` on most models that support it — **exceptions: Opus 4.7 defaults `xhigh`, Opus 5.5 defaults `medium`** [A, October 2026]. Sonnet 5.5 and Fable 5.1 default `high`. On Opus 5 an explicitly set level carries over across model switches; set `xhigh` deliberately to opt up, and on Opus 5.5 set effort explicitly rather than inheriting an Opus 5 level. Fable 5.1 and Opus 5 have no model-default effort hold; Fable 5 / Opus 4.8 / Opus 4.7 hold their default across sessions until effort is changed once — so on Fable 5.1 a settings `effortLevel` applies directly. Per-model override: `modelSettings.<id>.effortLevel`.
+- Default effort is model-specific; the §2 table lists it. Opus 5.5 defaults `medium`, while Sonnet 5.5, Fable 5.1 and Opus 5 default `high`. Anthropic says to set effort explicitly on Opus 5.5 instead of inheriting an Opus 5 level. On Opus 5 an explicitly set level carries over across model switches, and Fable 5.1 and Opus 5 hold no model-default effort, so a settings `effortLevel` applies directly (2026-10-13, not re-run). Per-model override: `modelSettings.<id>.effortLevel`.
 - `/effort` mid-session, `--effort` on launch, `CLAUDE_CODE_EFFORT_LEVEL` env var for persistence (only way `max` persists)
 - `/model` to switch mid-session
 - `/clear` between unrelated tasks (rarely need `/compact` with 1M context)
@@ -797,7 +807,7 @@ Watch but caveat (useful framing, less foundational):
 
 ### Codex CLI
 
-- `--full-auto` / `approval_policy = "on-request"` for safer default; `approval_policy = "never"` for full YOLO
+- `approval_policy = "on-request"` for the safer default; `approval_policy = "never"` or `--dangerously-bypass-approvals-and-sandbox` for full YOLO (`--full-auto` is gone in 0.167.0, §11)
 - Strong for: review, second opinion, plan QA, bounded execution
 - `codex resume <session-id>` for continuity
 - Profiles for repeatable presets
@@ -816,7 +826,7 @@ Watch but caveat (useful framing, less foundational):
 - Don't use multi-agent for ordinary bugfixes
 - Don't run `xhigh`/`max` effort everywhere — it costs more without proportional quality gain
 - Don't install MCP servers without §6 dependency-style review
-- **Don't assume Pro = better** for any model. GPT-5.5 Pro is not proven better for coding [A].
+- **Don't assume a Pro tier is better for coding.** GPT-5.5's release tables published no coding benchmarks for its Pro tier (archive) [A].
 - **Don't hide verification gaps** — if you can't run tests, declare that explicitly
 
 ---
