@@ -1,6 +1,6 @@
 # Scope — plan template
 
-Relocated verbatim from `SKILL.md` (Output format). Use it as the skeleton of the plan document; the complexity levels, phase rules and out-of-scope duty stay in `SKILL.md`.
+Use it as the skeleton of the plan document. The complexity levels, phase rules and out-of-scope duty are in `SKILL.md`.
 
 ```markdown
 ## Scope: <task title>

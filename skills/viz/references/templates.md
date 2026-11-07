@@ -1,6 +1,6 @@
 # Viz — templates and syntax reference
 
-Relocated verbatim from `SKILL.md`. Read when you need a starting Mermaid skeleton, a syntax reminder (arrow semantics, direction modifiers) or the one-screen keyword cheat sheet. The choice-of-diagram table, C4 zoom levels, house rules and anti-patterns stay in `SKILL.md`.
+Read when you need a starting Mermaid skeleton, a syntax reminder (arrow semantics, direction modifiers) or the one-screen keyword cheat sheet.
 
 ## Templates
 

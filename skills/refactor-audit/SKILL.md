@@ -1,13 +1,12 @@
 ---
 name: refactor-audit
 description: >
-  Audit a codebase for architecture drift and produce a `refactor-audit.md`
-  with evidence, recommendation, and guardrail candidates. Use when asked
-  "is this codebase getting messy?", "should we refactor?", "run a refactor
-  audit", or before a release-hardening pass. Collects hard / soft /
-  tooling-gap signals, compares against the previous audit, and applies a
-  two-stage decision rule to recommend a structural refactor or the
-  large-feature playbook. Does NOT execute the refactor itself.
+  Audits a codebase for architecture drift and recommends whether a structural
+  refactor is warranted, with evidence and guardrail candidates. Use when asked
+  "is this codebase getting messy?", "should we refactor?" or "run a refactor
+  audit", after a cluster of feature slices, or before a release-hardening
+  pass. Does not execute the refactor (use `scope` or `large-feature` to plan
+  and run it).
 source: local-dotfiles
 metadata:
   category: preference
@@ -26,10 +25,10 @@ Any of:
 - After completing a cluster of related feature slices (post-feature-cluster review)
 - Before a tagged release (release-hardening pass)
 - When a zoom-out reflection flags drift during long-running work
-- When the same agent mistake recurs across sessions (Hashimoto's harness rule)
+- When the same agent mistake recurs across sessions
 - When review bandwidth feels disproportionate to PR size
 
-**No calendar cadence default.** Calendar sweeps are busywork unless the team already runs scheduled maintenance windows. Trigger-based is the default.
+No calendar cadence default: calendar sweeps are busywork unless the team already runs scheduled maintenance windows. Trigger-based is the default.
 
 ## Output artifact
 
@@ -108,7 +107,7 @@ These have evidence the agent can produce; they require the repo to have the too
 - **Lint/type complexity threshold crossed** — Python: `ruff` complexity rules (`C90`, `PLR`), `mypy --strict` regressions. JS/TS: eslint complexity rules.
 - **Import cycle detected** — Python: `import-linter`, `grimp`, `pydeps --max-bacon`. JS/TS: `madge --circular`.
 - **Duplication threshold breach** — Python: `pylint duplicate-code`, `radon`. JS/TS: `jscpd`.
-- **Sonar / Trail-of-Bits / fp-check findings cluster** in one module.
+- **Static-analysis findings cluster** (Sonar, Semgrep) in one module.
 
 Always compare against the **repo's own baseline**. There is no universal "20% slower" threshold; if no baseline exists, record under tooling-gap and propose recording one.
 
@@ -116,13 +115,13 @@ Always compare against the **repo's own baseline**. There is no universal "20% s
 
 These rely on session notes, commit history, or agent recall.
 
-- Same agent mistake recurring across two or more sessions (Hashimoto's harness trigger)
+- Same agent mistake recurring across two or more sessions
 - "Just one more thing" responsibility creep — one module growing across unrelated features
 - Repeated cross-file edits to express one concept — coupling smell
 - Review burden disproportionate to PR size — review requires repeated clarification rounds, multiple missed-caller findings, or reviewer cannot validate a small PR without reconstructing several modules
 - A zoom-out reflection flagged drift during long-running work
 - Multiple recent slices needed an unplanned "fix this adjacent thing" detour
-- Missed-caller surprises during reviews (Sourcegraph/Amp lens — completeness gaps)
+- Missed-caller surprises during reviews (completeness gaps)
 
 ### Tooling-gap signals
 
@@ -130,7 +129,7 @@ Plausible signals we cannot currently observe because the tool isn't configured.
 - "Import cycles" in a Python repo that has no `import-linter` or `grimp` — log as tooling-gap, propose adding the tool.
 - "Duplication" in a JS/TS repo with no `jscpd` configured — same.
 
-Tooling-gap signals do NOT count toward the decision rule. They DO appear in the guardrail-candidates section.
+Tooling-gap signals do not count toward the decision rule. They appear in the guardrail-candidates section.
 
 ## Prior-audit comparison
 
@@ -151,7 +150,7 @@ If no prior audit exists, set `Previous audit reviewed: none` and leave `Repeate
 
 ## Decision rule — two stages
 
-The audit makes two separate decisions in order. **Scope shape never triggers refactor on its own** — evidence must justify separate refactor work first, then scope shape chooses the workflow.
+The audit makes two separate decisions in order. Scope shape never triggers refactor on its own — evidence must justify separate refactor work first, then scope shape chooses the workflow.
 
 ### Stage 1 — Should separate refactor work exist? (evidence-gated)
 
@@ -161,7 +160,7 @@ The audit makes two separate decisions in order. **Scope shape never triggers re
 | 1 hard + 2 soft signals fired this audit | Yes → proceed to Stage 2 |
 | 2+ soft signals repeated from the previous audit (`Repeated soft signals` field; see Prior-audit comparison above) | Yes → proceed to Stage 2 |
 | Explicit user request **with evidence** (user named a concrete drift) | Yes → proceed to Stage 2 |
-| Explicit user request, no evidence | Produce the artifact, record signals, recommendation = `no-action`; do NOT proceed to Stage 2 |
+| Explicit user request, no evidence | Produce the artifact, record signals, recommendation = `no-action`; do not proceed to Stage 2 |
 | Only soft signals this audit, no repeats from prior | `no-action`; log soft signals so next audit can detect repeats |
 | Nothing fired | `no-action` |
 
@@ -171,49 +170,39 @@ Reached only after Stage 1 says yes.
 
 | Scope shape | Recommendation |
 |---|---|
-| Bounded area, one module, no cross-cutting impact | `structural-refactor` directly |
-| Non-trivial surface or unclear shape | `structural-refactor` with `requires-plan: yes` (run `scope` first) |
+| Bounded area, one module, no cross-cutting impact | `structural-refactor` directly (`requires-plan: no`: TDD refactor steps, normal review) |
+| Non-trivial surface or unclear shape | `structural-refactor` with `requires-plan: yes` (run `scope` first, then execute the phased plan) |
 | Multi-slice / high blast radius / audit-relevant / multi-session / needs defensible handoff | `large-feature` playbook (treat the refactor itself as an L feature) |
 
-Multi-slice / high blast radius / etc. **are routing choices in Stage 2, not triggers in Stage 1.** A high-blast potential refactor that has no evidence supporting it stays at `no-action`.
-
-The recommendation routes to a workflow; it does not perform the work.
+Multi-slice / high blast radius / etc. are routing choices in Stage 2, not triggers in Stage 1. A high-blast potential refactor that has no evidence supporting it stays at `no-action`. The recommendation routes to a workflow; it does not perform the work.
 
 ## Recommendation classes
 
 - **no-action** — signals don't justify separate refactor work. Note in artifact for next audit.
-- **micro-refactor-in-slice** — surface area is small enough to be a TDD refactor step inside the current feature work. Do NOT escalate to separate refactor.
-- **structural-refactor** — structural drift confirmed; do the refactor as its own work (earlier audits label this class `improve-codebase-architecture`, same meaning). Carries a `requires-plan: yes/no` flag:
-  - `requires-plan: no` — bounded area, one module. Do it directly (TDD refactor steps, normal review).
-  - `requires-plan: yes` — non-trivial surface or unclear shape. Run `scope` first to produce a phased plan, then execute it.
-- **large-feature playbook** — refactor is multi-slice or high blast radius; treat as an L feature with full rigor (vertical tracer-bullet slices, per-slice red-green, cross-model at plan + merge).
+- **micro-refactor-in-slice** — surface area is small enough to be a TDD refactor step inside the current feature work. Do not escalate to separate refactor.
+- **structural-refactor** — structural drift confirmed; do the refactor as its own work, routed by the Stage 2 table. Older audits label this class `improve-codebase-architecture` (same meaning).
+- **large-feature playbook** — the refactor is multi-slice or high blast radius; see the Stage 2 table.
 
 ## Guardrail candidates — promote soft to hard
 
-Per Hashimoto's harness-engineering rule: every repeated soft signal should either become a hard guardrail (CI check, lint rule, contract) or be explicitly accepted/documented in the audit so it stops re-firing as a "discovery." Always close the audit with concrete guardrail candidates:
+Every repeated soft signal should either become a hard guardrail (CI check, lint rule, contract) or be explicitly accepted/documented in the audit so it stops re-firing as a "discovery." Always close the audit with concrete guardrail candidates:
 
 - *"Import cycle in `module X` was noticed manually twice → add `import-linter` contract preventing imports between X and Y."*
 - *"Same forgotten validation appeared in three PRs → add a Semgrep rule."*
 - *"Test walltime regressing without alarm → add `pytest --durations` to CI with a baseline threshold."*
 - *"Coverage drifted down silently → set `fail_under` in `pyproject.toml`."*
 
-These move drift from "agent has to notice" to "CI surfaces it." Over time, the audit relies less on soft signals and more on hard ones.
-
-## Anti-patterns
-
-- **Refactoring during feature work** — keep Stage 3 micro-refactor inside the slice; use this audit's recommendation for *separate* structural refactor.
-- **Refactor without test coverage in the affected area** — coverage gap is itself a guardrail candidate; address before structural work.
-- **"Clean up while I'm here" smuggling** — anything beyond the slice's scope goes into a separate refactor task driven by this audit.
-
-Four further anti-patterns, each restating a rule above, are in `references/background.md`.
+These move drift from "agent has to notice" to "CI surfaces it."
 
 ## Relationship to feature work
 
-During feature work, only do Stage 3 micro-refactor after green. If a feature slice surfaces structural drift, log it as a soft signal for the next audit — don't escalate inside the feature. The audit is the gate that converts soft signals into a separate refactor task.
+During feature work, do only the micro-refactor after green (`large-feature` Stage 3). If a feature slice surfaces structural drift, log it as a soft signal for the next audit — don't escalate inside the feature, and don't smuggle "clean up while I'm here" work into the slice. The audit is the gate that converts soft signals into a separate refactor task.
+
+Do not start a structural refactor without test coverage in the affected area. A coverage gap is itself a guardrail candidate; address it first.
 
 ## Cross-references
 
 - `skills/scope/` — phased planning when the refactor is non-trivial.
 - `skills/large-feature/` — full-rigor 7-stage playbook when the refactor is multi-slice or high blast radius.
 - `WORKFLOW.md` — the lean L mandate (plan + phased execution) still applies to substantial refactor work.
-- `references/background.md` — read when justifying the audit method or checking a draft audit against the failure modes it lists: four anti-patterns that restate the rules above, the `KNOWLEDGE.md` §18 pointer for the cited practitioner voices, and the SOTA grounding.
+- `references/background.md` — SOTA grounding and practitioner references.

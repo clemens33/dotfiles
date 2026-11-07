@@ -1,13 +1,6 @@
 # Refactor Audit — background
 
-Relocated verbatim from `SKILL.md`. Read when justifying the audit method to a reviewer, or when checking a draft audit against the failure modes below. Nothing here changes the decision rule in `SKILL.md`.
-
-## Anti-patterns that restate rules in SKILL.md
-
-- **Cadence-without-signal busywork** — don't run the audit on a calendar if no signals fired; you'll either find nothing (waste) or invent something (worse).
-- **Big-bang structural refactor** — if recommendation is L, slice it like any other L feature (`large-feature` Stage 2).
-- **Treating tooling-gap signals as fired** — they're not measured yet. They count toward guardrail candidates, not toward the decision rule.
-- **Inventing thresholds** — no universal "20% slower" / "10% coverage drop" — always compare against the repo's own baseline. If no baseline exists, record that explicitly.
+Read when justifying the audit method to a reviewer. Nothing here changes the decision rule in `SKILL.md`.
 
 ## Practitioner references
 

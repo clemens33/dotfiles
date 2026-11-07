@@ -1,10 +1,11 @@
 ---
 name: scope
 description: >
-  Decompose a task into a phased implementation plan with test gates.
-  Use when starting non-trivial work to align on approach, identify
-  risks, and break work into verifiable steps. Produces a structured
-  plan document.
+  Decomposes a non-trivial task into a phased plan with change surface, risks
+  and a test gate per phase. Use when starting work that touches several files
+  or systems, when the approach is unclear, or before parallel agent work. Not
+  for trivial changes, which need no plan, or for multi-agent convergence
+  artifacts (use `collab`).
 metadata:
   category: preference
 
@@ -12,14 +13,12 @@ metadata:
 
 # Scope
 
-Break down a task into a phased plan before jumping into code. Think first, build second.
+Break a task into a phased plan before jumping into code.
 
 ## When to use
 
-- Before starting any non-trivial feature or refactor
-- When a task touches multiple files, modules, or systems
-- When the approach isn't obvious and you want to align before coding
-- When the user asks "how would you approach this?" or "what's the plan?"
+- Before starting any non-trivial feature or refactor, especially one that touches multiple files, modules, or systems
+- When the approach isn't obvious and you want to align before coding, or the user asks "how would you approach this?" or "what's the plan?"
 - Before parallel agent work (each agent needs a clear scope boundary)
 
 ## Inputs
@@ -42,8 +41,7 @@ If you can't write this sentence, the task isn't clear enough — ask.
 
 List every file, module, API, database table, or config that will be touched.
 For each, note whether it's a create, modify, or delete.
-
-Use `grep`, `glob`, and file reads — don't guess.
+Search the repo; don't guess.
 
 ### Step 3: Identify risks and unknowns
 
@@ -64,12 +62,7 @@ Each phase must be:
 - **Safely commitable** — the codebase works after each phase, even if the feature is incomplete
 - **Small enough to review** — if a phase would produce a 500-line diff, split it
 
-Phase structure:
-1. Description: what this phase does
-2. Files touched: specific paths
-3. Test gate: how to verify this phase is correct
-4. Dependencies: which phases must complete first
-5. Estimated complexity: trivial / moderate / complex
+The phase fields (Do, Files, Complexity, Test gate, Depends on) are in the plan template.
 
 ### Step 5: Define the verification plan
 
@@ -78,8 +71,7 @@ What would a manual smoke test look like?
 
 ## Output format
 
-The plan template is in `references/plan-template.md`. Sections, in order: header (Goal, Complexity, Estimated phases); Change surface (path, action, notes table); Risks & unknowns; Rollout & operability (rollout strategy, rollback plan, observability, backward compatibility); Phases (each with Do, Files, Complexity, Test gate, Depends on); Verification; Out of scope. Read the template when writing the plan document; Complexity levels and Rules below hold the constraints.
-
+Use `references/plan-template.md` as the skeleton of the plan document: header, change surface, risks & unknowns, rollout & operability, phases, verification, out of scope.
 
 ## Complexity levels
 
@@ -99,12 +91,11 @@ to be retired before the rest of the plan is worth writing.
 
 ## Rules
 
-- **Don't scope trivial work.** If effort, blast radius and uncertainty are all low — just do it. Scoping a typo fix is waste.
-- **Phases must be verifiable.** "Refactor the module" is not a phase. "Extract X into Y and verify tests pass" is.
+- **Phases must be verifiable.** "Refactor the module" is not a phase; "Phase 3: test everything" has no test gate. "Extract X into Y and verify tests pass" is a phase.
 - **Be honest about unknowns.** "I don't know if this API supports X" is better than assuming it does.
-- **Stay concrete.** File paths, function names, specific commands — not "update the relevant modules."
+- **Stay concrete.** File paths, function names, specific commands — not "update the relevant modules." The plan says *what*, not *how* line by line.
 - **Out of scope is valuable.** Explicitly saying what you won't do prevents scope creep.
-- **Don't gold-plate the plan.** A good plan is a tool, not a deliverable. 10 minutes of scoping, not 2 hours.
+- **Don't gold-plate the plan.** A good plan is a tool, not a commitment. 10 minutes of scoping, not 2 hours.
 - **Update the plan.** If reality diverges during implementation, update the plan — don't silently abandon it.
 
 ## Boundary with other skills
@@ -114,21 +105,4 @@ to be retired before the rest of the plan is worth writing.
 
 ## Integration with cross-model workflow
 
-When using the plan → review → implement → verify workflow from AGENTS.md:
-
-1. **Scope** (this skill) → produces the plan
-2. **Cross-model review** → second tool reviews the plan for gaps
-3. **Implement** → follow the phases, check gates
-4. **Code review** → review the implementation against the plan
-
-The plan is the contract. Implementation should trace back to it.
-
-## Anti-patterns
-
-- Scoping for 2 hours then implementing in 20 minutes
-- Plans with no test gates ("Phase 3: test everything")
-- Phases that can't be committed independently
-- Ignoring unknowns and hoping they resolve themselves
-- Over-specifying implementation details (the plan says *what*, not *how* line-by-line)
-- Never updating the plan when reality changes
-- Treating the plan as a commitment instead of a tool
+The plan is the contract; implementation traces back to it. In the plan → review → implement → verify workflow from AGENTS.md: scope (this skill) produces the plan, a reviewer on a different model provider reviews it for gaps, you implement and check the gates, then code review checks the implementation against the plan.
