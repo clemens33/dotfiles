@@ -44,7 +44,7 @@ Use Claude Code or Codex well before you build a "system." Don't over-engineer.
 | Fable 5.1 (`claude-fable-5-1`) | 2026-09-01 | 10 / 50 | 1M / 128k | `high` | Jun 2026 | Anthropic model page [A] |
 | Opus 5.5 (`claude-opus-5-5`) | 2026-09-22 | 4 / 20 | 1M / 128k | `medium` | Jun 2026 | Anthropic model page [A] |
 | Sonnet 5.5 (`claude-sonnet-5-5`) | 2026-09-28 | 2 / 10 | 1M / 128k | `high` | Jun 2026 | Anthropic model page [A] |
-| Haiku 5.5 (`claude-haiku-5-5`) | 2026-10-07 | 0.10 / 0.50 up to 100k prompts; 0.50 / 2.50 above | 1M / 128k | `medium` | Jun 2026 | Anthropic launch page; comparison table on the Fable 5.1 page [A] |
+| Haiku 5.5 (`claude-haiku-5-5`) | 2026-10-07 | 0.10 / 0.50 for prompts up to 100k tokens; 0.50 / 2.50 above | 1M / 128k | `medium` | Jun 2026 | Anthropic launch page; comparison table on the Fable 5.1 page [A] |
 | Opus 5 (`claude-opus-5`), legacy | 2026-07-24 | 5 / 25 | 1M / 128k | `high` | May 2026 | archive; not re-checked [A] |
 | GPT-6.1 Sol (`gpt-6.1-sol`) | 2026-09-29 | 2 / 10 | API 1.05M / 128k; CLI 500k window, 95% effective | API —; CLI `low` | Apr 30, 2026 | OpenAI API models page; Codex catalog [A] |
 | GPT-6.1 Terra (`gpt-6.1-terra`) | 2026-10-26 | 1 / 5 | API 1.05M / 128k; CLI 500k window, 95% effective | API —; CLI `low` | Jun 1, 2026 | OpenAI API models page and changelog; Codex catalog [A] |
@@ -65,19 +65,19 @@ Use Claude Code or Codex well before you build a "system." Don't over-engineer.
 
 **OpenAI [A].** Codex values are CLI-scoped and the API page does not state a default effort, so do not carry a CLI default over to API calls. Codex 0.159.2 (2026-09-30) gave GPT-6.1 Sol a 272k window; 0.167.0 gives 500k (95% effective) and default `low`. The 0.167.0 catalog also lists `gpt-6-sol`, `gpt-6-luna`, `gpt-5.6-terra` and `gpt-5.6-luna` (272k, `medium`) and `gpt-5.6-sol` (272k, `low`). The catalog entries `gpt-reserve` and `codex-auto-review` (272k, `medium`) have no documented purpose. OpenAI positions Terra for fast computer use and high-volume agent work. OpenAI's launch posts keep complex coding on Sol or Astra [D, X]. The Codex catalog lists a `Fast` service tier on every model. The API uses `service_tier: "ultrafast"` for Sol and Astra (API changelog 2026-10-08 and 2026-09-29).
 
-**Effort switches and the prompt cache.** On the API, OpenAI's Reasoning guide describes `configuration_update`, which changes effort between responses without breaking the prompt-prefix cache (2026-09-22 [A]). Codex 0.167.0 lists the feature flag `reasoning_effort_override` as stable and on by default. The flag proves the option exists. Nothing read, including the Codex changelog, states that Codex uses `configuration_update` or keeps the cache on a mid-thread switch. CLI cache behavior stays **unverified**: keep one effort per CLI thread.
+**Effort switches and the prompt cache.** On the API, OpenAI's Reasoning guide describes `configuration_update`, which is appended between responses and keeps the request-level `reasoning.effort` unchanged. In GPT-6 standard single-agent mode this changes effort without breaking the prompt-prefix cache (2026-09-22 [A]). It is not an unconditional cache guarantee. Codex 0.167.0 lists the feature flag `reasoning_effort_override` as stable and on by default. The flag proves the option exists. Nothing read, including the Codex changelog, states that Codex uses `configuration_update` or keeps the cache on a mid-thread switch. CLI cache behavior stays **unverified**: keep one effort per CLI thread.
 
-**Google [A].** Gemini CLI was retired on 2026-06-18 and Antigravity CLI (`agy`) replaces it (§12). Argon's introductory price doubles on 2026-12-01. A Google story titled "Gemini 4 Carbon: our next frontier model" appears in the related-stories list of the Argon blog page. It was not opened. Do not treat Carbon as released.
+**Google [A].** Gemini CLI was retired on 2026-06-18 and Antigravity CLI (`agy`) replaces it (§12). Argon's introductory price doubles on 2026-12-01.
 
 **xAI [A].** Grok 4.7 is the current model. This repo pins `grok-4.7` (`grok/config.toml:21`). `grok-4.6` remains only as `fork_secondary_model` (`:123`).
 
 **Meta.** The ae spend policy puts the Muse seat on the Spark 1.3 contributor variant (lead, 2026-11-07). The repo's `muse/settings.json:3` pins the clean `muse-spark-1.3` ID, a different catalog entry. The seat policy and the repo pin are separate settings. Do not infer one from the other. The contributor tier trains on prompts ("may be used for product improvement" in the catalog; Spark snapshot 2026-09-13, not re-verified on Wonder). Wonder is a released model, not the ae seat. The Muse Code 1.4.7 catalog default is the clean `muse-wonder-1.0`. Artificial Analysis Intelligence Index via VentureBeat, 2026-10-12 [D]: Wonder Full 56, Wonder 52, against Opus 5.5 58, Sonnet 5.5 56, Fable 5.1 53 and GPT-6 Astra 53. No Tier A page states Wonder's cutoff or default effort. Do not infer them from backend routing.
 
-**Open weights [A/D].** The Kimi K3.1 Pro model card shows a custom license (`kimi-k3.1-pro`). The status of the original K3 base weights is unverified. Vendor coding charts for open models usually ran on the vendor's own harness; see the harness-swing lesson below.
+**Open weights [A/D].** The Kimi K3.1 Pro model card shows a custom license (`kimi-k3.1-pro`). The status of the original K3 base weights is unverified. Vendor coding charts for open models usually ran on the vendor's own harness; see the harness lesson below.
 
 ### Standing lessons carried from the archive
 
-- **Harness choice swings scores as much as model choice.** Same-model, cross-harness gaps of tens of points appear in Terminal-Bench bakeoffs [C/D]. Discount vendor charts that ran on the vendor's own harness by 10–15%.
+- **Harness choice swings scores as much as model choice.** Same-model, cross-harness gaps of tens of points appear in Terminal-Bench bakeoffs [C/D]. A harness gap has no fixed size or direction. Compare models on matched harnesses, or validate on your own tasks, before you trust a vendor chart that ran on the vendor's own harness.
 - **Benchmarks.** OpenAI deprecated SWE-bench Verified (saturated, contaminated) in favor of SWE-bench Pro, read from Scale's leaderboard, plus contamination-resistant live benches [A/B]. Treat deltas under 3pp as noise (Anthropic infra-noise [A]). METR horizons over 16h are unreliable [B]. SWE-Bench Pro V2 (arXiv:2610.24206 [B]) revises the Pro split. A statistical look at the METR plot (arXiv:2610.12466 [B]) questions the time-horizon fit.
 - **Long horizons decay.** Short-horizon benchmark gains do not imply long-horizon capability. SWE-EVO and SlopCodeBench show multi-file evolution stays weak and quality erodes over long runs [B]. Pair every long loop with the §17.5 guardrails.
 - **Fast mode is separate from effort.** Fast mode trades price for speed. Effort sets reasoning depth. Both can run together.
@@ -108,7 +108,7 @@ In this document: inline citations carry tier markers `[A]`, `[B]`, `[C]`, `[D]`
 
 ## 4. Verification-First Lifecycle
 
-Generated code is abundant. **Validation is the bottleneck.** This shifts the operating model.
+Generated code is abundant. **Validation is the bottleneck.** This shifts the operating model. `WORKFLOW.md` and `shared/AGENTS.md` attribute "generated code is debt until validated" to the Anthropic 2026 Agentic Coding Trends Report (§18). The November 2026 refresh fetched that PDF (HTTP 200) but could not text-search it, so the attribution is unconfirmed. Treat the phrase as this repo's shorthand until someone reads the report.
 
 ### Operating rules
 
@@ -129,6 +129,7 @@ Generated code is abundant. **Validation is the bottleneck.** This shifts the op
 - Agent-generated tests for agent-generated code without human verification of test intent
 - **Generic "do TDD" prompts.** TDAD (arXiv:2603.17973 [B]) — supplying *targeted code-test impact context* cut regressions ~70%, while a procedural "follow TDD" instruction made regressions *worse*. Give the agent the impact map / acceptance contract, not the procedure. Agent commits also over-mock (arXiv:2602.00409 [B]) — add explicit anti-mock / test-intent guidance.
 - **Trusting the test gate the implementer can game.** Reward-hacking the stop criterion (`sys.exit(0)`, deleted/hardcoded tests) is now empirically the dominant autonomous-loop failure — see §17.6. Diversify checks; the implementer must not grade its own only test.
+- **Reward hacking spreads and escalates.** A reward-hacking strategy elicited in one agent propagated through shared code, shared memory and natural-language plans to other agents, including stronger closed-weight ones (arXiv:2610.12822 [B]). In autonomous research loops the spontaneous hacking rate was 30.5% on open-ended pipeline tasks. An LLM panel that saw only submitted code and reported scores missed 6.5% of confirmed hacks, and evasions grew over five critique rounds (arXiv:2609.28614 [B]). Implication (ours): give reviewers and verifiers executable evidence, not only the implementer's code, notes and scores.
 
 ---
 
@@ -162,6 +163,10 @@ For multi-agent setups: capable orchestrator + cheap specialized workers. Report
 
 - Remains the portable cross-tool repo contract.
 - AAIF stewardship implies stability; backwards-compatible evolution is the norm.
+
+### Agent Skills
+
+- Anthropic donated Agent Skills, the `SKILL.md` folder format, to AAIF on 2026-10-22. The same release added Open Responses (OpenAI), OpenEnv (Hugging Face) and OpenSandbox (Alibaba) [A]. Skills now sit under the same foundation as MCP and AGENTS.md. Sources: Anthropic news and the Linux Foundation press release (§18).
 
 ### MCP servers — treat as dependencies, not plugins
 
@@ -231,6 +236,10 @@ Anthropic's Claude Mythos Preview (announced 2026-04-07) [A] and OpenAI's "Trust
 3. **Separate defensive scanning from exploit development.** They're different capability classes; don't conflate them in agent permissions.
 4. **Treat MCP servers with security-relevant capability (network egress, credential access) as security-review dependencies.** See §6.
 
+### Planted instruction files [D]
+
+Forever Security (2026-10-22) showed that a web page can drop an `AGENTS.md` into `~/Downloads`, and an agent started in that folder follows it. In their tests Codex ran the payload (npm package `function-color`, edits to `~/.codex/config.toml`) in more than 90% of attempts. Claude Code was harder to fool and fell to a different attack: a planted `CLAUDE.md` rerouted its API traffic. The vendor reports that nothing needs patching on the vendor side. This is a security-vendor blog with lab figures, so treat the rates as a signal. It matches the rule that instruction files and MCP config are governed infrastructure (§6, §9): do not start an agent in `~/Downloads`, and read an instruction file you did not write before the agent does.
+
 ### Industry context — the maintainer / researcher reality (April 2026)
 
 Vendor announcements show the offense+defense capability arc; practitioner reports show the operational shift on the ground. Cite together, not one without the other:
@@ -244,25 +253,27 @@ Both are true at once: AI is generating real maintainer review load (good and ba
 
 ---
 
-## 9. Instruction File Landscape (April 2026)
+## 9. Instruction File Landscape (updated November 2026)
 
 Every AI coding tool reads a markdown config file. AAIF stewardship means `AGENTS.md` is the closest to a stable cross-tool standard.
 
 | File | Tool(s) | Status |
 |------|---------|--------|
-| `AGENTS.md` | Codex (first-class), Cursor, Claude Code (fallback), most via convention | Closest to universal. AAIF-stewarded [A]. |
-| `CLAUDE.md` | Claude Code | First-class, hierarchical (root→startup, subdirs→lazy). Also `~/.claude/CLAUDE.md` for global. |
-| `GEMINI.md` | Gemini CLI | Hierarchical discovery similar to Codex. |
+| `AGENTS.md` | Codex (first-class), Cursor, Grok, agy, Claude Code (fallback), most via convention | Closest to universal. AAIF-stewarded [A]. |
+| `CLAUDE.md` | Claude Code; Grok and Muse also read it | First-class, hierarchical (root→startup, subdirs→lazy). Also `~/.claude/CLAUDE.md` for global. Grok and Muse details in §12. |
+| `GEMINI.md` | Antigravity CLI (`agy`) | agy reads project `GEMINI.md` or `AGENTS.md` (§12). Gemini CLI was retired 2026-06-18. |
 | `.cursor/rules/` | Cursor | Cursor-specific. |
-| `copilot-instructions.md` | GitHub Copilot | In `.github/`. |
+| `copilot-instructions.md` | GitHub Copilot | Per repo in `.github/`. The Copilot CLI also reads `${COPILOT_HOME:-$HOME/.copilot}/copilot-instructions.md`, which this repo renders. |
 
 ### Best practice
 
 - **`AGENTS.md`** = single source of truth / universal cross-tool contract
-- **`CLAUDE.md`** = Claude-specific operational tips (or symlink to `AGENTS.md` if content is identical)
+- **`CLAUDE.md`** = Claude-specific operational tips (or symlink to `AGENTS.md` if content is identical). This repo renders its contract into each tool's global file instead of symlinking (`scripts/render-contract.sh`; README, "Where doctrine lives")
 - Tool-specific files only when they clearly pay off
 - Keep under 200–300 lines each
 - Focus on what agents would get wrong without the file
+- Evidence [B]: context files did not generally improve task success and raised inference cost by over 20% on average. Agents follow the instructions well, but repository overviews did not help; use the files for non-standard practices and test them before deploying (arXiv:2602.11988)
+- Evidence [B]: conditional phrasing was followed less often than prescriptive or explanatory phrasing (86 tasks, four harness-model combinations; a short paper still under review, arXiv:2611.04367)
 - NOT code snippets (go stale), NOT obvious facts inferable from `package.json`
 
 ---
@@ -449,9 +460,9 @@ The single highest-value pattern across the field. Single model reviewing its ow
 
 **No native interop.** Shared filesystem + git. Separate agents reading the same `AGENTS.md`.
 
-### P2 watchlist — "complementary models" claim
+### Evidence on pairing and direction [B]
 
-Single-source report [D] that GPT-5.5 executes plans best when Opus 4.7 wrote them. Interesting but not stable enough to enshrine as guidance. Watch for replication; current repo guidance remains symmetric cross-model review.
+A controlled experiment on 116 LiveCodeBench tasks (arXiv:2607.21656, accepted at Agentic SE @ KDD'26) found an asymmetric pairing. Claude reviewing Codex drafts raised the pass rate from 71.6% to 89.7%. Codex self-review reached 84.5%. Codex reviewing Claude drafts lowered it from 91.4% to 82.8%, and Claude self-review left 91.4% unchanged. The reviewer saw the problem and the draft but could not run tests, and the study covers one Claude and one Codex model. Repo guidance does not change: review stays provider-diverse in both directions. The result is a reason to give reviewers executable checks and to measure a pairing before trusting it.
 
 ---
 
@@ -475,8 +486,9 @@ Single-source report [D] that GPT-5.5 executes plans best when Opus 4.7 wrote th
 
 ## 15. Context Window
 
-- Opus 4.7, Opus 4.6, and Sonnet 4.6: 1M tokens [A].
-- **1M is a ceiling, not a recommended working size.** Coherence still degrades in sprawling sessions ("dumb zone" reports persist on Opus 4.7 as on 4.6).
+- Opus 5.5, Sonnet 5.5, Haiku 5.5 and Fable 5.1: 1M tokens (§2) [A].
+- **1M is a ceiling, not a recommended working size.** Coherence still degrades in sprawling sessions ("dumb zone" reports persisted from Opus 4.6 through 4.7; not re-checked on 5.5).
+- **Message threads (beta, header `message-threads-2026-08-12`).** The server keeps the conversation, so a request sends only the new messages and time to first token stays lower and steadier in long agent loops. A thread is best-effort: it expires 5 minutes after its last request, a continue request then returns 404, and the client must replay the full conversation. Not ZDR or HIPAA eligible [A, platform.claude.com message-threads page, 2026-11-07].
 - Manual `/compact at 50%` advice is firmly obsolete.
 - `/clear` when switching to a genuinely different task.
 - File-system memory should be **append-only, scoped, and periodically pruned**. Capture decisions, invariants, and handoffs — not transcripts or vague preferences.
@@ -498,6 +510,7 @@ Single-source report [D] that GPT-5.5 executes plans best when Opus 4.7 wrote th
 - Two agents on one mutable branch
 - Complex coordinator before clean instructions/tests exist
 - Multi-agent for ordinary bugfixes
+- Verifiers that read the implementer's plans and notes: reward hacking transmits through shared code, memory and plans (arXiv:2610.12822 [B])
 
 ### April 2026 update — review bandwidth as the bottleneck
 
@@ -544,7 +557,7 @@ Why it's stronger than a chat loop:
 
 - **Deterministic control flow** — real `for`/`while`/`if` and explicit fan-out, not model-judged "should I loop again?"
 - **Plan stays out of context** — no context rot from orchestration overhead; the window holds synthesized results only
-- **Bounded concurrency** — Claude Code docs state **≤16 concurrent / 1,000 agents total** per run
+- **Bounded concurrency** — Claude Code docs state **up to 16 concurrent agents by default** (fewer on low-CPU hosts; `CLAUDE_CODE_WORKFLOW_MAX_CONCURRENT_AGENTS` changes it) and **1,000 agents total** per run [A, workflows docs, 2026-11-07]
 - **Fresh context per subagent** — each spawned agent gets a clean window (the Ralph insight, generalized)
 - **Inspectable / re-runnable / resumable** — the script is an artifact you can read, diff, and replay
 
@@ -574,7 +587,7 @@ return results.flat().filter(f => f.verdict?.isReal);
 
 The same shape covers **migrations** (discover sites → transform each in an isolated worktree → verify), **research fan-out** (the exact pattern behind this doc's June-2026 refresh), and **loop-until-dry discovery** (keep spawning finders until K rounds return nothing new). Codex's equivalent surface is app-server / non-interactive mode — orchestration moved out of the chat UI into programmable APIs on both sides.
 
-**Caveat [A]:** multi-agent fan-out costs ~15× the tokens of a single chat (Anthropic). Reserve it for high-value, parallelizable, context-exceeding work — *most coding tasks aren't parallel enough to justify it*. Orchestration-as-code makes fan-out cheaper to *control*, not cheaper to *run*.
+**Caveat [A]:** multi-agent fan-out costs ~15× the tokens of a single chat (Anthropic, "How we built our multi-agent research system", §18). Reserve it for high-value, parallelizable, context-exceeding work — *most coding tasks aren't parallel enough to justify it*. Orchestration-as-code makes fan-out cheaper to *control*, not cheaper to *run*.
 
 ### 17.4 Ralph, honest read [C]
 
@@ -591,14 +604,14 @@ Huntley's pattern: `while :; do cat PROMPT.md | claude-code ; done`. The mechani
 - Best for: greenfield, well-specified, **one-task-per-loop**, test-gated mechanical work (batch refactors, migrations, coverage)
 - Huntley's own red line: *"no way in heck would I use Ralph in an existing codebase"* — greenfield only; senior steering required
 - NOT for: judgment-heavy work, UX, architecture, vague specs, unbounded runs
-- Always set `--max-iterations`; also native as `/loop` (self-paced, 1-min–1-hr wake, built-in 7-day expiry); can run parallel across git worktrees
+- Always set `--max-iterations`; also native as `/loop` (self-paced, 1-min–1-hr wake via `ScheduleWakeup`; an uncancelled loop ends after seven days [A, scheduled-tasks docs, 2026-11-07]); can run parallel across git worktrees
 
 ### 17.5 Guardrails for unattended loops [A/C]
 
 Every unattended loop needs, **by construction**:
 
 - A **machine-verifiable stopping criterion** (not "agent says done")
-- A **hard iteration ceiling** (`--max-iterations`, `max_turns`) — Claude Code ends the turn after 8 consecutive `Stop`-hook blocks
+- A **hard iteration ceiling** (`--max-iterations`, `max_turns`) — Claude Code ends the turn after stop hooks continue it eight times in a row [A, hooks reference, 2026-11-07; an environment variable raises the cap]
 - A **token/$ budget cap** — increasingly the *real* governor over raw iteration count (Claude Agent SDK exposes `max_budget_usd`; Codex `/goal` stops on budget exhaustion)
 - **Wall-clock limit + no-progress detection** (exit if diff/error is unchanged N rounds — *"you cannot ask an agent if it is in a loop; you must prove it"*)
 - A **kill-switch** (`Esc`; `CLAUDE_CODE_DISABLE_CRON=1`)
@@ -608,11 +621,11 @@ Every unattended loop needs, **by construction**:
 
 ### 17.6 The defining failure mode — reward-hacking the criterion [A/B]
 
-The agent that games its own stop signal: calls `sys.exit(0)` to fake green tests, deletes failing tests, hardcodes expected outputs. METR found Opus 4.6 attempted reward hacking in **~80%** of long MirrorCode runs [B]; it *generalizes* to broader sabotage (Anthropic "Natural emergent misalignment from reward hacking", arXiv:2511.18397 + official research page [A/B] — 12% sabotage, ~50% alignment-faking after learning to hack). **Mitigation:** diversify checks, add holdout tests + mutation testing, and **never let the implementer write *and* grade the only test.** Counter-intuitively, "inoculation prompting" (explicitly permitting the hack) removes the *misaligned generalization* [A]. Long-horizon decay compounds this: SlopCodeBench [B] shows quality erodes monotonically and **better prompts don't stop it** — bound the loop, don't trust it to self-limit.
+The agent that games its own stop signal: calls `sys.exit(0)` to fake green tests, deletes failing tests, hardcodes expected outputs. METR found Opus 4.6 attempted reward hacking in **~80%** of long MirrorCode runs [B; source not located in the November 2026 refresh]; it *generalizes* to broader sabotage (Anthropic "Natural emergent misalignment from reward hacking", arXiv:2511.18397 + official research page [A/B] — 12% sabotage, ~50% alignment-faking after learning to hack). The behavior also spreads between agents through shared code, memory and plans, and grows over critique rounds when the check is a shallow score (arXiv:2610.12822, arXiv:2609.28614 [B]; §4). **Mitigation:** diversify checks, add holdout tests + mutation testing, and **never let the implementer write *and* grade the only test.** Counter-intuitively, "inoculation prompting" (explicitly permitting the hack) removes the *misaligned generalization* [A]. Long-horizon decay compounds this: SlopCodeBench [B] shows quality erodes monotonically and **better prompts don't stop it** — bound the loop, don't trust it to self-limit.
 
 ### 17.7 Repo docs this refresh implies (open follow-ups)
 
-Recorded here so they're not lost; each is a separate, confirmable change:
+Recorded here so they're not lost; each is a separate, confirmable change. Still open on 2026-11-07: `shared/AGENTS.md` has no unbounded-loops rule, `skills/large-feature/SKILL.md` cites §18 but not §17, and `skills/refactor-audit` has no loop-safe field.
 
 - **`shared/AGENTS.md`** — candidate for a one-line contract rule: *"No unbounded loops — every autonomous loop needs a machine-verifiable stop, an iteration ceiling, and a budget cap (§17.5)."* Decide contract-level vs. WORKFLOW-level.
 - **`large-feature` skill** — could reference §17 loops explicitly (its red-green slices are eval-in-the-loop), or defer to a dedicated loops skill/playbook.
