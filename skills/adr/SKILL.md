@@ -94,7 +94,7 @@ Before writing, verify the input qualifies:
   survived. The status-quo "do nothing" option is a valid alternative if
   applicable.
 
-If the input is unresolved or not architectural, tell the user and don't write the ADR. If
+If the input is unresolved or falls under "Skip the ADR when", tell the user and don't write the ADR. If
 alternatives are absent, write the ADR with the constraint that forced the call (and use "Only
 viable option because \<constraint>" in Decision Outcome).
 
@@ -231,8 +231,7 @@ touched — never the user's unrelated work in progress.
 - If multiple ADR directories exist (rare), prefer the deepest one under
   `docs/` — it's usually the live one.
 - If existing ADRs use a non-MADR format (e.g. Nygard's original 4-section
-  format), match that format exactly. Don't impose MADR.
-- If the repo has ADRs but no `template.md`, infer the template by reading
-  the most recent ADR and reproducing its sections.
+  format), match that format exactly. Don't impose MADR. With ADRs but no
+  `template.md`, reproduce the sections of the most recent ADR.
 - If the repo has a CONTRIBUTING.md or AGENTS.md with explicit ADR rules,
   follow those over the detection defaults.

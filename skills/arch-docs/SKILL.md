@@ -99,7 +99,8 @@ invent sections you can't fill with real content.
 
 If updating an existing doc, **preserve its current structure** unless
 the user explicitly asks to restructure. Match the existing tone and
-section names.
+section names, and its framework (4+1, Nygard, freeform prose): don't impose
+arc42-lite or migrate frameworks.
 
 ### Step 4: Add `arch:watch` markers and run staleness check
 
@@ -322,10 +323,6 @@ UI code, or documentation do not make a repo an AI system.
 - If `ARCHITECTURE.md` exists at the repo root and is short, update
   it in place. If it's already large, suggest splitting into
   `docs/architecture/` rather than letting it grow.
-- If a repo's existing arch docs use a different framework (4+1,
-  Nygard, freeform prose), match that style — don't impose
-  arc42-lite. The skill's job is to make the docs better, not to
-  migrate frameworks.
 - If the user has only one application file (e.g. a single-script CLI
   tool), the architecture doc is the README. Don't create
   `docs/architecture/` for trivial repos.
