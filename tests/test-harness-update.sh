@@ -143,7 +143,10 @@ check 'three failed attempts report one FAIL and count once in exit status' \
 timeout_stops_retries() {
   local name=timeout
   local status log
-  if run_agy "$name" 99 update 1 1; then
+  # Whole-step budget in seconds. It must cover attempt 1 plus its RETRY log line
+  # on a loaded host, and stay below the 5s backoff that the real sleep then eats.
+  local budget=2
+  if run_agy "$name" 99 update "$budget" 1; then
     return 1
   else
     status=$?
@@ -153,7 +156,7 @@ timeout_stops_retries() {
   [ "$status" -eq 1 ] &&
     [ "$(wc -l <"$TMP_ROOT/$name/agy.calls" | tr -d ' ')" -eq 1 ] &&
     grep -Fq 'agy RETRY after attempt 1/3; backoff=5s' "$log" &&
-    grep -Fq 'agy FAIL timed out after 1s' "$log" &&
+    grep -Fq "agy FAIL timed out after ${budget}s" "$log" &&
     ! grep -Fq 'agy ATTEMPT 2/3' "$log"
 }
 
