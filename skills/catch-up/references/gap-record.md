@@ -1,6 +1,6 @@
 # Gap record
 
-Use the LOCATION and general format of the shared comprehension log (set by
+Use the location and general format of the shared comprehension log (set by
 the retired `quiz-diff` skill, archived in `skills-retired/quiz-diff/`), but
 this is not a diff.
 
@@ -22,15 +22,14 @@ one JSON object per run:
 ```
 
 - Git fields (`branch_label`, `base`, `head`, `diff_hash`) are nullable.
-  NEVER fabricate a SHA.
+  Never fabricate a SHA.
 - Fingerprint = truthful source snapshot: sessions read, cutoff, as-of
   time. Skip hash-staleness checks when git fields are null.
 - Store the gap (what his picture missed), not his raw answer text.
 
 ## Compatibility with quiz-diff entries
 
-The log may still hold entries written by the retired `quiz-diff` skill. A
-reader that ignores unknown keys (`skill`, `sessions`) reads catch-up
-entries as gap records with null git fields. quiz-diff entries keep their
-git fingerprint and are unaffected. Both kinds share one log; the `skill`
-key tells them apart.
+The log may still hold entries from the retired `quiz-diff` skill. Both kinds
+share one log; the `skill` key tells them apart, and a reader that ignores
+unknown keys (`skill`, `sessions`) reads catch-up entries as gap records with
+null git fields.

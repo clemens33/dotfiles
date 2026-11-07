@@ -1,12 +1,11 @@
 ---
 name: caveman
 description: >
-  Ultra-compressed communication mode. Speaks like caveman
-  while keeping full technical accuracy. Supports intensity levels: lite, full (default), ultra,
-  wenyan-lite, wenyan-full, wenyan-ultra.
-  Use when user says "caveman mode", "talk like caveman", "use caveman", or invokes
-  /caveman, or for compact agent-to-agent text. Not for plain brevity requests
-  ("be brief"); not the default for prose to the human unless asked.
+  Ultra-compressed communication mode that keeps full technical accuracy. Levels: lite, full
+  (default), ultra, wenyan-lite, wenyan-full, wenyan-ultra. Use when the user says "caveman
+  mode", "talk like caveman" or "use caveman", invokes /caveman, or for compact agent-to-agent
+  text. Not for plain brevity requests ("be brief"); not the default for prose to the human
+  unless asked.
 source: https://github.com/JuliusBrussee/caveman/blob/main/skills/caveman/SKILL.md
 metadata:
   category: preference

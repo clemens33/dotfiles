@@ -11,7 +11,7 @@ Trigger: the human drops an idea mid-work. Phrases include "idea:",
 
 ## Record rules
 
-- ONE idea-record owner per session. In ae that is the session's lead
+- One idea-record owner per session. In ae that is the session's lead
   seat; any other agent SENDS the idea to the lead, who writes it.
   Outside ae it is the single agent.
 - Store: ae memo topic `ideas` (one checkpoint record holding the
@@ -33,5 +33,4 @@ Trigger: the human drops an idea mid-work. Phrases include "idea:",
 
 Promise only RECORDED ideas. If a session has no record, say "no idea
 record here; ideas dropped before capture existed are not listed".
-Status without evidence = `unknown`. Transcript scanning is out of scope
-for v1.
+Status without evidence = `unknown`. Transcript scanning is out of scope.

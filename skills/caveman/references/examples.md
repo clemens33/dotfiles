@@ -1,6 +1,6 @@
 # Caveman — worked examples
 
-Relocated verbatim from `SKILL.md`. One question answered at every intensity level; the level definitions stay in `SKILL.md`.
+One question answered at every intensity level; the level definitions are in `SKILL.md`.
 
 Example — "Why React component re-render?"
 - lite: "Your component re-renders because you create a new object reference each render. Wrap it in `useMemo`."
