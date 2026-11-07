@@ -1,12 +1,12 @@
 ---
 name: test-audit
 description: >
-  Audit test-suite QUALITY (not coverage) after heavy AI-agent work. Use when
-  the user says "audit the tests", after a large feature lands, before
-  release-hardening, or when refactor-audit routes here. Four evidence lanes:
-  scoped mutation testing (Python/JS-TS/Rust), high-confidence bypass facts,
-  gamed-test forensics, and a detached judge pass. Produces a triaged findings
-  report with guardrail candidates. Advisory — never gates, never installs.
+  Audits test-suite quality (not coverage) after heavy AI-agent work and
+  reports triaged findings with guardrail candidates. Use when the user asks
+  to audit the tests, after a large feature lands, before release hardening,
+  or when refactor-audit routes here. Advisory: never gates, modifies or
+  installs. Not for coverage tracking (use `refactor-audit`) or writing tests
+  (use `tdd`).
 metadata:
   category: preference
 
@@ -19,25 +19,23 @@ them. This skill audits whether the suite would actually catch bugs: mutation
 probes, bypass detection, weakening forensics, and an independent judge.
 Coverage is a quantity signal and is out of scope (refactor-audit tracks it).
 
-Prior art acknowledged: `Jott2121/crucible` (pytest+mutmut tester/critic loop —
-its rule "kill/survive is the receipt, never ask the model if tests are good"
-is adopted here), Jeremy Longshore's `audit-tests` gist (mutation + review;
-its universal thresholds are deliberately NOT adopted), tsDetect/PyNose smell
-taxonomies (precision lessons: automated smell detection has ~0.36 F-measure —
-which is why contextual smells are review candidates here, never findings).
+Prior art: `Jott2121/crucible` (kill/survive is the receipt), Jeremy Longshore's `audit-tests` gist, tsDetect/PyNose smell taxonomies.
 
 ## Ground rules
 
-1. **Mutants are probes, not proof.** A surviving mutant becomes a finding
-   only after triage (see Lane 1). Equivalent mutants, no-coverage, timeouts,
-   and tool errors are separate statuses — never collapse them into "weak test".
+1. **Mutants are probes, not proof.** Kill/survive results, not model
+   opinion, are the evidence that tests catch bugs. A surviving mutant becomes
+   a finding only after triage (see Lane 1). Equivalent mutants, no-coverage,
+   timeouts, and tool errors are separate statuses — never collapse them into
+   "weak test".
 2. **Two evidence tiers.** High-confidence facts can be reported directly.
    Contextual smells are review candidates for the judge/human — a zero-assertion
    test may be a legitimate exception/snapshot/property test.
 3. **No universal thresholds.** No assertion-density minimums, mock-count
    caps, or negative-test ratios. Counts do not establish oracle quality.
-4. **Never modify anything.** No installs, no config edits, no cache deletion,
-   no test changes. Audit only. Report side-effect artifacts the tools create.
+4. **Never modify anything.** No installs or reconfiguring tools mid-audit,
+   no config edits, no cache deletion, no test changes (including deleting
+   "redundant" tests). Audit only. Report side-effect artifacts the tools create.
 5. **Advisory.** Findings route to fixes (tdd skill), structure work
    (structural refactor), or guardrail promotion (refactor-audit).
 
@@ -48,7 +46,7 @@ including uncommitted and untracked test/CI/config files (never
 hard-code `main`). Announce base, head, dirty-state, file
 counts. Record a scope hash.
 
-- Mutation targets = **changed production lines/modules**.
+- Mutation targets = **changed production lines/modules** (scoped only; a full-suite mutation run blows the budget).
 - Test-only diff → map changed tests to production modules via imports or
   existing coverage data; if ambiguous, ask for a named module.
 - Deletion-only production change → target the surrounding module (no
@@ -133,8 +131,8 @@ still tested elsewhere (renames/parameterization are not deletions):
 ## Lane 4 — Detached judge (opinion, evidence-cited)
 
 Spawn a **genuinely detached** reviewer — in an ae session, spawn/ask an ae
-agent of a different model family (per AGENTS.md); otherwise a fresh-context
-subagent. Give it only: the production diff, the tests, relevant requirements/
+agent on a different model provider (the served model, not the harness; per
+AGENTS.md); otherwise a fresh-context subagent. Give it only: the production diff, the tests, relevant requirements/
 ADRs, and the Lane 2/3 review candidates. Anchor on the intended contract
 ("does this test pin the *required* behavior?"), not just sensitivity.
 Judge output is an **opinion with cited evidence** — it can raise a review
@@ -156,13 +154,3 @@ candidate to a finding only together with Lane 1/2/3 evidence, never alone.
   read, e.g. private CI, and is a governance decision, not a skill feature)
 - Routing: fixes → tdd; structural test friction →
   structural refactor; recurring signals → refactor-audit
-
-## Anti-patterns
-
-- Coverage worship; chasing 100% mutation score (ignore-comment gaming, cost)
-- Full-suite mutation runs (budget explosion) — scoped only
-- Auto-deleting "redundant" tests — minimization is unsafe without deep review
-- Calling a survivor "proof" before triage; calling judge opinion a verdict
-- Flagging literal expected values as a smell (inverted oracle logic)
-- Installing or reconfiguring tools mid-audit
-- Comparing mutation scores across different scopes/configs/versions
