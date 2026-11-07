@@ -2,7 +2,7 @@
 
 The contract loads via `~/.claude/CLAUDE.md` for Claude Code; native Copilot loads `${COPILOT_HOME:-$HOME/.copilot}/copilot-instructions.md`.
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository. The sections below describe the repo itself.
+The sections below describe the repo itself.
 
 ## Overview
 
