@@ -413,5 +413,20 @@ _python:
         if [ "$c" = /usr/bin/python3 ] && [ "$(uname -s)" = Darwin ] && ! xcode-select -p >/dev/null 2>&1; then continue; fi
         if usable "$c"; then command -v "$c"; exit 0; fi
     done
+    # fallback: a private venv built by uv from its cache (offline; no system or brew python is modified)
+    if command -v uv >/dev/null 2>&1; then
+        venv="${XDG_CACHE_HOME:-$HOME/.cache}/dotfiles-just/py-yaml-6.0.3"
+        if usable "$venv/bin/python"; then echo "$venv/bin/python"; exit 0; fi
+        rm -rf "$venv"; mkdir -p "$(dirname "$venv")"
+        export UV_OFFLINE=1 UV_PYTHON_DOWNLOADS=never
+        # >=3.11 so tomllib exists without tomli
+        if base=$(uv python find --managed-python '>=3.11' 2>/dev/null || uv python find '>=3.11' 2>/dev/null) \
+            && uv venv --offline -q --python "$base" "$venv" >/dev/null 2>&1 \
+            && uv pip install --offline -q --python "$venv/bin/python" pyyaml==6.0.3 >/dev/null 2>&1 \
+            && usable "$venv/bin/python"; then
+            echo "$venv/bin/python"; exit 0
+        fi
+        rm -rf "$venv"
+    fi
     echo "no python with PyYAML and tomllib/tomli found; {{py_hint}}" >&2
     exit 1
