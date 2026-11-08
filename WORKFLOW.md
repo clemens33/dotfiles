@@ -77,7 +77,7 @@ Obvious, low-risk work. Stay in minimal-harness mode.
 
 **Settings:**
 - Effort: see § Effort level cheat sheet.
-- Skills: none forced; the tone rule (`shared/AGENTS.md` rule 4, "Anti-fluff, two registers") is enough
+- Skills: none forced; the writing rules (`shared/AGENTS.md` § Writing for Clemens) are enough
 - Subagents: none
 - Branch: direct to the default branch is fine
 
@@ -93,7 +93,7 @@ Skill-augmented single agent for the implementation; the acceptance tests come f
 - Brief inline outline in the prompt — one paragraph: what you're doing, what done looks like, how you'll know
 - Run the repository's applicable checks for this slice and checkpoint, including required lint/type checks and affected contracts. Use its focused/full risk lanes; do not interpret “validation” as every available test command. Mandatory full, freeze, release and task-specific gates remain binding. Record commands, candidate identity, results and gaps.
 - You read the diff before committing
-- Spec-first tests (AGENTS.md universal principles): by default one different-provider seat authors and freezes acceptance tests, then reviews implementation; test changes retain their own cross-provider review. No additional test-author seat is required.
+- Spec-first tests (`shared/AGENTS.md` § Engineering principles): by default one different-provider seat authors and freezes acceptance tests, then reviews implementation; test changes retain their own cross-provider review. No additional test-author seat is required.
 - Independent authorship/review is not a requirement that every seat rerun every suite. The brief assigns execution and independent assessment separately; reviewers execute checks required by repository policy and investigate disputed or missing evidence. Test-author and implementation gates remain distinct; a verdict never gates itself.
 
 **Settings:**
@@ -114,7 +114,7 @@ Plan-first. Phased execution.
 1. **Written plan first** — `scope` skill produces a phased plan with test gates *before* code. If `scope` feels heavy, write the equivalent to `.local/plan.md` by hand.
 2. **Phased execution** — each phase ends green-or-stop. No "let me just finish this one more thing."
 
-Plus the spec-first rule from the AGENTS.md universal principles: normally the same different-provider seat authors and freezes acceptance tests, then reviews implementation; test changes retain their own cross-provider review. A separate test author may be used for parallel slices or high blast radius.
+Plus the spec-first rule from `shared/AGENTS.md` § Engineering principles: normally the same different-provider seat authors and freezes acceptance tests, then reviews implementation; test changes retain their own cross-provider review. A separate test author may be used for parallel slices or high blast radius.
 
 **Recommended before execution:**
 - **Grill the plan** with the `grill-with-docs` skill (or a cross-model plan critique) — catches handwaves before they cost you code.
@@ -122,7 +122,7 @@ Plus the spec-first rule from the AGENTS.md universal principles: normally the s
 
 **Use as needed (context-dependent):**
 - **Subagent split** (planner / implementer / reviewer fan-out) if work parallelizes. Skip if you can hold the plan in your head.
-- **Worktrees** if parallel tracks exist. Overkill for sequential phases. Own cleanup per the `shared/AGENTS.md` worktree duty (record path/branch/owner; `git worktree remove` when no longer needed).
+- **Worktrees** if parallel tracks exist. Overkill for sequential phases. Own cleanup per § Git worktrees and branches below (record path/branch/owner; `git worktree remove` when no longer needed).
 - **ADR** if a real design decision was made (genuine alternatives, hard to reverse, surprising without context). Rare.
 - **`arch-docs` update** if the change touches the living architecture (new module, new boundary, new invariant). Not for every L task.
 
@@ -234,11 +234,23 @@ For trivial mechanical work (typos, formatting, version bumps), any seat may cho
 
 ---
 
+## Git worktrees and branches
+
+Read this before you create, reuse or remove a git worktree, or delete a branch. `shared/AGENTS.md` § Git keeps the binding core; this section holds the full conditions.
+
+Git worktrees: do not pre-populate or copy `node_modules`, `.venv`, `target` or similar generated trees by default; create them only when the assigned work needs them, with the repo's setup commands and package-manager caches. Avoid recursive copies, including filesystem clones: they still create file entries and can burden endpoint security. Reuse another checkout's `node_modules` only after verifying its installed dependencies, source resolution and isolation from concurrent installs and generated/cache writes (matching manifests and lockfiles are not enough); otherwise install locally, never through a shared link. Keep Python environments worktree-local and recreate them with the repo's tool (`uv sync` for uv-managed projects) instead of copying, because scripts and editable installs can retain source/interpreter paths. Missing dependencies are setup failures, not code regressions: complete the required setup or report the verification gap.
+
+Own cleanup of each worktree you create; record its path, branch (or detached HEAD) and cleanup owner. When no agent or process needs it any more, preserve required work and evidence, check its current state, and remove the clean worktree with `git worktree remove`; never force removal, and report any retained worktree and the reason. If you finish or hand off before cleanup is safe, report each remaining path, branch or detached HEAD, state and reason, and transfer cleanup to a named successor who accepts it; under ae, the spawner must resolve this ownership before retiring the creator.
+
+Delete only disposable branches you or your spawned worker created for that task, using `git branch -d` after verifying their work is merged into the intended target; leave existing/shared branches alone. A rebased or squashed slice fails `git branch -d` though its work landed. Then `git branch -D` is allowed without asking when all hold, checked against the fetched remote target (`<remote-target>`, e.g. `origin/main`): never pushed, not checked out in any worktree, no merge commits (`git rev-list --merges --count <remote-target>..<branch>` is 0), and `git cherry <remote-target> <branch>` is all `-` or, for a squash, the patch-id of `git diff <merge-base> <branch>` (merge-base with `<remote-target>`) equals that of a commit on `<remote-target>`. Record branch and tip SHA in evidence. Anything else: ask.
+
+---
+
 ## Universal principles (every bucket)
 
 1. **Verify your work.** If the agent cannot run a check, declare the verification gap explicitly. No silent assumptions.
 2. **Articulate before solving** — baked into the `diagnose` skill loop. If you cannot state the problem in one sentence, you are not ready to fix it. Reproduce → describe → then act.
-3. **Clear, tight output** — `shared/AGENTS.md` rule 4 ("Anti-fluff, two registers"): plain STE-based prose and a visual for substantial reports to Clemens; caveman-lite between agents.
+3. **Clear, tight output** — `shared/AGENTS.md` § Writing for Clemens: plain STE-based prose and a visual for substantial reports to Clemens; caveman-lite between agents.
 4. **Source-tier your justifications** — `KNOWLEDGE.md` §3. Tier A/B drives, C/D suggests.
 5. **Effort follows seat policy** — see § Effort level cheat sheet; apply its trivial-work exception, not a blanket task-bucket override.
 6. **Do not abdicate judgment.** The agent does the typing, you do the thinking. Read every diff at S/M, every phase at L.

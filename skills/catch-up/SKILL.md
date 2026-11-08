@@ -3,7 +3,8 @@ name: catch-up
 description: >
   Brief the human after time away (status, open decisions, ideas, what changed, what needs him)
   or record a dropped idea. Use when he asks "brief me" or "catch me up", asks what is open or
-  what happened while he was away, or drops an idea ("idea:", "park this"). Not for diff quizzes.
+  what happened while he was away, or drops an idea beyond the current task ("idea:", "spark",
+  "note this", "park this", or an unprompted aside). Not for diff quizzes.
 metadata:
   category: preference
 
