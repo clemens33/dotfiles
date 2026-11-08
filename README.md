@@ -371,12 +371,15 @@ scripts/harness-update.sh --check
 scripts/harness-update.sh
 scripts/harness-update.sh --only codex
 
-# Report instruction files that drifted from the rendered contract
+# Report instruction files and profile settings that drifted from their rendered source
 scripts/harness-update.sh --only contract
+scripts/harness-update.sh --only settings
 ```
 
 `contract` is a step, not a CLI: it runs `render-contract.sh --check` and names
-any target that no longer matches. It never renders — `./install` does that.
+any target that no longer matches. `settings` does the same for the claude-p and
+claude-mic profile settings with `render-claude-settings.sh --check`; a legacy
+symlink alone reports `SKIP`. Neither renders — `./install` does that.
 
 `ae` is excluded by default because session glue is version-pinned. Its
 checksum-verified upgrader remains opt-in and requires an explicit calver:

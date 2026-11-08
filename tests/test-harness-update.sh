@@ -1281,5 +1281,125 @@ copilot_relative_home_path() {
 check 'relative PATH Copilot CLI is real; a relative-PATH shim stays absent' \
   copilot_relative_home_path
 
+# settings step: drift only. Expected outcomes come from the step's contract
+# (OK / STALE count + home-relative paths / SKIP legacy or absent renderer /
+# FAIL on unexpected exit), never from the renderer's internals.
+run_settings() {
+  # run_settings <name> [script] -> output in $TMP_ROOT/<name>/out, status returned
+  local name=$1 script=${2:-$SCRIPT}
+  env HOME="$TMP_ROOT/$name/home" bash "$script" --only settings \
+    >"$TMP_ROOT/$name/out" 2>&1
+}
+
+settings_home() {
+  local name=$1
+  mkdir -p "$TMP_ROOT/$name/home/.claude-p" "$TMP_ROOT/$name/home/.local/bin"
+}
+
+settings_clean_is_ok() {
+  local name=settings-clean
+  settings_home "$name"
+  env HOME="$TMP_ROOT/$name/home" "$ROOT/scripts/render-claude-settings.sh" >/dev/null 2>&1 || return 1
+  local before
+  before=$(cksum <"$TMP_ROOT/$name/home/.claude-p/settings.json")
+  run_settings "$name" || return 1
+  grep -q '^settings OK' "$TMP_ROOT/$name/out" &&
+    [ "$before" = "$(cksum <"$TMP_ROOT/$name/home/.claude-p/settings.json")" ]
+}
+check 'settings step reports OK when profile settings match' settings_clean_is_ok
+
+settings_stale_is_reported_not_fixed() {
+  local name=settings-stale
+  settings_home "$name"
+  printf '{}\n' >"$TMP_ROOT/$name/home/.claude-p/settings.json"
+  run_settings "$name" || return 1
+  grep -q '^settings STALE 1 target(s), run ./install: ~/.claude-p/settings.json$' "$TMP_ROOT/$name/out" &&
+    [ "$(cat "$TMP_ROOT/$name/home/.claude-p/settings.json")" = '{}' ]
+}
+check 'settings step reports a stale file as STALE and never writes it' \
+  settings_stale_is_reported_not_fixed
+
+settings_legacy_symlink_is_skip() {
+  local name=settings-legacy
+  settings_home "$name"
+  ln -s "$ROOT/claude/settings.json" "$TMP_ROOT/$name/home/.claude-p/settings.json"
+  run_settings "$name" || return 1
+  grep -q '^settings SKIP legacy symlink' "$TMP_ROOT/$name/out" &&
+    ! grep -q 'settings STALE\|settings FAIL' "$TMP_ROOT/$name/out" &&
+    [ -L "$TMP_ROOT/$name/home/.claude-p/settings.json" ]
+}
+check 'settings step reports a legacy symlink as SKIP and leaves it' \
+  settings_legacy_symlink_is_skip
+
+settings_absent_renderer_is_skip() {
+  local name=settings-norenderer
+  settings_home "$name"
+  mkdir -p "$TMP_ROOT/$name/repo/scripts"
+  cp "$SCRIPT" "$TMP_ROOT/$name/repo/scripts/harness-update.sh"
+  run_settings "$name" "$TMP_ROOT/$name/repo/scripts/harness-update.sh" || return 1
+  grep -q '^settings SKIP renderer not found' "$TMP_ROOT/$name/out"
+}
+check 'settings step reports SKIP when the renderer is absent' \
+  settings_absent_renderer_is_skip
+
+settings_unexpected_exit_is_fail() {
+  local name=settings-fail
+  settings_home "$name"
+  mkdir -p "$TMP_ROOT/$name/repo/scripts"
+  cp "$SCRIPT" "$TMP_ROOT/$name/repo/scripts/harness-update.sh"
+  printf '#!/bin/sh\nexit 2\n' >"$TMP_ROOT/$name/repo/scripts/render-claude-settings.sh"
+  chmod +x "$TMP_ROOT/$name/repo/scripts/render-claude-settings.sh"
+  if run_settings "$name" "$TMP_ROOT/$name/repo/scripts/harness-update.sh"; then
+    return 1
+  fi
+  grep -q '^settings FAIL --check exited 2' "$TMP_ROOT/$name/out" &&
+    [ "$(grep -c '^settings FAIL' "$TMP_ROOT/$name/out")" -eq 1 ] &&
+    ! grep -q 'settings ATTEMPT\|settings RETRY' "$TMP_ROOT/$name/out"
+}
+check 'settings step reports FAIL and exits 1 on an unexpected renderer exit' \
+  settings_unexpected_exit_is_fail
+
+settings_fake_renderer() {
+  # settings_fake_renderer <name> <stdout text> <exit code>
+  local name=$1
+  settings_home "$name"
+  mkdir -p "$TMP_ROOT/$name/repo/scripts"
+  cp "$SCRIPT" "$TMP_ROOT/$name/repo/scripts/harness-update.sh"
+  printf '#!/bin/sh\nprintf "%%s" "%s"\nexit %s\n' "$2" "$3" \
+    >"$TMP_ROOT/$name/repo/scripts/render-claude-settings.sh"
+  chmod +x "$TMP_ROOT/$name/repo/scripts/render-claude-settings.sh"
+}
+
+settings_markerless_exit1_is_fail() {
+  local name=settings-nomarker
+  settings_fake_renderer "$name" '' 1
+  if run_settings "$name" "$TMP_ROOT/$name/repo/scripts/harness-update.sh"; then
+    return 1
+  fi
+  grep -q '^settings FAIL --check exited 1 without a target' "$TMP_ROOT/$name/out" &&
+    ! grep -q 'settings SKIP' "$TMP_ROOT/$name/out"
+}
+check 'settings step fails when --check exits 1 without a stale or legacy line' \
+  settings_markerless_exit1_is_fail
+
+settings_mixed_is_stale() {
+  local name=settings-mixed
+  settings_home "$name"
+  mkdir -p "$TMP_ROOT/$name/home/.claude-mic"
+  printf '{}\n' >"$TMP_ROOT/$name/home/.claude-mic/settings.json"
+  ln -s "$ROOT/claude/settings.json" "$TMP_ROOT/$name/home/.claude-p/settings.json"
+  run_settings "$name" || return 1
+  grep -q '^settings STALE 1 target(s), run ./install: ~/.claude-mic/settings.json$' "$TMP_ROOT/$name/out" &&
+    [ -L "$TMP_ROOT/$name/home/.claude-p/settings.json" ] &&
+    [ "$(cat "$TMP_ROOT/$name/home/.claude-mic/settings.json")" = '{}' ]
+}
+check 'settings step reports legacy plus stale as STALE and writes nothing' \
+  settings_mixed_is_stale
+
+settings_is_in_default_loop() {
+  grep -q '^for tool in .* contract settings; do$' "$SCRIPT"
+}
+check 'settings step is part of the default tool loop' settings_is_in_default_loop
+
 printf '%s passed, %s failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]
