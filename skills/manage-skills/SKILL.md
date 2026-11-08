@@ -98,7 +98,7 @@ The frontmatter fields the linter enforces, and why each one is not optional:
   Re-test or retire these after a model upgrade.
 - `preference`: our conventions, infrastructure or private knowledge, which drift with our
   practice, not with model progress. A smarter model still needs these.
-- Private knowledge (for example the MIC Langfuse cluster) is `preference`, even though the
+- Private knowledge (for example a company-internal cluster or service) is `preference`, even though the
   task is impossible without the skill.
 
 Body limits: 500 lines and ~5000 estimated tokens (gate 4). Over either, do not add a waiver —
