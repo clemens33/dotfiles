@@ -92,9 +92,14 @@ The frontmatter fields the linter enforces, and why each one is not optional:
 | `description` | Must contain the exact-case substring `Use when` — house grammar, checked literally | gate 3 |
 | `metadata.category` | Must be exactly `capability` or `preference` | gate 7 |
 
-`capability` vs `preference` is an ablation test, not a topic label: if removing the skill
-would make a task *impossible*, it is a `capability`; if the task would still get done but in a
-way the user does not want, it is a `preference`.
+`capability` vs `preference` is a decay-mode label, not a topic or an ablation test:
+
+- `capability`: generic know-how that a stronger base model would make unnecessary.
+  Re-test or retire these after a model upgrade.
+- `preference`: our conventions, infrastructure or private knowledge, which drift with our
+  practice, not with model progress. A smarter model still needs these.
+- Private knowledge (for example the MIC Langfuse cluster) is `preference`, even though the
+  task is impossible without the skill.
 
 Body limits: 500 lines and ~5000 estimated tokens (gate 4). Over either, do not add a waiver —
 split the reference material out (see "Splitting an oversized skill" below).
