@@ -361,5 +361,32 @@ check 'install.conf.yaml renders the profile settings' \
 check 'install.conf.yaml keeps the plain ~/.claude/settings.json symlink' \
     contains "$ROOT/install.conf.yaml" "$tilde/.claude/settings.json:"
 
+# ---------------------------------------------------------------------------
+# 10. context-mode plugin retired (2026-11-09)
+# ---------------------------------------------------------------------------
+# The plugin was enabled in the tracked settings but installed in none of the
+# three Claude config dirs. The tracked source must not enable it, and the
+# render must replace a profile file that still carries the key (the render
+# overwrites the whole file from the source on every install).
+check 'tracked claude/settings.json does not enable context-mode' \
+    json_is "$ROOT/claude/settings.json" '(.enabledPlugins // {}) | has("context-mode@context-mode") | not'
+check 'tracked claude/settings.json defines no context-mode marketplace' \
+    json_is "$ROOT/claude/settings.json" '(.extraKnownMarketplaces // {}) | has("context-mode") | not'
+mkdir -p "$TMP_ROOT/real/scripts" "$TMP_ROOT/real/claude"
+ln -s "$SCRIPT" "$TMP_ROOT/real/scripts/render-claude-settings.sh"
+cp "$ROOT/claude/settings.json" "$TMP_ROOT/real/claude/settings.json"
+make_home h10 .claude .claude-p .claude-mic
+for id in .claude-p .claude-mic; do
+    jq '.enabledPlugins["context-mode@context-mode"] = true' "$TMP_ROOT/real/claude/settings.json" \
+        >"$TMP_ROOT/h10/$id/settings.json"
+done
+render real h10 >/dev/null 2>&1 || bad "render of the tracked settings exited non-zero"
+for id in .claude-p .claude-mic; do
+    check "$id: a stale context-mode plugin key is removed by the render" \
+        json_is "$TMP_ROOT/h10/$id/settings.json" '(.enabledPlugins // {}) | has("context-mode@context-mode") | not'
+    check "$id: the other enabled plugins survive the render" \
+        json_is "$TMP_ROOT/h10/$id/settings.json" '.enabledPlugins["rust-analyzer-lsp@claude-plugins-official"] == true'
+done
+
 printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]
