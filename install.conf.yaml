@@ -98,6 +98,13 @@
     ~/.grok/AGENTS.md:
       path: grok/AGENTS.md
       force: true
+    # Opt-in browser MCP servers (chrome-devtools, playwright), off by default in
+    # every harness. A seat that needs a browser launches with
+    # `claude --mcp-config ~/.config/ae/browser-mcp.json` (ae profiles *-web).
+    ~/.config/ae/browser-mcp.json:
+      path: claude/browser-mcp.json
+      create: true
+      force: true
 
 # Additional Claude Code identity (`claude-p` fish function
 # sets CLAUDE_CONFIG_DIR) — isolated login per config dir (macOS: own Keychain
@@ -263,6 +270,10 @@
     # open-design retired 2026-11-09: enable it per session or per project instead.
     - command: scripts/agy-mcp-retire.sh open-design
       description: Retiring OpenDesign from Antigravity MCP state
+    # chrome-devtools retired 2026-11-09: opt in per session instead (README
+    # "Enable the MCP on demand").
+    - command: scripts/agy-mcp-retire.sh chrome-devtools
+      description: Retiring Chrome DevTools from Antigravity MCP state
     # Migration (2026-09-07): Codex user skills moved to ~/.agents/skills. The
     # legacy root still exists on hosts installed before this change, Codex
     # scans both, and a link there wins — so a skill deleted or renamed here
