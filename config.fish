@@ -19,6 +19,39 @@ if set -q TMUX
     end
 end
 
+# pytest-xdist: `-n auto` starts one worker per physical core (18 on the M-series
+# Mac), which starves the other agent sessions on the machine. pytest-xdist reads
+# PYTEST_XDIST_AUTO_NUM_WORKERS for `-n auto` and `-n logical`; cap it at two
+# thirds of the PHYSICAL cores (floor, minimum 2, never above the core count),
+# the same unit xdist's psutil lookup counts for `auto`, so the cap can only
+# lower that default. Logical CPUs would be wrong on SMT hosts: 16 logical / 8
+# physical would give 10 > 8.
+# Darwin: hw.physicalcpu. Linux: unique core,socket pairs from lscpu, falling
+# back to nproc (logical) where lscpu is missing or prints nothing. If no count
+# can be read, nothing is set (fail-open).
+# Override: export your own value before the shell starts, or pass `-n N`.
+# CI does not read this file, so CI keeps all cores.
+# No jobs-budget call here: it samples for 1 s and would slow every shell start.
+if not set -q PYTEST_XDIST_AUTO_NUM_WORKERS
+    set -l _ncpu
+    switch (uname)
+        case Darwin
+            set _ncpu (sysctl -n hw.physicalcpu 2>/dev/null)
+        case '*'
+            # `command -q` guards: fish prints "Unknown command" to stderr for a
+            # missing binary even with 2>/dev/null.
+            command -q lscpu
+            and set _ncpu (lscpu -p=core,socket 2>/dev/null | string match -v '#*' | sort -u | count)
+            test "$_ncpu" -gt 0 2>/dev/null
+            or begin
+                command -q nproc; and set _ncpu (nproc 2>/dev/null)
+            end
+    end
+    if string match -qr '^[1-9][0-9]*$' -- "$_ncpu"
+        set -gx PYTEST_XDIST_AUTO_NUM_WORKERS (math "min($_ncpu, max(2, floor($_ncpu * 2 / 3)))")
+    end
+end
+
 # Homebrew (macOS, Apple Silicon) — early, so brew-installed tools resolve
 # before anything below. No-op on Linux/WSL where the path doesn't exist.
 # Explicit `fish` arg: shellenv's auto-detection can emit POSIX syntax.
