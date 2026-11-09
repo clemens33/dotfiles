@@ -381,6 +381,45 @@ cp "$RETIRED_OD" "$TMP_ROOT/retired-open-design-first"
 run_merge "$HOME_DIR" "$RETIRED_OD" "$SERVERS"
 check 'OpenDesign retirement is idempotent' cmp -s "$TMP_ROOT/retired-open-design-first" "$RETIRED_OD"
 
+# Chrome DevTools MCP retirement (2026-11-09): browser MCP servers are opt-in per
+# seat (claude/browser-mcp.json, passed with --mcp-config), never installed by
+# default. The install removes the USER-level entry on every run. A
+# per-project entry (`claude mcp add --scope local`) is an on-demand choice and
+# must survive.
+RETIRED_CD=$TMP_ROOT/retired-chrome-devtools/.claude.json
+mkdir -p "$(dirname "$RETIRED_CD")"
+cat >"$RETIRED_CD" <<'JSON'
+{
+  "runtime": "keep",
+  "mcpServers": {
+    "chrome-devtools": {"type": "stdio", "command": "npx", "args": ["-y", "chrome-devtools-mcp@1.8.0"], "env": {}},
+    "machine-local": {"command": "local"}
+  },
+  "projects": {
+    "/work/web": {
+      "allowedTools": [],
+      "mcpServers": {"chrome-devtools": {"type": "stdio", "command": "npx", "args": ["-y", "chrome-devtools-mcp@1.8.0"], "env": {}}}
+    }
+  }
+}
+JSON
+run_merge "$HOME_DIR" "$RETIRED_CD" "$SERVERS"
+check 'stale user-level Chrome DevTools is removed while local servers and runtime state survive' \
+    jq_true "$RETIRED_CD" '.runtime == "keep" and (.mcpServers | has("chrome-devtools") | not) and .mcpServers["machine-local"].command == "local" and .mcpServers.alpha.command == "alpha-bin"'
+check 'project-scope Chrome DevTools entry survives the merge (on-demand path)' \
+    jq_true "$RETIRED_CD" '.projects["/work/web"].mcpServers["chrome-devtools"].command == "npx" and .projects["/work/web"].allowedTools == []'
+check 'tracked MCP source does not reinstall Chrome DevTools' \
+    jq_true "$REAL_SERVERS" 'has("chrome-devtools") | not'
+cp "$RETIRED_CD" "$TMP_ROOT/retired-chrome-devtools-first"
+run_merge "$HOME_DIR" "$RETIRED_CD" "$SERVERS"
+check 'Chrome DevTools retirement is idempotent' cmp -s "$TMP_ROOT/retired-chrome-devtools-first" "$RETIRED_CD"
+RETIRED_CD_REAL=$TMP_ROOT/retired-chrome-devtools-real/.claude.json
+mkdir -p "$(dirname "$RETIRED_CD_REAL")"
+printf '%s\n' '{"runtime":"keep","mcpServers":{"chrome-devtools":{"command":"old"},"machine-local":{"command":"local"}}}' >"$RETIRED_CD_REAL"
+run_merge "$HOME_DIR" "$RETIRED_CD_REAL" "$REAL_SERVERS"
+check 'the tracked source removes a stale Chrome DevTools and keeps local servers' \
+    jq_true "$RETIRED_CD_REAL" '.runtime == "keep" and .mcpServers == {"machine-local": {"command": "local"}}'
+
 # The other shared MCP sources are not merged; the symlink or copy carries the
 # file, so the source itself must not declare the server any more.
 check 'codex source declares no OpenDesign MCP server' \

@@ -24,19 +24,6 @@
     "/Users/ckriech/projects/clemens33/portfolio",
     "/Users/ckriech/projects/clemens33/ae"
   ],
-  "//mcpServers": "Pinned 2026-09-07 (bump via harness-update): chrome-devtools-mcp 1.8.0. Same pin in codex/config.toml, claude/mcpServers.json, opencode/opencode.jsonc, grok/config.toml \u2014 bump all five together. No comment key inside mcpServers itself: every key there is a server name.",
-  "mcpServers": {
-    "chrome-devtools": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "chrome-devtools-mcp@1.8.0",
-        "--browser-url=http://127.0.0.1:9222",
-        "--no-usage-statistics",
-        "--no-performance-crux"
-      ]
-    }
-  },
   "permissions": {
     "allow": [
       "command(*)",

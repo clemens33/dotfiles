@@ -19,7 +19,9 @@
 # retired name is removed on the next install while every other machine-local
 # server and all runtime state stays. Never list a name that is still in
 # claude/mcpServers.json. Retired: serena (2026-11-07, Clemens ruling);
-# context7 and open-design (2026-11-09, Clemens ruling).
+# context7, open-design and chrome-devtools (2026-11-09, Clemens ruling).
+# chrome-devtools is opt-in per seat through claude/browser-mcp.json
+# (`claude --mcp-config`), not through this merge.
 #
 # Only the top-level .mcpServers is touched. A per-project server (`claude mcp
 # add --scope local` writes .projects["<cwd>"].mcpServers) is never read or
@@ -49,7 +51,7 @@ trap 'rm -f "$tmp"' EXIT
 
 if [ -f "$target" ]; then
     jq --slurpfile mcp "$servers" '
-        ["serena","context7","open-design"] as $obsolete |
+        ["serena","context7","open-design","chrome-devtools"] as $obsolete |
         .mcpServers = (((.mcpServers // {}) | del(.[$obsolete[]])) + $mcp[0])
     ' "$target" > "$tmp"
 else

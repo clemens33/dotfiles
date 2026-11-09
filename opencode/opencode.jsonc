@@ -249,12 +249,15 @@
   // the built-in updater only notifies so two updaters never race.
   "update": "notify",
 
-  // --- MCP servers: same set as codex/grok --------------------------------
+  // --- MCP servers: defined but off by default ----------------------------
   // Package pin (bump via harness-update): chrome-devtools-mcp 1.8.0. Same
-  // pin in codex/config.toml, claude/mcpServers.json, antigravity/settings.json,
-  // grok/config.toml — bump all five together. The OpenDesign MCP is not
-  // configured here: it is enabled on demand per project, see README "Enable
-  // the MCP on demand".
+  // pin in codex/config.toml and claude/browser-mcp.json — bump all three
+  // together. The OpenDesign MCP is not configured here: it is enabled on
+  // demand per project, see README "Enable the MCP on demand".
+  // chrome-devtools is defined but OFF ("disabled": true, 2026-11-09). OpenCode 2
+  // has no `enabled` key and silently drops it (opencode debug config, 2.2.6), so
+  // never write "enabled": false here. The opt-in route is in README "Enable the
+  // MCP on demand".
   // `opencode mcp list` shows only servers that connected; a missing
   // uvx/npx/docker hides an entry there — check opencode.log for
   // "mcp connect failed".
@@ -265,6 +268,7 @@
       "chrome-devtools": {
         "type": "local",
         "command": ["npx", "-y", "chrome-devtools-mcp@1.8.0", "--browser-url=http://127.0.0.1:9222", "--no-usage-statistics", "--no-performance-crux"],
+        "disabled": true,
       },
     },
   },

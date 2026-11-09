@@ -7,11 +7,12 @@ trap 'rm -rf "$tmp"' EXIT
 merge=${COPILOT_MERGE_TEST_SCRIPT:-$ROOT/scripts/copilot-mcp-merge.sh}
 target="$tmp/mcp-config.json"
 source="$tmp/servers.json"
-printf '%s\n' '{"chrome-devtools":{"type":"stdio","command":"npx","args":["-y","chrome-devtools-mcp"],"env":{}}}' >"$source"
-printf '%s\n' '{"preference":7,"mcpServers":{"local":{"custom":true},"serena":{"command":"obsolete"},"context7":{"command":"obsolete"},"open-design":{"command":"open-design-mcp","tools":["*"]}}}' >"$target"
+# The tracked source is empty: browser MCP servers are opt-in per seat (claude/browser-mcp.json).
+printf '{}\n' >"$source"
+printf '%s\n' '{"preference":7,"mcpServers":{"local":{"custom":true},"serena":{"command":"obsolete"},"context7":{"command":"obsolete"},"open-design":{"command":"open-design-mcp","tools":["*"]},"chrome-devtools":{"type":"local","command":"npx","args":["-y","chrome-devtools-mcp@1.8.0"],"env":{},"tools":["*"]}}}' >"$target"
 "$merge" "$target" "$source"
-# serena, context7 and open-design are retired names: delete-only, never accepted from the source.
-jq -e '.preference == 7 and .mcpServers.local.custom and (.mcpServers.serena == null) and (.mcpServers | has("context7") | not) and (.mcpServers | has("open-design") | not) and .mcpServers["chrome-devtools"] == {type:"local",command:"npx",args:["-y","chrome-devtools-mcp"],env:{},tools:["*"]}' "$target" >/dev/null
+# serena, context7, open-design and chrome-devtools are retired names: delete-only, never accepted from the source.
+jq -e '.preference == 7 and .mcpServers.local.custom and (.mcpServers.serena == null) and (.mcpServers | has("context7") | not) and (.mcpServers | has("open-design") | not) and (.mcpServers | has("chrome-devtools") | not) and (.mcpServers | keys == ["local"])' "$target" >/dev/null
 cp "$target" "$tmp/before"
 "$merge" "$target" "$source"
 cmp "$target" "$tmp/before"
@@ -33,6 +34,7 @@ for invalid in '[]' '{"mcpServers":{}}' '{"unowned":{"command":"bad"}}' \
     '{"chrome-devtools":{"command":"npx","type":false}}' \
     '{"chrome-devtools":{"command":"npx","env":{"KEY":42}}}' \
     '{"chrome-devtools":{"command":"npx","invented":true}}' \
+    '{"chrome-devtools":{"type":"stdio","command":"npx","args":["-y","chrome-devtools-mcp@1.8.0","--browser-url=http://127.0.0.1:9222","--no-usage-statistics","--no-performance-crux"],"env":{}}}' \
     '{"context7":{"type":"stdio","command":"npx"}}' \
     '{"open-design":{"type":"stdio","command":"open-design-mcp"}}' \
     '{"serena":{"type":"stdio","command":"uvx"}}'; do

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Reconcile the one public MCP name into native Copilot runtime state.
+# Reconcile the public MCP names (none at present) into native Copilot runtime state.
 # Usage: copilot-mcp-merge.sh TARGET BARE_CLAUDE_SERVER_MAP
 set -euo pipefail
 if [ "$#" -ne 2 ]; then
@@ -12,10 +12,13 @@ command -v jq >/dev/null 2>&1 || { echo 'copilot MCP: jq required' >&2; exit 1; 
 [ ! -L "$target" ] || { echo 'copilot MCP: refusing symlink target' >&2; exit 1; }
 # Source schema is deliberately closed: new public names/transports need an
 # explicit adapter update rather than silently creating invalid native config.
+# No public name is allowed at present (chrome-devtools is opt-in per seat since
+# 2026-11-09): the source must be {}. The per-server shape check below stays so a
+# name added to the allowed list later is validated at once.
 jq -se '
     length == 1 and (.[0] |
     type == "object" and
-    (keys - ["chrome-devtools"] | length == 0) and
+    (keys | length == 0) and
     all(.[];
         type == "object" and
         (keys - ["type","command","args","env","cwd","timeout"] | length == 0) and
@@ -40,7 +43,7 @@ input=$target
 jq -s --slurpfile source "$source" '
     ($source[0] | with_entries(.value |= (. + {type:"local",args:(.args // []),env:(.env // {}),tools:["*"]}))) as $managed |
     (.[0] // {}) |
-    # serena (2026-11-07), context7 and open-design (2026-11-09) are retired:
+    # serena (2026-11-07), context7, open-design and chrome-devtools (2026-11-09) are retired:
     # not accepted from the source, still deleted here so an old entry in the
     # native file is removed on the next install. Workspace .mcp.json files are
     # separate files this script never reads.
