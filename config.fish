@@ -131,4 +131,9 @@ end
 
 
 # Added by Antigravity CLI installer
-set -gx PATH "/home/ckriech/.local/bin" $PATH
+# Linux only: on macOS /home is an autofs mount, so a PATH entry there makes
+# automountd run od_user_homes on every PATH lookup. The original text stays
+# in case the installer greps for it (unverified). agy lives in ~/.local/bin.
+if test (uname) = Linux
+    set -gx PATH "/home/ckriech/.local/bin" $PATH
+end
