@@ -100,7 +100,7 @@
       force: true
     # Opt-in browser MCP servers (chrome-devtools, playwright), off by default in
     # every harness. A seat that needs a browser launches with
-    # `claude --mcp-config ~/.config/ae/browser-mcp.json` (ae profiles *-web).
+    # `claude --mcp-config=$HOME/.config/ae/browser-mcp.json` (ae profiles *-web).
     ~/.config/ae/browser-mcp.json:
       path: claude/browser-mcp.json
       create: true
