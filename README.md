@@ -168,16 +168,17 @@ org half ships inside the file each tool already loads.
 
 The public install renders the complete shared contract into
 `${COPILOT_HOME:-$HOME/.copilot}/copilot-instructions.md` and reconciles the
-three public MCP servers into that home's `mcp-config.json`. Copilot discovers
+two public MCP servers into that home's `mcp-config.json`. Copilot discovers
 existing `~/.agents/skills` natively; no duplicate skill tree is installed.
 Existing repository instructions remain in effect alongside the personal contract.
 
 The MCP adapter converts Claude `stdio` definitions to native `local` entries
-with `tools: ["*"]`. It owns only Context7, Chrome DevTools and OpenDesign, plus
-the retired name Serena, which it only deletes: removing one from the managed
-source removes that entry; machine-local servers and unrelated fields survive.
-The Claude and Muse merges keep the same kind of retired-name list (Serena,
-retired 2026-11-07), so an old installed entry disappears on the next install. Invalid managed schema fails without rewriting the
+with `tools: ["*"]`. It owns only Chrome DevTools and OpenDesign, plus
+the retired names Serena and Context7, which it only deletes: removing one from
+the managed source removes that entry; machine-local servers and unrelated
+fields survive. The Claude and Muse merges keep the same kind of retired-name
+list (Serena, retired 2026-11-07; Context7, retired 2026-11-09), so an old
+installed entry disappears on the next install. Invalid managed schema fails without rewriting the
 target. The resulting regular file is mode0600. Tool discovery does not add
 blanket tool, path or URL permissions.
 
