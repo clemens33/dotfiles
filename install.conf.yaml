@@ -258,6 +258,11 @@
     # keys survive; the shared Claude-style MCP source is installed verbatim.
     - command: scripts/muse-settings-merge.sh "$HOME/.config/muse/settings.json" muse/settings.json claude/mcpServers.json
       description: Merging Muse settings and MCP servers
+    # Antigravity keeps MCP servers machine-locally (agy mcp add), outside
+    # antigravity/settings.json, so a retired name needs its own removal step.
+    # open-design retired 2026-11-09: enable it per session or per project instead.
+    - command: scripts/agy-mcp-retire.sh open-design
+      description: Retiring OpenDesign from Antigravity MCP state
     # Migration (2026-09-07): Codex user skills moved to ~/.agents/skills. The
     # legacy root still exists on hosts installed before this change, Codex
     # scans both, and a link there wins — so a skill deleted or renamed here

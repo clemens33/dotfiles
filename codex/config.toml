@@ -596,8 +596,8 @@ trust_level = "trusted"
 # session start and keeps a breaking release from landing on all harnesses the
 # same day. Same pin in claude/mcpServers.json, opencode/opencode.jsonc,
 # antigravity/settings.json, grok/config.toml — bump all five together.
-# OpenDesign is separately digest-pinned in open-design/compose.yaml; it is not
-# managed by harness-update.
+# The OpenDesign MCP (open-design-mcp) is not configured here: it is enabled on
+# demand per session or project, see README "Enable the MCP on demand".
 
 # 20s (STRICTER than other servers on purpose): this attaches to an existing
 # browser at :9222 and polls for it, so if Chrome isn't up with
@@ -608,10 +608,6 @@ trust_level = "trusted"
 command = "npx"
 args = ["-y", "chrome-devtools-mcp@1.8.0", "--browser-url=http://127.0.0.1:9222", "--no-usage-statistics", "--no-performance-crux"]
 startup_timeout_sec = 20
-
-[mcp_servers.open-design]
-command = "open-design-mcp"
-startup_timeout_sec = 30
 
 # codebase-memory dropped 2026-07-29: trial ended with the mac migration.
 # Binary may linger in ~/.local/bin on WSL; not installed on macOS.

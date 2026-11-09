@@ -348,5 +348,48 @@ check 'tracked MCP source does not reinstall Context7' \
 cp "$RETIRED_C7" "$TMP_ROOT/retired-context7-first"
 run_merge "$HOME_DIR" "$RETIRED_C7" "$SERVERS"
 check 'Context7 retirement is idempotent' cmp -s "$TMP_ROOT/retired-context7-first" "$RETIRED_C7"
+
+# OpenDesign MCP retirement (2026-11-09): on demand only, never installed. The
+# install removes the USER-level entry (top-level .mcpServers) on every run.
+# A per-project entry (`claude mcp add --scope local` writes
+# .projects["<cwd>"].mcpServers) is the on-demand path and must survive.
+RETIRED_OD=$TMP_ROOT/retired-open-design/.claude.json
+mkdir -p "$(dirname "$RETIRED_OD")"
+cat >"$RETIRED_OD" <<'JSON'
+{
+  "runtime": "keep",
+  "mcpServers": {
+    "open-design": {"type": "stdio", "command": "open-design-mcp", "args": [], "env": {}},
+    "machine-local": {"command": "local"}
+  },
+  "projects": {
+    "/work/design": {
+      "allowedTools": [],
+      "mcpServers": {"open-design": {"type": "stdio", "command": "open-design-mcp", "args": [], "env": {}}}
+    }
+  }
+}
+JSON
+run_merge "$HOME_DIR" "$RETIRED_OD" "$SERVERS"
+check 'stale user-level OpenDesign is removed while local servers and runtime state survive' \
+    jq_true "$RETIRED_OD" '.runtime == "keep" and (.mcpServers | has("open-design") | not) and .mcpServers["machine-local"].command == "local" and .mcpServers.alpha.command == "alpha-bin"'
+check 'project-scope OpenDesign entry survives the merge (on-demand path)' \
+    jq_true "$RETIRED_OD" '.projects["/work/design"].mcpServers["open-design"].command == "open-design-mcp" and .projects["/work/design"].allowedTools == []'
+check 'tracked MCP source does not reinstall OpenDesign' \
+    jq_true "$REAL_SERVERS" 'has("open-design") | not'
+cp "$RETIRED_OD" "$TMP_ROOT/retired-open-design-first"
+run_merge "$HOME_DIR" "$RETIRED_OD" "$SERVERS"
+check 'OpenDesign retirement is idempotent' cmp -s "$TMP_ROOT/retired-open-design-first" "$RETIRED_OD"
+
+# The other shared MCP sources are not merged; the symlink or copy carries the
+# file, so the source itself must not declare the server any more.
+check 'codex source declares no OpenDesign MCP server' \
+    sh -c '! grep -Eq "^\[mcp_servers\.(\"?)open-design" "$1"' _ "$ROOT/codex/config.toml"
+check 'grok source declares no OpenDesign MCP server' \
+    sh -c '! grep -Eq "^\[mcp_servers\.(\"?)open-design" "$1"' _ "$ROOT/grok/config.toml"
+check 'opencode source declares no OpenDesign MCP server' \
+    sh -c '! grep -Eq "^[[:space:]]*\"open-design\"[[:space:]]*:" "$1"' _ "$ROOT/opencode/opencode.jsonc"
+check 'antigravity settings declare no OpenDesign MCP server' \
+    jq_true "$ROOT/antigravity/settings.json" '(.mcpServers // {}) | has("open-design") | not'
 printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]
