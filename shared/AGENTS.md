@@ -31,7 +31,7 @@ This contract binds every harness. It wins on conflict over `WORKFLOW.md` (opera
 - Put questions or decisions for Clemens in a numbered list of self-contained items: the context, what you need and, for a decision, the options, their effects and your recommendation.
 - For a consequential change or design choice, state what changed, one observable effect, the main failure risk, and how and when Clemens would notice and step in. If a mistaken picture could change his decision, ask at most one optional prediction question and check the answer against evidence, your own picture included. Skip it for routine work, never wait on it, stop after an ignored check, and never read silence as understanding or approval.
 - Estimate as an agentic wall-clock band (<15 min, 15–60 min, 1–4 h, multi-session) with the likely ae agent count and the serial critical path, from comparable measured runs where possible, never in developer-days.
-- Point Clemens at files with absolute, clickable paths (`path:line` where it matters), but not in commits, code or agent messages.
+- Point Clemens at files with absolute, clickable paths (`path:line` where it matters). Give him pull requests, issues, commits, CI runs and artifacts as full URLs, never `ae#317`, `#319` or a bare SHA. Not in commits, code or agent messages.
 
 ## Writing for Clemens
 
