@@ -78,6 +78,7 @@ Requirements:
 | Vim | `vimrc` | `~/.vimrc` |
 | Bash aliases | `bash_aliases` | `~/.bash_aliases` |
 | Claude Code | `claude/settings.json`, `claude/mcpServers.json` | `~/.claude/`; `~/.claude-p/` and `~/.claude-mic/` get a rendered `settings.json` (see below) |
+| Browser MCP servers (opt-in) | `claude/browser-mcp.json` | `~/.config/ae/browser-mcp.json` (symlink; see [Browser MCP servers](#browser-mcp-servers-off-by-default)) |
 | GitHub Copilot CLI | Native settings command + rendered instructions + merged MCP; auth/preferences remain CLI-owned | `${COPILOT_HOME:-~/.copilot}/` |
 | Codex CLI | `codex/config.toml` | `~/.codex/config.toml` |
 | OpenCode 2 | `opencode/opencode.jsonc` | `~/.config/opencode/opencode.jsonc` |
@@ -168,17 +169,19 @@ org half ships inside the file each tool already loads.
 
 The public install renders the complete shared contract into
 `${COPILOT_HOME:-$HOME/.copilot}/copilot-instructions.md` and reconciles the
-one public MCP server into that home's `mcp-config.json`. Copilot discovers
+public MCP servers (none by default) into that home's `mcp-config.json`. Copilot discovers
 existing `~/.agents/skills` natively; no duplicate skill tree is installed.
 Existing repository instructions remain in effect alongside the personal contract.
 
 The MCP adapter converts Claude `stdio` definitions to native `local` entries
-with `tools: ["*"]`. It owns only Chrome DevTools, plus the retired names
-Serena, Context7 and OpenDesign, which it only deletes: removing one from the
-managed source removes that entry; machine-local servers and unrelated fields
-survive. The Claude and Muse merges keep the same kind of retired-name list
-(Serena, retired 2026-11-07; Context7 and OpenDesign, retired 2026-11-09), so an
-old installed entry disappears on the next install. Invalid managed schema fails without rewriting the
+with `tools: ["*"]`. It owns no name at present: the managed source
+`claude/mcpServers.json` is `{}` and a source that declares a server fails the
+closed schema. The retired names Serena, Context7, OpenDesign and Chrome DevTools
+are only deleted: an entry left in the native file is removed on the next
+install; machine-local servers and unrelated fields survive. The Claude and Muse
+merges keep the same kind of retired-name list (Serena, retired 2026-11-07;
+Context7, OpenDesign and Chrome DevTools, retired 2026-11-09), so an old
+installed entry disappears on the next install. Invalid managed schema fails without rewriting the
 target. The resulting regular file is mode0600. Tool discovery does not add
 blanket tool, path or URL permissions.
 
@@ -375,6 +378,46 @@ Antigravity 1.5.3, Copilot CLI 1.0.107.
 To remove the app, run `open-design down`, delete the two named volumes
 according to the data-retention choice above (sign out in the UI before retiring
 the Vela volume) and drop the `open-design` links from `install.conf.yaml`.
+
+#### Browser MCP servers: off by default
+
+`chrome-devtools` and `playwright` start no process unless a seat opts in
+(2026-11-09: dozens of idle `chrome-devtools-mcp` and `playwright-mcp` processes
+and an `npx` registry check at every agent start). `./install` removes a stale
+user-level `chrome-devtools` from the three Claude homes, Muse, Copilot and
+Antigravity, and links `claude/browser-mcp.json` to
+`~/.config/ae/browser-mcp.json`. That file holds the pinned entries
+`chrome-devtools-mcp@1.8.0` (with `--no-usage-statistics --no-performance-crux`)
+and `@playwright/mcp@0.0.84`. Bump the pin in that file, in `codex/config.toml`,
+in `opencode/opencode.jsonc` and in the commands below together.
+`chrome-devtools` needs Chrome with the DevTools port 9222 (`chrome-debug`);
+`playwright` launches its own browser.
+
+Playwright is also off where a project `.mcp.json` declares it: `claude/settings.json`
+sets `disabledMcpjsonServers: ["playwright"]` for all three Claude homes. The
+assistant repo's `.mcp.json` stays as it is. The ae profiles `sonnet55x-web`,
+`sonnet55x-p-web` and `opus55h-mic-web` (both servers, through `--mcp-config`)
+and `sol61h-web` (chrome-devtools only, through `-c`) opt in at spawn; they
+live in `~/.ae/config`, not in this repo. `./install` must have created the
+symlink before the first `-web` seat starts.
+
+Each command was run against the installed CLIs (versions under the table) in a
+throwaway `HOME`, config directory or project. No real `chrome-devtools-mcp` or
+`@playwright/mcp` server was started to check them. "Not verified" means it could
+not be shown to work.
+
+| Harness | Opt-in command | Verified |
+|---|---|---|
+| Claude Code | `claude --mcp-config=$HOME/.config/ae/browser-mcp.json` (both servers). Keep the `=`: the option is variadic, so a space lets it swallow the next word. | yes, with stub servers in a temp `CLAUDE_CONFIG_DIR`: the file adds to the user and project servers, and a same-named `playwright` from the file connects while `disabledMcpjsonServers` lists it |
+| Codex | `codex -c mcp_servers.chrome-devtools.enabled=true` (chrome-devtools only) | yes (`codex mcp list`: `disabled` by default, `enabled` with the flag) |
+| OpenCode | `OPENCODE_CONFIG_CONTENT='{"mcp":{"servers":{"chrome-devtools":{"type":"local","command":["npx","-y","chrome-devtools-mcp@1.8.0","--browser-url=http://127.0.0.1:9222","--no-usage-statistics","--no-performance-crux"],"disabled":false}}}}' opencode --standalone`. The default is `"disabled": true`: OpenCode 2 has no `enabled` key and drops it. | default: `opencode debug config --standalone` keeps `disabled: true` for the repo file. Opt-in: not verified: a stub server never showed as connected (`opencode mcp list` exits first), and the opt-in value overriding the file value is not shown |
+| Grok | In the project: `grok mcp add --scope project chrome-devtools -- npx -y chrome-devtools-mcp@1.8.0 --browser-url=http://127.0.0.1:9222 --no-usage-statistics --no-performance-crux`. The default `--scope user` is replaced by the next install. | `./.grok/config.toml` written as expected; server start not exercised |
+| Antigravity (`agy`) | Machine-wide only: `agy mcp add chrome-devtools npx -y chrome-devtools-mcp@1.8.0 --browser-url=http://127.0.0.1:9222 --no-usage-statistics --no-performance-crux`, then `agy mcp remove chrome-devtools`. The next `./install` removes it again. | `mcp_config.json` written as expected; server start not exercised |
+| Copilot CLI | Workspace file `./.mcp.json` with `{"mcpServers":{"chrome-devtools":{"type":"local","command":"npx","args":["-y","chrome-devtools-mcp@1.8.0","--browser-url=http://127.0.0.1:9222","--no-usage-statistics","--no-performance-crux"],"env":{},"tools":["*"]}}}` in a trusted folder. | not verified for this server: the workspace-file mechanism is the one the OpenDesign row above verified, but listing it would start chrome-devtools; `--additional-mcp-config` not verified |
+| Muse Code | No on-demand route documented; `./install` removes a user-level `chrome-devtools` from `~/.config/muse/settings.json`. | not verified |
+
+Versions checked: Claude Code 2.1.319, Codex 0.167.0, Grok 1.0.77, OpenCode 2.2.6,
+Antigravity 1.5.3, Copilot CLI 1.0.107.
 
 ## Automatic harness updates
 
