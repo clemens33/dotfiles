@@ -190,7 +190,7 @@ cask "sqlcl"              # replaces the manual ~/opt/sqlcl install
 #     NOT stored here — MIC runs a self-hosted instance; see the private overlay.
 #     npm hardening: `npm config set strict-allow-scripts true` on every rebuild
 #     (2026-08-20) — blocks dependency lifecycle hooks (Shai-Hulud-class worms);
-#     verified cold npx MCP handshakes (context7, chrome-devtools) still pass.
+#     verified cold npx MCP handshakes (chrome-devtools) still pass.
 #     If an install legitimately needs hooks: for npx/`npm exec`/`npm i -g`,
 #     per-package `--allow-scripts=pkg`; project-scoped install/ci/update/
 #     rebuild REJECTS that flag — allowlist via `allowScripts` in package.json

@@ -335,5 +335,18 @@ check 'tracked MCP source does not reinstall Serena' \
 cp "$RETIRED" "$TMP_ROOT/retired-first"
 run_merge "$HOME_DIR" "$RETIRED" "$SERVERS"
 check 'Serena retirement is idempotent' cmp -s "$TMP_ROOT/retired-first" "$RETIRED"
+
+# Context7 retirement (2026-11-09) preserves unrelated installed state.
+RETIRED_C7=$TMP_ROOT/retired-context7/.claude.json
+mkdir -p "$(dirname "$RETIRED_C7")"
+printf '%s\n' '{"runtime":"keep","mcpServers":{"context7":{"command":"old"},"machine-local":{"command":"local"}}}' >"$RETIRED_C7"
+run_merge "$HOME_DIR" "$RETIRED_C7" "$SERVERS"
+check 'retired Context7 is removed while local servers and runtime state survive' \
+    jq_true "$RETIRED_C7" '.runtime == "keep" and (.mcpServers | has("context7") | not) and .mcpServers["machine-local"].command == "local" and .mcpServers.alpha.command == "alpha-bin"'
+check 'tracked MCP source does not reinstall Context7' \
+    jq_true "$REAL_SERVERS" 'has("context7") | not'
+cp "$RETIRED_C7" "$TMP_ROOT/retired-context7-first"
+run_merge "$HOME_DIR" "$RETIRED_C7" "$SERVERS"
+check 'Context7 retirement is idempotent' cmp -s "$TMP_ROOT/retired-context7-first" "$RETIRED_C7"
 printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]

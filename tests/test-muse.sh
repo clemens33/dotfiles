@@ -256,14 +256,18 @@ installer_wiring_negative_control() {
 check 'negative control detects missing Dotbot Muse wiring' \
     installer_wiring_negative_control
 
-# Retire Serena from either historical key spelling.
+# Retire Serena and Context7 from either historical key spelling.
 for spelling in mcpServers mcp_servers; do
     retired_target=$TMP_ROOT/retired-$spelling/settings.json
     mkdir -p "$(dirname "$retired_target")"
-    jq -n --arg key "$spelling" '{runtime_nonce:"keep",($key):{serena:{command:"old"},"machine-local":{command:"local"}}}' >"$retired_target"
+    jq -n --arg key "$spelling" '{runtime_nonce:"keep",($key):{serena:{command:"old"},context7:{command:"old"},"machine-local":{command:"local"}}}' >"$retired_target"
     HOME=$TEST_HOME sh "$SCRIPT" "$retired_target" "$SETTINGS" "$SERVERS" >/dev/null 2>&1
     check "Serena is retired from $spelling without deleting local state" \
         jq -e '.runtime_nonce == "keep" and (has("mcp_servers") | not) and (.mcpServers | has("serena") | not) and .mcpServers["machine-local"].command == "local"' "$retired_target"
+    check "Context7 is retired from $spelling without deleting local state" \
+        jq -e '.runtime_nonce == "keep" and (has("mcp_servers") | not) and (.mcpServers | has("context7") | not) and .mcpServers["machine-local"].command == "local"' "$retired_target"
 done
+check 'tracked MCP source does not reinstall Context7 into Muse' \
+    jq -e 'has("context7") | not' "$SERVERS"
 printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]

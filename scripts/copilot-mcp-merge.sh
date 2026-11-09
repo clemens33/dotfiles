@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Reconcile the three public MCP names into native Copilot runtime state.
+# Reconcile the two public MCP names into native Copilot runtime state.
 # Usage: copilot-mcp-merge.sh TARGET BARE_CLAUDE_SERVER_MAP
 set -euo pipefail
 if [ "$#" -ne 2 ]; then
@@ -15,7 +15,7 @@ command -v jq >/dev/null 2>&1 || { echo 'copilot MCP: jq required' >&2; exit 1; 
 jq -se '
     length == 1 and (.[0] |
     type == "object" and
-    (keys - ["context7","chrome-devtools","open-design"] | length == 0) and
+    (keys - ["chrome-devtools","open-design"] | length == 0) and
     all(.[];
         type == "object" and
         (keys - ["type","command","args","env","cwd","timeout"] | length == 0) and
@@ -40,8 +40,9 @@ input=$target
 jq -s --slurpfile source "$source" '
     ($source[0] | with_entries(.value |= (. + {type:"local",args:(.args // []),env:(.env // {}),tools:["*"]}))) as $managed |
     (.[0] // {}) |
-    # serena is retired (2026-11-07): not accepted from the source, still deleted
-    # here so an old entry in the native file is removed on the next install.
+    # serena (2026-11-07) and context7 (2026-11-09) are retired: not accepted
+    # from the source, still deleted here so an old entry in the native file is
+    # removed on the next install.
     .mcpServers = ((.mcpServers // {} | del(.serena,.context7,."chrome-devtools",."open-design")) + $managed)
 ' "$input" >"$tmp"
 chmod 600 "$tmp"

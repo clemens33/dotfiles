@@ -7,10 +7,11 @@ trap 'rm -rf "$tmp"' EXIT
 merge=${COPILOT_MERGE_TEST_SCRIPT:-$ROOT/scripts/copilot-mcp-merge.sh}
 target="$tmp/mcp-config.json"
 source="$tmp/servers.json"
-printf '%s\n' '{"context7":{"type":"stdio","command":"npx","args":["-y","context7"],"env":{}}}' >"$source"
-printf '%s\n' '{"preference":7,"mcpServers":{"local":{"custom":true},"serena":{"command":"obsolete"}}}' >"$target"
+printf '%s\n' '{"chrome-devtools":{"type":"stdio","command":"npx","args":["-y","chrome-devtools-mcp"],"env":{}}}' >"$source"
+printf '%s\n' '{"preference":7,"mcpServers":{"local":{"custom":true},"serena":{"command":"obsolete"},"context7":{"command":"obsolete"}}}' >"$target"
 "$merge" "$target" "$source"
-jq -e '.preference == 7 and .mcpServers.local.custom and (.mcpServers.serena == null) and .mcpServers.context7 == {type:"local",command:"npx",args:["-y","context7"],env:{},tools:["*"]}' "$target" >/dev/null
+# serena and context7 are retired names: delete-only, never accepted from the source.
+jq -e '.preference == 7 and .mcpServers.local.custom and (.mcpServers.serena == null) and (.mcpServers | has("context7") | not) and .mcpServers["chrome-devtools"] == {type:"local",command:"npx",args:["-y","chrome-devtools-mcp"],env:{},tools:["*"]}' "$target" >/dev/null
 cp "$target" "$tmp/before"
 "$merge" "$target" "$source"
 cmp "$target" "$tmp/before"
@@ -25,13 +26,14 @@ unchanged_failure() {
     test -z "$(find "$tmp" -name '.copilot-mcp.*' -print)"
 }
 for invalid in '[]' '{"mcpServers":{}}' '{"unowned":{"command":"bad"}}' \
-    '{"context7":{"type":"http","url":"https://example.invalid"}}' \
-    '{"context7":{"command":"npx","args":"wrong"}}' \
-    '{"context7":{"command":"npx","args":false}}' \
-    '{"context7":{"command":"npx","env":null}}' \
-    '{"context7":{"command":"npx","type":false}}' \
-    '{"context7":{"command":"npx","env":{"KEY":42}}}' \
-    '{"context7":{"command":"npx","invented":true}}' \
+    '{"chrome-devtools":{"type":"http","url":"https://example.invalid"}}' \
+    '{"chrome-devtools":{"command":"npx","args":"wrong"}}' \
+    '{"chrome-devtools":{"command":"npx","args":false}}' \
+    '{"chrome-devtools":{"command":"npx","env":null}}' \
+    '{"chrome-devtools":{"command":"npx","type":false}}' \
+    '{"chrome-devtools":{"command":"npx","env":{"KEY":42}}}' \
+    '{"chrome-devtools":{"command":"npx","invented":true}}' \
+    '{"context7":{"type":"stdio","command":"npx"}}' \
     '{"serena":{"type":"stdio","command":"uvx"}}'; do
     printf '%s\n' "$invalid" >"$source"
     unchanged_failure
@@ -44,7 +46,7 @@ printf '{}\n{}\n' >"$target"
 unchanged_failure
 cp "$tmp/valid-target" "$target"
 "$merge" "$target" "$source"
-jq -e '.mcpServers | has("context7") | not' "$target" >/dev/null
+jq -e '.mcpServers | (has("chrome-devtools") | not) and (has("context7") | not)' "$target" >/dev/null
 cp "$target" "$tmp/referent"
 ln -s "$tmp/referent" "$tmp/link"
 if "$merge" "$tmp/link" "$source" >/dev/null 2>&1; then
