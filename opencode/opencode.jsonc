@@ -252,8 +252,9 @@
   // --- MCP servers: same set as codex/grok --------------------------------
   // Package pin (bump via harness-update): chrome-devtools-mcp 1.8.0. Same
   // pin in codex/config.toml, claude/mcpServers.json, antigravity/settings.json,
-  // grok/config.toml — bump all five together. OpenDesign is separately digest-
-  // pinned in open-design/compose.yaml and is not managed by harness-update.
+  // grok/config.toml — bump all five together. The OpenDesign MCP is not
+  // configured here: it is enabled on demand per project, see README "Enable
+  // the MCP on demand".
   // `opencode mcp list` shows only servers that connected; a missing
   // uvx/npx/docker hides an entry there — check opencode.log for
   // "mcp connect failed".
@@ -264,10 +265,6 @@
       "chrome-devtools": {
         "type": "local",
         "command": ["npx", "-y", "chrome-devtools-mcp@1.8.0", "--browser-url=http://127.0.0.1:9222", "--no-usage-statistics", "--no-performance-crux"],
-      },
-      "open-design": {
-        "type": "local",
-        "command": ["open-design-mcp"],
       },
     },
   },

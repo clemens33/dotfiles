@@ -178,7 +178,7 @@ cask "sqlcl"              # replaces the manual ~/opt/sqlcl install
 # Not available in Homebrew at all — install another way:
 #   pinniped (/usr/local/bin/pinniped)  -> vendor release or a custom tap
 #   the npm -g packages (codex, copilot, gemini-cli, pi-coding-agent,
-#     ccusage, context-mode, pi-web-access, taskplane, @bitwarden/cli)
+#     ccusage, pi-web-access, taskplane, @bitwarden/cli)
 #     -> npm after mise node. OpenCode 2 is NOT npm here: vendor curl
 #     installer, see §4. Config: opencode/opencode.jsonc -> ~/.config/opencode/
 #     `npm i -g @bitwarden/cli` gives `bw` (vault CLI; the cask below is the

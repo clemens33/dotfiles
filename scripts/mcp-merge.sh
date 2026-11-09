@@ -19,7 +19,11 @@
 # retired name is removed on the next install while every other machine-local
 # server and all runtime state stays. Never list a name that is still in
 # claude/mcpServers.json. Retired: serena (2026-11-07, Clemens ruling);
-# context7 (2026-11-09, Clemens ruling).
+# context7 and open-design (2026-11-09, Clemens ruling).
+#
+# Only the top-level .mcpServers is touched. A per-project server (`claude mcp
+# add --scope local` writes .projects["<cwd>"].mcpServers) is never read or
+# changed here, which is what keeps an on-demand open-design entry alive.
 set -euo pipefail
 
 target="$1"
@@ -45,7 +49,7 @@ trap 'rm -f "$tmp"' EXIT
 
 if [ -f "$target" ]; then
     jq --slurpfile mcp "$servers" '
-        ["serena","context7"] as $obsolete |
+        ["serena","context7","open-design"] as $obsolete |
         .mcpServers = (((.mcpServers // {}) | del(.[$obsolete[]])) + $mcp[0])
     ' "$target" > "$tmp"
 else

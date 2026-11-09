@@ -88,8 +88,9 @@ git = "https://github.com/xai-org/plugin-marketplace.git"
 # MCP servers — same set as codex/config.toml, identical TOML shape.
 # Package pin (bump via harness-update): chrome-devtools-mcp 1.8.0. Same pin
 # in codex/config.toml, claude/mcpServers.json, opencode/opencode.jsonc,
-# antigravity/settings.json — bump all five together. OpenDesign is separately
-# digest-pinned in open-design/compose.yaml and is not managed by harness-update.
+# antigravity/settings.json — bump all five together. The OpenDesign MCP is not
+# configured here: it is enabled on demand per project, see README "Enable the
+# MCP on demand".
 
 # 20s (STRICTER than other servers on purpose): this attaches to an existing
 # browser at :9222 and polls for it, so if Chrome isn't up with
@@ -100,10 +101,6 @@ git = "https://github.com/xai-org/plugin-marketplace.git"
 command = "npx"
 args = ["-y", "chrome-devtools-mcp@1.8.0", "--browser-url=http://127.0.0.1:9222", "--no-usage-statistics", "--no-performance-crux"]
 startup_timeout_sec = 20
-
-[mcp_servers.open-design]
-command = "open-design-mcp"
-startup_timeout_sec = 30
 
 # codebase-memory dropped 2026-07-29 (trial ended).
 

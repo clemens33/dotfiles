@@ -12,7 +12,8 @@
 # They are dropped from BOTH historical spellings before the merge, so a retired
 # name disappears on the next install while other machine-local servers stay.
 # Never list a name that is still in claude/mcpServers.json.
-# Retired: serena (2026-11-07, Clemens ruling); context7 (2026-11-09, Clemens ruling).
+# Retired: serena (2026-11-07, Clemens ruling); context7 and open-design (2026-11-09,
+# Clemens ruling).
 set -eu
 
 target=$1
@@ -41,7 +42,7 @@ trap 'rm -f "$tmp"' EXIT
 
 if [ -f "$target" ]; then
     jq --slurpfile managed "$settings" --slurpfile mcp "$servers" '
-        ["serena","context7"] as $obsolete |
+        ["serena","context7","open-design"] as $obsolete |
         ((.mcp_servers // {}) | del(.[$obsolete[]])) as $legacy_mcp |
         ((.mcpServers // {}) | del(.[$obsolete[]])) as $existing_mcp |
         (del(.mcp_servers) + $managed[0]) |

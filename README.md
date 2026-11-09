@@ -168,17 +168,17 @@ org half ships inside the file each tool already loads.
 
 The public install renders the complete shared contract into
 `${COPILOT_HOME:-$HOME/.copilot}/copilot-instructions.md` and reconciles the
-two public MCP servers into that home's `mcp-config.json`. Copilot discovers
+one public MCP server into that home's `mcp-config.json`. Copilot discovers
 existing `~/.agents/skills` natively; no duplicate skill tree is installed.
 Existing repository instructions remain in effect alongside the personal contract.
 
 The MCP adapter converts Claude `stdio` definitions to native `local` entries
-with `tools: ["*"]`. It owns only Chrome DevTools and OpenDesign, plus
-the retired names Serena and Context7, which it only deletes: removing one from
-the managed source removes that entry; machine-local servers and unrelated
-fields survive. The Claude and Muse merges keep the same kind of retired-name
-list (Serena, retired 2026-11-07; Context7, retired 2026-11-09), so an old
-installed entry disappears on the next install. Invalid managed schema fails without rewriting the
+with `tools: ["*"]`. It owns only Chrome DevTools, plus the retired names
+Serena, Context7 and OpenDesign, which it only deletes: removing one from the
+managed source removes that entry; machine-local servers and unrelated fields
+survive. The Claude and Muse merges keep the same kind of retired-name list
+(Serena, retired 2026-11-07; Context7 and OpenDesign, retired 2026-11-09), so an
+old installed entry disappears on the next install. Invalid managed schema fails without rewriting the
 target. The resulting regular file is mode0600. Tool discovery does not add
 blanket tool, path or URL permissions.
 
@@ -332,16 +332,19 @@ package centers on `DESIGN.md` and can add `manifest.json`, compiled
 `tokens.css`, component fixtures, assets, and provenance/evidence. Legacy
 directories containing only `DESIGN.md` remain compatible.
 
-`open-design-mcp` is registered as a managed stdio MCP server for Claude Code,
-Codex, OpenCode, and Grok. ae-launched seats inherit their underlying harness's
-same user configuration; ae needs no separate MCP entry. Antigravity (`agy`)
-currently ignores the managed settings file's `mcpServers` block. Register it
-machine-locally with `agy mcp add open-design open-design-mcp`; clean-install
-registration remains a known gap.
+The OpenDesign MCP bridge (`open-design-mcp`) has not been a managed MCP server
+since 2026-11-09: its 22 tools cost about 7k tokens of definitions whenever a
+harness loads them eagerly, and only design sessions use them. The bridge itself
+stays installed and runnable. Every `./install` deletes a user-level
+`open-design` entry from each Claude identity's `.claude.json` that exists, from
+Muse, from Copilot and from Antigravity (`scripts/agy-mcp-retire.sh`). Codex and
+OpenCode link to a source that no longer lists it, and Grok copies one. Enable
+the bridge on demand, in a scope the install never touches.
+
 OpenDesign 0.21.1 does not support Docker/Compose MCP snippets or shared HTTP
-transport upstream, so this setup uses a locally tested `docker exec -i` stdio
-compatibility bridge. Muse Code 1.0.3 exposes no MCP client configuration and is
-not integrated.
+transport upstream, so the bridge is a locally tested `docker exec -i` stdio
+compatibility command. It needs the running container (`open-design start`).
+Muse Code 1.0.3 exposes no MCP client configuration and is not integrated.
 
 Direction matters: a host harness can call OpenDesign's MCP to read projects and
 write artifacts. The isolated container cannot launch host Claude/Codex/OpenCode
@@ -349,13 +352,29 @@ binaries. Generation initiated in the OpenDesign UI therefore needs its own BYOK
 provider configured in OpenDesign; host subscriptions and credentials are not
 mounted or copied into it.
 
-To uninstall, run `open-design down`, revert the managed config entries and
-links, and remove `open-design` explicitly from every existing Claude identity
-state file (`~/.claude.json`, `~/.claude-p/.claude.json`, and
-`~/.claude-mic/.claude.json` when present). The Claude merge is additive, so
-rerunning `./install` alone cannot retire an old server. Sign out in the UI
-before retiring the Vela volume, then keep or explicitly remove each named
-volume according to the data-retention choice above.
+### Enable the MCP on demand
+
+Run `open-design start` first. Each command below was run against the installed
+CLI (versions under the table) in a throwaway `HOME` or config directory.
+"Not verified" means it could not be shown to work.
+
+| Harness | Scope and command | Verified |
+|---|---|---|
+| Claude Code | One project, private (stored under `projects["<cwd>"].mcpServers` in the identity's `.claude.json`): `claude mcp add --scope local open-design -- open-design-mcp`. Undo: `claude mcp remove open-design --scope local`. | yes |
+| Claude Code | Shared project file `./.mcp.json`: `claude mcp add --scope project open-design -- open-design-mcp` | yes (file written; the approval prompt on first use is not exercised) |
+| Codex | One session: `codex -c 'mcp_servers.open-design.command="open-design-mcp"'`. Do not use `codex mcp add`: it writes `~/.codex/config.toml`, which links into this repo. | yes (`codex -c … mcp list` shows it enabled) |
+| Grok | One project, `./.grok/config.toml`: `grok mcp add --scope project open-design open-design-mcp`. The default `--scope user` is replaced by the next install. | yes (`grok mcp list` shows `(project)`) |
+| OpenCode | One project, `./opencode.json`: `opencode mcp add open-design -- open-design-mcp`. Do not add `--global`: it writes `~/.config/opencode/opencode.json`, which the install never cleans, so the server would stay on everywhere. | file written in the managed `mcp.servers` shape; server load not verified (`opencode mcp list` could not start beside the running service) |
+| Antigravity (`agy`) | Machine-wide only, no project scope: `agy mcp add open-design open-design-mcp`, then `agy mcp disable open-design` or `remove`. The next `./install` removes it again. | yes (`add`, `list`, `remove`) |
+| Copilot CLI | Workspace file `./.mcp.json` (or `./.github/mcp.json`) with `{"mcpServers":{"open-design":{"type":"local","command":"open-design-mcp","args":[],"env":{},"tools":["*"]}}}`. Copilot reads it only in a trusted folder (`trustedFolders` in `~/.copilot/config.json`). `copilot mcp add` is user-level and removed by the next install. `--additional-mcp-config` is per session by `copilot --help` ("for this session"), but `copilot mcp list` never shows its servers. | discovery verified (`copilot mcp list` shows it under "Workspace servers" in a trusted folder); launch not exercised; `--additional-mcp-config` not verified |
+| Muse Code | No MCP client configuration. | not applicable |
+
+Versions checked: Claude Code 2.1.319, Codex 0.167.0, Grok 1.0.77, OpenCode 2.2.6,
+Antigravity 1.5.3, Copilot CLI 1.0.107.
+
+To remove the app, run `open-design down`, delete the two named volumes
+according to the data-retention choice above (sign out in the UI before retiring
+the Vela volume) and drop the `open-design` links from `install.conf.yaml`.
 
 ## Automatic harness updates
 

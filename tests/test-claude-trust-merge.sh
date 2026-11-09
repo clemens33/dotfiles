@@ -362,6 +362,30 @@ check 'tracked list: every root lands expanded against HOME and flagged' \
 check 'tracked list: HOME itself is deliberately not a root' \
     jq_true "$TRACKED" --arg home "$HOME_DIR" '(.projects | has($home)) | not'
 
+# Per-project MCP entries (`claude mcp add --scope local` writes
+# .projects["<cwd>"].mcpServers) are the on-demand path for servers the install
+# no longer manages (OpenDesign, retired 2026-11-09). This script is the only
+# install step that rewrites .projects, so it must leave them alone.
+PROJ_MCP=$TMP_ROOT/project-mcp/.claude.json
+mkdir -p "$(dirname "$PROJ_MCP")"
+cat >"$PROJ_MCP" <<'JSON'
+{
+  "projects": {
+    "/trusted/root/design": {
+      "mcpServers": {"open-design": {"type": "stdio", "command": "open-design-mcp", "args": [], "env": {}}}
+    },
+    "/elsewhere": {
+      "mcpServers": {"open-design": {"type": "stdio", "command": "open-design-mcp", "args": [], "env": {}}}
+    }
+  }
+}
+JSON
+run_trust "$HOME_DIR" "$PROJ_MCP" "$PATHS"
+check 'project-scope OpenDesign entry under a trusted root survives the trust merge' \
+    jq_true "$PROJ_MCP" '.projects["/trusted/root/design"].mcpServers["open-design"].command == "open-design-mcp" and .projects["/trusted/root/design"].hasTrustDialogAccepted == true'
+check 'project-scope OpenDesign entry outside the trusted roots survives untouched' \
+    jq_true "$PROJ_MCP" '.projects["/elsewhere"] == {"mcpServers": {"open-design": {"type": "stdio", "command": "open-design-mcp", "args": [], "env": {}}}}'
+
 # $HOME must stay literal in the tracked Dotbot commands.
 # shellcheck disable=SC2016
 installer_wires_trust_merge() {
