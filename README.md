@@ -73,7 +73,7 @@ Requirements:
 
 | Config | Source | Symlinks to |
 |---|---|---|
-| Fish shell | `config.fish`, `fish/functions/`, `fish/completions/uv.fish` | `~/.config/fish/` (`fish/completions/uv.fish` is generated: `just uv-completion` refreshes it after a uv upgrade, and `just test` fails while it is stale) |
+| Fish shell | `config.fish`, `fish/functions/`, `fish/completions/uv.fish` | `~/.config/fish/` (`fish/completions/uv.fish` is generated: `just uv-completion` refreshes it after a uv upgrade, and `just test` fails locally while it is stale; the test skips under CI or without uv) |
 | tmux | `tmux.conf` | `~/.tmux.conf` |
 | Git | `gitconfig` | `~/.gitconfig` |
 | Vim | `vimrc` | `~/.vimrc` |
