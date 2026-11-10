@@ -96,8 +96,8 @@ brew "mise"
 #   cargo-edit cargo-outdated cargo-expand
 # No linker override on macOS (zld archived; Apple's ld fast since Xcode 15).
 brew "cargo-binstall"
-# brew "sccache"          # optional compile cache; uncomment [build]
-#                         # rustc-wrapper in rust/cargo-config.toml with it
+brew "sccache"            # compile cache; config.fish exports RUSTC_WRAPPER when it is
+#                         # on PATH (no rustc-wrapper in cargo-config.toml)
 
 # ---------------------------------------------------------------------------
 # 5) Casks — GUI apps
