@@ -7,9 +7,9 @@
 	autocrlf = input
 	pager = delta
 	untrackedCache = true
-# Large-repo speed. On git >= 2.40 manyFiles turns on index.skipHash (no trailing index
-# checksum), index.version=4 (path-prefix compression) and core.untrackedCache. Version 4
-# applies only to new indexes: an existing repo keeps v2 until
+# Large-repo speed. manyFiles turns on index.version=4 (path-prefix compression) and
+# core.untrackedCache, and since git 2.40 also index.skipHash (no trailing index checksum).
+# Version 4 applies only to new indexes: an existing repo keeps v2 until
 # `git update-index --index-version 4`. skipHash and the untracked cache apply on the next
 # index write. No core.fsmonitor: the built-in daemon is per repo and costs a process each.
 [feature]
