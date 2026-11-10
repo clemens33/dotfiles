@@ -19,6 +19,7 @@
 brew "fish"
 brew "bash"    # macOS ships 3.2; ae requires bash >= 4
 brew "flock"   # util-linux flock is absent on macOS; ae lifecycle locking needs it
+brew "coreutils" # timeout and gtimeout for the burner-run rule, plus the g-prefixed GNU tools
 brew "gh"
 brew "just"
 brew "jq"
