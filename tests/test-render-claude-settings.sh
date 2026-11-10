@@ -384,8 +384,8 @@ render real h10 >/dev/null 2>&1 || bad "render of the tracked settings exited no
 for id in .claude-p .claude-mic; do
     check "$id: a stale context-mode plugin key is removed by the render" \
         json_is "$TMP_ROOT/h10/$id/settings.json" '(.enabledPlugins // {}) | has("context-mode@context-mode") | not'
-    check "$id: the other enabled plugins survive the render" \
-        json_is "$TMP_ROOT/h10/$id/settings.json" '.enabledPlugins["rust-analyzer-lsp@claude-plugins-official"] == true'
+    check "$id: the other plugin keys survive the render, with rust-analyzer-lsp off by default" \
+        json_is "$TMP_ROOT/h10/$id/settings.json" '.enabledPlugins["rust-analyzer-lsp@claude-plugins-official"] == false'
 done
 
 printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"
