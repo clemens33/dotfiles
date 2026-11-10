@@ -54,9 +54,17 @@ end
 
 # Homebrew (macOS, Apple Silicon) — early, so brew-installed tools resolve
 # before anything below. No-op on Linux/WSL where the path doesn't exist.
-# Explicit `fish` arg: shellenv's auto-detection can emit POSIX syntax.
+# Static copy of `brew shellenv fish` for the /opt/homebrew prefix. The output
+# is constant, and the fork cost about 12 ms of CPU per shell. A test compares
+# this block with the live output (tests/test-fish-env-drift.sh), so a Homebrew
+# change to shellenv shows up in `just test`.
 if test -x /opt/homebrew/bin/brew
-    /opt/homebrew/bin/brew shellenv fish | source
+    set --global --export HOMEBREW_PREFIX "/opt/homebrew"
+    set --global --export HOMEBREW_CELLAR "/opt/homebrew/Cellar"
+    set --global --export HOMEBREW_REPOSITORY "/opt/homebrew"
+    fish_add_path --global --move --path "/opt/homebrew/bin" "/opt/homebrew/sbin"
+    if test -n "$MANPATH"; set --global --export MANPATH (string replace --regex '^:*(.*?):*$' ':$1' -- "$MANPATH"); end
+    if not set --query INFOPATH; set INFOPATH ''; end; set --global --export INFOPATH "/opt/homebrew/share/info" $INFOPATH
     # keg-only libpq: psql etc. are not linked into the prefix
     fish_add_path -g /opt/homebrew/opt/libpq/bin
 end
@@ -123,9 +131,9 @@ if test -d ~/.config/fish/functions-mic
     end
 end
 
-if command -q uv
-    uv generate-shell-completion fish | source
-end
+# uv completion: fish/completions/uv.fish (generated; `just uv-completion`
+# refreshes it after a uv upgrade). Fish loads it on the first `uv <Tab>`, so no
+# `uv generate-shell-completion | source` runs at shell start.
 
 # fnm (Linux node version manager; mise replaces it on macOS)
 set FNM_PATH $HOME/.local/share/fnm

@@ -54,10 +54,11 @@ The wrapper install script detects the overlay submodule and runs its Dotbot pas
 | `just versions` | Installed harness versions (`<tool> --version` only, never `muse`); informational | none |
 | `just outdated` | Installed versus latest harness versions (`scripts/harness-update.sh --check`) | network, a log in `~/.local/state` |
 | `just update [args]` | Updates the harnesses, harness-only: arguments go to `scripts/harness-update.sh` (`--only TOOL`, `--check`, `--include-ae`) | network, installs |
+| `just uv-completion [--check]` | Regenerates `fish/completions/uv.fish` from the installed uv (`--check` only compares, exit 1 when stale) | rewrites that one tracked file |
 | `just brew` | macOS only: `brew bundle --file macos/Brewfile` | network, installs |
 | `just install [args]` | `./install` | symlinks, fetches the dotbot submodule |
 
-`check`, `lint`, `test`, `contract` and `versions` never write tracked files and never call the network. `update`, `brew`, `install` and `outdated` run only when you name them.
+`check`, `lint`, `test`, `contract` and `versions` never write tracked files and never call the network. `update`, `brew`, `install`, `outdated` and `uv-completion` run only when you name them.
 
 Requirements:
 
@@ -72,7 +73,7 @@ Requirements:
 
 | Config | Source | Symlinks to |
 |---|---|---|
-| Fish shell | `config.fish`, `fish/functions/` | `~/.config/fish/` |
+| Fish shell | `config.fish`, `fish/functions/`, `fish/completions/uv.fish` | `~/.config/fish/` (`fish/completions/uv.fish` is generated: `just uv-completion` refreshes it after a uv upgrade, and `just test` fails while it is stale) |
 | tmux | `tmux.conf` | `~/.tmux.conf` |
 | Git | `gitconfig` | `~/.gitconfig` |
 | Vim | `vimrc` | `~/.vimrc` |
