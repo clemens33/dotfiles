@@ -246,6 +246,32 @@ Delete only disposable branches you or your spawned worker created for that task
 
 ---
 
+## Stress and burner runs
+
+A burner (busy loop, `yes`, fuzzer, load or flake hunt) is bounded in count, priority and time: `shared/AGENTS.md` § Environment. This POSIX `sh` snippet starts `$(jobs-budget)` niced `yes` processes for at most 10 minutes. Replace `yes` with your burner. Run it with `sh`, not fish.
+
+```sh
+n=$(jobs-budget); pids=
+cleanup() { kill $pids 2>/dev/null; wait $pids 2>/dev/null; }
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+trap 'exit 129' HUP
+i=0
+while [ "$i" -lt "$n" ]; do
+    nice -n 10 timeout -k 5 600 yes >/dev/null &
+    pids="$pids $!"
+    i=$((i + 1))
+done
+wait
+```
+
+- `timeout` sends TERM at the limit. `-k 5` adds KILL five seconds later, so a burner that ignores TERM still ends.
+- The traps cover the normal end, Ctrl-C, a closed terminal (HUP) and `kill`. Unhandled signals, including `kill -9`, skip them. The `timeout` limit still ends the burners then.
+- `timeout` is GNU coreutils. Ubuntu has it. On macOS, Homebrew `coreutils` provides `timeout` and `gtimeout`.
+
+---
+
 ## Universal principles (every bucket)
 
 1. **Verify your work.** If the agent cannot run a check, declare the verification gap explicitly. No silent assumptions.

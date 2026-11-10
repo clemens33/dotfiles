@@ -2,26 +2,43 @@
 # Print how many parallel jobs a heavy test/build/lint run should use right now.
 #
 #   pytest -n "$(jobs-budget)"    make -j"$(jobs-budget)"    CARGO_BUILD_JOBS=$(jobs-budget) cargo build
+#   jobs-budget --max             the static ceiling, no sample (config.fish uses it)
 #
 # Several agent sessions share one machine, and every tool sizes itself to ALL
 # cores without knowing about the others. This helper answers "how many cores are
 # free right now" so concurrent heavy runs share the machine instead of piling up.
+# It also keeps a few cores free for the system itself: an idle machine would
+# otherwise hand one lone heavy run every core, and the operating system, the
+# endpoint-security scanner and the human's own work would starve.
 #
 # CONTRACT
 #   stdout   exactly one positive integer and a newline; diagnostics go to stderr
 #   exit     always 0; the helper must never break the run that called it
-#   alone    an idle machine yields ncpu. A lone session re-running tests seconds
-#            after its own previous run gets every core again: the measurement is
+#   reserve  R cores stay free. Default R = 0 when ncpu <= 2, else floor(ncpu / 8)
+#            clamped to [1, 4]: 4 CPUs keep 1, 18 keep 2, 32 or more keep 4.
+#            JOBS_BUDGET_RESERVE=<n> overrides it: digits only, any length, leading
+#            zeros allowed. 0 gives every core back; n >= ncpu is valid and leaves
+#            the minimum of 1. Unset or empty means the default. Any other text
+#            warns once on stderr and uses the default.
+#   cap      max(1, ncpu - R). EVERY output path stays <= cap: idle, busy and every
+#            fallback below.
+#   --max    prints the cap at once and skips the 1 s sample (only the CPU count is
+#            probed), for tools that read an environment variable once at shell
+#            start (CARGO_BUILD_JOBS, NEXTEST_TEST_THREADS). Any other argument
+#            warns on stderr and is ignored; the exit status stays 0.
+#   alone    an idle machine yields the cap. A lone session re-running tests seconds
+#            after its own previous run gets the cap again: the measurement is
 #            CPU idle over a fresh 1 s sample taken AFTER the call, not the 1-minute
 #            load average, which keeps remembering a run that ended a minute ago.
-#   busy     N = ceil(ncpu * idle fraction), clamped to [min(2, ncpu), ncpu].
+#   busy     N = ceil(ncpu * idle fraction), clamped to [min(2, cap), cap].
 #            Ceiling, not rounding: the few percent that idle daemons always use
-#            must never cost a lone session a core. A saturated or oversubscribed
-#            machine yields 2.
-#   unknown  any probe failure, unknown OS or implausible output prints ncpu. If
-#            even the CPU count is unknown it prints 4 at once, without sampling.
-#            A probe that reports failure is distrusted even when it printed
-#            plausible numbers.
+#            must never cost a lone session a core. R is not subtracted a second
+#            time: the system's own load is already in the idle sample. A saturated
+#            or oversubscribed machine yields min(2, cap).
+#   unknown  any probe failure, unknown OS or implausible output prints the cap. If
+#            even the CPU count is unknown it assumes 4 CPUs (cap 3 by default)
+#            and prints at once, without sampling. A probe that reports failure is
+#            distrusted even when it printed plausible numbers.
 #
 # PROBES (one sample, about 1 s wall, no sudo, three process spawns: uname, the
 # CPU count, and the sampler)
@@ -45,8 +62,9 @@
 # the script, and a run must never break on a garbled probe.
 #
 # KNOWN LIMIT. There is no lock, queue or state file (v1). Two sessions that call
-# this in the same second both see an idle machine and both take every core; the
-# window is the ramp-up of the first job, not a minute. The next call sees it.
+# this in the same second both see an idle machine and both take the cap, so the
+# sum can still exceed it; the window is the ramp-up of the first job, not a
+# minute. The next call sees it. The cap is a per-run ceiling, not a global lock.
 set -eu
 set -f
 unset IFS
@@ -87,6 +105,31 @@ to_uint() {
 
 valid_ncpu() {
     to_uint "${1:-}" && [ "$UINT" -gt 0 ] && [ "$UINT" -le "$MAX_NCPU" ]
+}
+
+# set_cap <ncpu>: sets reserve and cap (see CONTRACT). Warns once on an invalid
+# JOBS_BUDGET_RESERVE. Digits too long for shell arithmetic are still a valid
+# number, and a number that large exceeds any CPU count, so the cap is 1.
+set_cap() {
+    if [ "$1" -le 2 ]; then
+        reserve=0
+    else
+        reserve=$(($1 / 8))
+        [ "$reserve" -ge 1 ] || reserve=1
+        [ "$reserve" -le 4 ] || reserve=4
+    fi
+    override=${JOBS_BUDGET_RESERVE:-}
+    if [ -n "$override" ]; then
+        if ! is_digits "$override"; then
+            warn "ignoring JOBS_BUDGET_RESERVE='$override' (need a non-negative integer); using the default reserve $reserve"
+        elif to_uint "$override"; then
+            reserve=$UINT
+        else
+            reserve=$MAX_NCPU
+        fi
+    fi
+    cap=$(($1 - reserve))
+    [ "$cap" -ge 1 ] || cap=1
 }
 
 # The CPU count seeds every fallback, so it is resolved first. Prints it, or
@@ -174,29 +217,44 @@ sample_linux() {
     idle_den=$d_total
 }
 
+max_only=0
+for arg in "$@"; do
+    case $arg in
+    --max) max_only=1 ;;
+    *) warn "ignoring unknown argument '$arg'" ;;
+    esac
+done
+
 os=$(uname -s 2>/dev/null) || os=
 if ! ncpu=$(detect_ncpu); then
+    set_cap "$DEFAULT_NCPU"
     warn "cannot determine CPU count; assuming $DEFAULT_NCPU"
-    printf '%s\n' "$DEFAULT_NCPU"
+    printf '%s\n' "$cap"
+    exit 0
+fi
+
+set_cap "$ncpu"
+if [ "$max_only" -eq 1 ]; then
+    printf '%s\n' "$cap"
     exit 0
 fi
 
 idle_num=
 idle_den=
 case $os in
-Darwin) sample_darwin || warn "iostat probe failed or implausible; using all $ncpu CPUs" ;;
-Linux) sample_linux || warn "/proc/stat probe failed or implausible; using all $ncpu CPUs" ;;
-*) warn "unsupported OS '${os:-unknown}'; using all $ncpu CPUs" ;;
+Darwin) sample_darwin || warn "iostat probe failed or implausible; using the cap of $cap" ;;
+Linux) sample_linux || warn "/proc/stat probe failed or implausible; using the cap of $cap" ;;
+*) warn "unsupported OS '${os:-unknown}'; using the cap of $cap" ;;
 esac
 
 if ! is_digits "$idle_num" || ! is_digits "$idle_den" || [ "$idle_den" -eq 0 ] || [ "$idle_num" -gt "$idle_den" ]; then
-    printf '%s\n' "$ncpu"
+    printf '%s\n' "$cap"
     exit 0
 fi
 
 jobs=$(((ncpu * idle_num + idle_den - 1) / idle_den))
 floor=$MIN_JOBS
-[ "$floor" -le "$ncpu" ] || floor=$ncpu
+[ "$floor" -le "$cap" ] || floor=$cap
 [ "$jobs" -ge "$floor" ] || jobs=$floor
-[ "$jobs" -le "$ncpu" ] || jobs=$ncpu
+[ "$jobs" -le "$cap" ] || jobs=$cap
 printf '%s\n' "$jobs"
