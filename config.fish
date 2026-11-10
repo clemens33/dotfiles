@@ -72,6 +72,28 @@ end
 # fought once. -p prepends: installers expect ~/.local/bin to win.
 fish_add_path -g -p ~/.local/bin ~/bin
 
+# cargo and cargo-nextest size themselves to ALL cores, so one lone run takes the
+# last core the operating system and the endpoint-security scanner need. Default
+# both to `jobs-budget --max`, the CPU count minus a small reserve (18 cores -> 16),
+# only where unset. --max prints at once with no 1 s sample, so shell start stays
+# fast. The cap is static: changing JOBS_BUDGET_RESERVE later does not rewrite a
+# value that is already exported, and an exported value is kept by design.
+# Override: export your own value before the shell starts, or pass `-j N` /
+# `--test-threads N`; JOBS_BUDGET_RESERVE=<n> moves the cap for new shells where
+# the worker variable is unset.
+# Fail-open: no jobs-budget or an unexpected answer sets nothing.
+# Placed after the PATH line above, which puts jobs-budget (~/.local/bin) on PATH.
+if command -q jobs-budget
+    and not begin
+        set -q CARGO_BUILD_JOBS; and set -q NEXTEST_TEST_THREADS
+    end
+    set -l _cap (jobs-budget --max 2>/dev/null)
+    if string match -qr '^[1-9][0-9]*$' -- "$_cap"
+        set -q CARGO_BUILD_JOBS; or set -gx CARGO_BUILD_JOBS $_cap
+        set -q NEXTEST_TEST_THREADS; or set -gx NEXTEST_TEST_THREADS $_cap
+    end
+end
+
 # WSL/Windows glue — only inside WSL
 if test -d /mnt/c
     alias subl='"/mnt/c/Program Files/Sublime Text/subl.exe"'
