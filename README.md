@@ -84,7 +84,7 @@ Requirements:
 | OpenCode 2 | `opencode/opencode.jsonc` | `~/.config/opencode/opencode.jsonc` |
 | Antigravity CLI (`agy`) | `antigravity/settings.json` | `~/.gemini/antigravity-cli/settings.json` |
 | OpenDesign | `open-design/compose.yaml`, `open-design/Dockerfile`, `bin/open-design` | `~/.config/open-design/compose.yaml`, `~/.config/open-design/Dockerfile`, `~/.local/bin/open-design{,-mcp}` |
-| `jobs-budget` | `bin/jobs-budget` | `~/.local/bin/jobs-budget` — prints how many parallel jobs a test/build run should use from the CPU free right now (`pytest -n "$(jobs-budget)"`); all cores on an idle machine |
+| `jobs-budget` | `bin/jobs-budget` | `~/.local/bin/jobs-budget` — prints how many parallel jobs a test/build run should use from the CPU free right now (`pytest -n "$(jobs-budget)"`); an idle machine yields every core minus a reserve (default `floor(ncpu / 8)` clamped to 1–4, or 0 on one or two CPUs, so 2 on 18 cores; `JOBS_BUDGET_RESERVE=<n>` overrides, `0` gives every core back). `jobs-budget --max` prints that cap with no 1 s sample; `config.fish` uses it to default `CARGO_BUILD_JOBS` and `NEXTEST_TEST_THREADS` when unset |
 | AI skills | `skills/<name>/` | `~/.claude/skills/<name>/`, `~/.agents/skills/<name>/` |
 
 The AI contract is the one exception: it is **rendered**, not symlinked. See
