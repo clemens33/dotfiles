@@ -16,5 +16,12 @@ lint = "clippy --all-targets --all-features -- -D warnings"
 # wins come from `cargo check`, nextest, and (optionally) sccache below.
 
 [build]
+# Default parallel jobs: the CPU count minus 2 (16 on the 18-core Mac), so one
+# ordinary build leaves the system and the endpoint-security scanner two cores.
+# A negative value means "logical CPUs plus the value" and clamps at 1 (cargo
+# 1.97, build_config.rs), so a 2-core host builds with 1 job and does not fail.
+# This file is the lowest-precedence cargo config layer: a repo's
+# .cargo/config.toml build.jobs, the CARGO_BUILD_JOBS variable and -j all win.
+jobs = -2
 # rustc-wrapper: not here — config.fish exports RUSTC_WRAPPER=sccache only
 # where sccache is installed (apt sccache / brew install sccache).

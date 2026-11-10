@@ -2,7 +2,7 @@
 # Print how many parallel jobs a heavy test/build/lint run should use right now.
 #
 #   pytest -n "$(jobs-budget)"    make -j"$(jobs-budget)"    CARGO_BUILD_JOBS=$(jobs-budget) cargo build
-#   jobs-budget --max             the static ceiling, no sample (config.fish uses it)
+#   jobs-budget --max             the static ceiling, no sample
 #
 # Several agent sessions share one machine, and every tool sizes itself to ALL
 # cores without knowing about the others. This helper answers "how many cores are
@@ -23,8 +23,9 @@
 #   cap      max(1, ncpu - R). EVERY output path stays <= cap: idle, busy and every
 #            fallback below.
 #   --max    prints the cap at once and skips the 1 s sample (only the CPU count is
-#            probed), for tools that read an environment variable once at shell
-#            start (CARGO_BUILD_JOBS, NEXTEST_TEST_THREADS). Any other argument
+#            probed), for callers that need the ceiling without waiting a second.
+#            No shell start file calls it: cargo takes its global default from
+#            `[build] jobs = -2` in ~/.cargo/config.toml. Any other argument
 #            warns on stderr and is ignored; the exit status stays 0.
 #   alone    an idle machine yields the cap. A lone session re-running tests seconds
 #            after its own previous run gets the cap again: the measurement is
