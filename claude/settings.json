@@ -33,7 +33,7 @@
     "command": "~/.claude/statusline.sh"
   },
   "enabledPlugins": {
-    "rust-analyzer-lsp@claude-plugins-official": true
+    "rust-analyzer-lsp@claude-plugins-official": false
   },
   "feedbackSurveyRate": 0,
   "alwaysThinkingEnabled": true,
@@ -62,6 +62,7 @@
   "agentPushNotifEnabled": true,
   "voiceEnabled": true,
   "//autoCompactWindow": "400000 (was 500000, 2026-09-11): the effective context window auto-compaction is measured against; it can only lower the model's real window, never raise it. Installed CC 2.1.268 fires at that window minus a ~13k reserve (~387k here), earlier still when the precompute buffer applies. Smaller steady-state working set means less cached context re-sent per turn — a deliberate cost/quota trade-off, not a guaranteed saving, since more compactions also means more summaries. Roll back to 500000 if continuity regresses. CLAUDE_CODE_AUTO_COMPACT_WINDOW overrides this key; CLAUDE_AUTOCOMPACT_PCT_OVERRIDE (1-100) is supported but deliberately unset so one knob controls the threshold. Compaction fidelity is tuned in shared/AGENTS.md (`## Compact instructions`), rendered into ~/.claude/CLAUDE.md.",
+  "//enabledPlugins": "rust-analyzer-lsp (2026-11-10): installed but OFF by default, because every Claude agent that touched a Rust repo started its own rust-analyzer (two at 96 % and 85 % CPU on one checkout). A seat that wants Rust language-server diagnostics opts in with `claude --settings=$HOME/.config/ae/rust-lsp.settings.json` (claude/rust-lsp.settings.json; README \"Rust language server: off by default\"). Do not uninstall the plugin: the opt-in only flips this key.",
   "//disabledMcpjsonServers": "playwright (2026-11-09): a project .mcp.json that declares the Playwright MCP server (the assistant repo does) is OFF by default, because every seat that started it kept a browser MCP process alive. Verified in Claude Code 2.1.319 with stub servers (.local/mcp-browser/proof): this user-scope key wins over enableAllProjectMcpServers above, and it does NOT filter a same-named server given by `claude --mcp-config`. A seat opts in with `claude --mcp-config=$HOME/.config/ae/browser-mcp.json` (pinned chrome-devtools and playwright; ae profiles *-web; README \"Browser MCP servers: off by default\").",
   "//hooks": "MessageDisplay prepends [HH:MM] to each assistant message — display-only (screen), zero tokens, transcript untouched.",
   "//switchModelsOnFlag": "false = do NOT auto-switch on a flagged request. Pause with choice (switch, or edit+retry) instead of silent switch. Same as /config -> Model & output -> 'Switch models when a message is flagged' off. (Fable-5.1-era routing was biology -> Opus 5, cyber -> Opus 4.8; Opus-5.5-era targets unverified 2026-09-22).",

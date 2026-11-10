@@ -79,6 +79,7 @@ Requirements:
 | Bash aliases | `bash_aliases` | `~/.bash_aliases` |
 | Claude Code | `claude/settings.json`, `claude/mcpServers.json` | `~/.claude/`; `~/.claude-p/` and `~/.claude-mic/` get a rendered `settings.json` (see below) |
 | Browser MCP servers (opt-in) | `claude/browser-mcp.json` | `~/.config/ae/browser-mcp.json` (symlink; see [Browser MCP servers](#browser-mcp-servers-off-by-default)) |
+| Rust language server (opt-in) | `claude/rust-lsp.settings.json` | `~/.config/ae/rust-lsp.settings.json` (symlink; see [Rust language server](#rust-language-server-off-by-default)) |
 | GitHub Copilot CLI | Native settings command + rendered instructions + merged MCP; auth/preferences remain CLI-owned | `${COPILOT_HOME:-~/.copilot}/` |
 | Codex CLI | `codex/config.toml` | `~/.codex/config.toml` |
 | OpenCode 2 | `opencode/opencode.jsonc` | `~/.config/opencode/opencode.jsonc` |
@@ -418,6 +419,46 @@ not be shown to work.
 
 Versions checked: Claude Code 2.1.319, Codex 0.167.0, Grok 1.0.77, OpenCode 2.2.6,
 Antigravity 1.5.3, Copilot CLI 1.0.107.
+
+#### Rust language server: off by default
+
+The `rust-analyzer-lsp@claude-plugins-official` plugin stays installed but is
+off in all three Claude homes (2026-11-10: every Claude agent that touched a Rust
+repo started its own `rust-analyzer`, two of them at 96 % and 85 % CPU).
+`claude/settings.json` sets the plugin to `false`. `./install` renders that value
+into `~/.claude-p/settings.json` and `~/.claude-mic/settings.json`, replacing a
+runtime toggle there (the overwrite rule above), and `~/.claude/settings.json`
+is a link to the same file. The change reaches new sessions only: a running
+`rust-analyzer` keeps running until its session ends.
+
+A seat that wants Rust diagnostics and code navigation opts in per launch:
+
+```bash
+claude --settings=$HOME/.config/ae/rust-lsp.settings.json
+```
+
+`./install` links `claude/rust-lsp.settings.json` to that path. The file holds
+only the `enabledPlugins` entry set to `true`. Keep the `=`, as for `--mcp-config`
+above. `--settings` adds to the user and project settings and wins on the one key
+it sets. The ae profiles have no opt-in twin yet; that is an open decision.
+Do not enable the plugin with `claude plugin enable`: it writes the user-scope
+settings file, which for plain `claude` is the tracked `claude/settings.json`
+(the write goes through the link and dirties the working tree), and the next
+`./install` reverts it in the other two homes.
+
+Checked on Claude Code 2.1.322 in a throwaway `CLAUDE_CONFIG_DIR` (plugin state
+copied, settings rendered from the tracked file) and a scratch `cargo new` crate:
+
+| Check | Result |
+|---|---|
+| `claude plugin list`, default | `Status: ✘ disabled` |
+| `claude --settings=… plugin list` | `Status: ✔ enabled` with the note that the flag settings override the user setting |
+| `--debug-file` of a start that stops at the login check (no model call) | default: `Total LSP servers loaded: 0`; opt-in: `Loaded 1 LSP server(s) from plugin: rust-analyzer-lsp` |
+| User settings still apply next to `--settings` | `claude auto-mode config` still shows a user `autoMode` object (two keys) and `claude mcp list` still honours the user `disabledMcpjsonServers` and `enableAllProjectMcpServers`, in both modes |
+| The server starts only when used | one `claude -p` turn on the claude-p login with `--setting-sources project,local --settings=…`: a new `rust-analyzer` process with the crate as its working directory started under that run; none for the crate existed before it (three unrelated ones from other sessions were running and stayed unchanged) |
+
+Not verified: an interactive session, the plain `~/.claude` and `~/.claude-mic`
+logins, and two `--settings` flags in one launch.
 
 ## Automatic harness updates
 

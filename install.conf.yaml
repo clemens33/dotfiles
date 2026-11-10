@@ -105,6 +105,13 @@
       path: claude/browser-mcp.json
       create: true
       force: true
+    # Opt-in Rust language server for Claude Code, off by default
+    # (claude/settings.json). A seat that wants it launches with
+    # `claude --settings=$HOME/.config/ae/rust-lsp.settings.json`.
+    ~/.config/ae/rust-lsp.settings.json:
+      path: claude/rust-lsp.settings.json
+      create: true
+      force: true
 
 # Additional Claude Code identity (`claude-p` fish function
 # sets CLAUDE_CONFIG_DIR) — isolated login per config dir (macOS: own Keychain
