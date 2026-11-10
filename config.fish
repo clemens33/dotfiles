@@ -54,9 +54,17 @@ end
 
 # Homebrew (macOS, Apple Silicon) — early, so brew-installed tools resolve
 # before anything below. No-op on Linux/WSL where the path doesn't exist.
-# Explicit `fish` arg: shellenv's auto-detection can emit POSIX syntax.
+# Static copy of `brew shellenv fish` for the /opt/homebrew prefix. The output
+# is constant, and the fork cost about 12 ms of CPU per shell. A test compares
+# this block with the live output (tests/test-fish-env-drift.sh), so a Homebrew
+# change to shellenv shows up in `just test`.
 if test -x /opt/homebrew/bin/brew
-    /opt/homebrew/bin/brew shellenv fish | source
+    set --global --export HOMEBREW_PREFIX "/opt/homebrew"
+    set --global --export HOMEBREW_CELLAR "/opt/homebrew/Cellar"
+    set --global --export HOMEBREW_REPOSITORY "/opt/homebrew"
+    fish_add_path --global --move --path "/opt/homebrew/bin" "/opt/homebrew/sbin"
+    if test -n "$MANPATH"; set --global --export MANPATH (string replace --regex '^:*(.*?):*$' ':$1' -- "$MANPATH"); end
+    if not set --query INFOPATH; set INFOPATH ''; end; set --global --export INFOPATH "/opt/homebrew/share/info" $INFOPATH
     # keg-only libpq: psql etc. are not linked into the prefix
     fish_add_path -g /opt/homebrew/opt/libpq/bin
 end
@@ -72,27 +80,17 @@ end
 # fought once. -p prepends: installers expect ~/.local/bin to win.
 fish_add_path -g -p ~/.local/bin ~/bin
 
-# cargo and cargo-nextest size themselves to ALL cores, so one lone run takes the
-# last core the operating system and the endpoint-security scanner need. Default
-# both to `jobs-budget --max`, the CPU count minus a small reserve (18 cores -> 16),
-# only where unset. --max prints at once with no 1 s sample, so shell start stays
-# fast. The cap is static: changing JOBS_BUDGET_RESERVE later does not rewrite a
-# value that is already exported, and an exported value is kept by design.
-# Override: export your own value before the shell starts, or pass `-j N` /
-# `--test-threads N`; JOBS_BUDGET_RESERVE=<n> moves the cap for new shells where
-# the worker variable is unset.
-# Fail-open: no jobs-budget or an unexpected answer sets nothing.
-# Placed after the PATH line above, which puts jobs-budget (~/.local/bin) on PATH.
-if command -q jobs-budget
-    and not begin
-        set -q CARGO_BUILD_JOBS; and set -q NEXTEST_TEST_THREADS
-    end
-    set -l _cap (jobs-budget --max 2>/dev/null)
-    if string match -qr '^[1-9][0-9]*$' -- "$_cap"
-        set -q CARGO_BUILD_JOBS; or set -gx CARGO_BUILD_JOBS $_cap
-        set -q NEXTEST_TEST_THREADS; or set -gx NEXTEST_TEST_THREADS $_cap
-    end
-end
+# No cargo or nextest job-count defaults are exported from here. An environment
+# variable outranks a repo's .cargo/config.toml and .config/nextest.toml, so an
+# export would override the repos it should only back up. Cargo's global default
+# is `[build] jobs = -2` in rust/cargo-config.toml (~/.cargo/config.toml, the
+# lowest cargo layer: ncpu - 2, i.e. 16 on the 18-core Mac). A repo config, the
+# CARGO_BUILD_JOBS variable and -j all win over it.
+# Nextest has no user-level test-threads key (https://nexte.st/docs/user-config/),
+# so a bare nextest run in a repo without a nextest config uses one test thread
+# per CPU. Pass -j "$(jobs-budget)" there.
+# Shells and seats started before this change keep the values they inherited,
+# and a fish started under one inherits them too, until they restart.
 
 # WSL/Windows glue — only inside WSL
 if test -d /mnt/c
@@ -123,9 +121,9 @@ if test -d ~/.config/fish/functions-mic
     end
 end
 
-if command -q uv
-    uv generate-shell-completion fish | source
-end
+# uv completion: fish/completions/uv.fish (generated; `just uv-completion`
+# refreshes it after a uv upgrade). Fish loads it on the first `uv <Tab>`, so no
+# `uv generate-shell-completion | source` runs at shell start.
 
 # fnm (Linux node version manager; mise replaces it on macOS)
 set FNM_PATH $HOME/.local/share/fnm

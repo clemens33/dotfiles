@@ -387,6 +387,21 @@ outdated *args:
 update *args:
     scripts/harness-update.sh "$@"
 
+# regenerate fish/completions/uv.fish from the installed uv (run after a uv upgrade); --check only compares and exits 1 when stale
+uv-completion *args:
+    #!/usr/bin/env bash
+    set -u
+    command -v uv >/dev/null 2>&1 || { echo "  FAIL  uv not found on PATH" >&2; exit 1; }
+    tmp=$(mktemp "${TMPDIR:-/tmp}/uv-completion.XXXXXX")
+    trap 'rm -f "$tmp"' EXIT HUP INT TERM
+    uv generate-shell-completion fish >"$tmp" || { echo "  FAIL  uv generate-shell-completion fish" >&2; exit 1; }
+    if cmp -s "$tmp" fish/completions/uv.fish; then echo "  ok    fish/completions/uv.fish matches uv $(uv --version | awk '{print $2}')"; exit 0; fi
+    if [ "${1:-}" = "--check" ]; then
+        echo "  STALE fish/completions/uv.fish differs from the installed uv; run: just uv-completion" >&2; exit 1
+    fi
+    mkdir -p fish/completions && cat "$tmp" >fish/completions/uv.fish
+    echo "  ok    fish/completions/uv.fish regenerated from uv $(uv --version | awk '{print $2}'); review and commit it"
+
 # explicit and networked, macOS only: install what macos/Brewfile lists
 brew:
     #!/usr/bin/env bash

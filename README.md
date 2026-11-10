@@ -54,10 +54,11 @@ The wrapper install script detects the overlay submodule and runs its Dotbot pas
 | `just versions` | Installed harness versions (`<tool> --version` only, never `muse`); informational | none |
 | `just outdated` | Installed versus latest harness versions (`scripts/harness-update.sh --check`) | network, a log in `~/.local/state` |
 | `just update [args]` | Updates the harnesses, harness-only: arguments go to `scripts/harness-update.sh` (`--only TOOL`, `--check`, `--include-ae`) | network, installs |
+| `just uv-completion [--check]` | Regenerates `fish/completions/uv.fish` from the installed uv (`--check` only compares, exit 1 when stale) | rewrites that one tracked file |
 | `just brew` | macOS only: `brew bundle --file macos/Brewfile` | network, installs |
 | `just install [args]` | `./install` | symlinks, fetches the dotbot submodule |
 
-`check`, `lint`, `test`, `contract` and `versions` never write tracked files and never call the network. `update`, `brew`, `install` and `outdated` run only when you name them.
+`check`, `lint`, `test`, `contract` and `versions` never write tracked files and never call the network. `update`, `brew`, `install`, `outdated` and `uv-completion` run only when you name them.
 
 Requirements:
 
@@ -72,7 +73,7 @@ Requirements:
 
 | Config | Source | Symlinks to |
 |---|---|---|
-| Fish shell | `config.fish`, `fish/functions/` | `~/.config/fish/` |
+| Fish shell | `config.fish`, `fish/functions/`, `fish/completions/uv.fish` | `~/.config/fish/` (`fish/completions/uv.fish` is generated: `just uv-completion` refreshes it after a uv upgrade, and `just test` fails locally while it is stale; the test skips under CI or without uv) |
 | tmux | `tmux.conf` | `~/.tmux.conf` |
 | Git | `gitconfig` | `~/.gitconfig` |
 | Vim | `vimrc` | `~/.vimrc` |
@@ -85,7 +86,7 @@ Requirements:
 | OpenCode 2 | `opencode/opencode.jsonc` | `~/.config/opencode/opencode.jsonc` |
 | Antigravity CLI (`agy`) | `antigravity/settings.json` | `~/.gemini/antigravity-cli/settings.json` |
 | OpenDesign | `open-design/compose.yaml`, `open-design/Dockerfile`, `bin/open-design` | `~/.config/open-design/compose.yaml`, `~/.config/open-design/Dockerfile`, `~/.local/bin/open-design{,-mcp}` |
-| `jobs-budget` | `bin/jobs-budget` | `~/.local/bin/jobs-budget` — prints how many parallel jobs a test/build run should use from the CPU free right now (`pytest -n "$(jobs-budget)"`); an idle machine yields every core minus a reserve (default `floor(ncpu / 8)` clamped to 1–4, or 0 on one or two CPUs, so 2 on 18 cores; `JOBS_BUDGET_RESERVE=<n>` overrides, `0` gives every core back). `jobs-budget --max` prints that cap with no 1 s sample; `config.fish` uses it to default `CARGO_BUILD_JOBS` and `NEXTEST_TEST_THREADS` when unset |
+| `jobs-budget` | `bin/jobs-budget` | `~/.local/bin/jobs-budget` — prints how many parallel jobs a test/build run should use from the CPU free right now (`pytest -n "$(jobs-budget)"`); an idle machine yields every core minus a reserve (default `floor(ncpu / 8)` clamped to 1–4, or 0 on one or two CPUs, so 2 on 18 cores; `JOBS_BUDGET_RESERVE=<n>` overrides, `0` gives every core back). `jobs-budget --max` prints that cap with no 1 s sample. Cargo's global default is `[build] jobs = -2` in `rust/cargo-config.toml` (`~/.cargo/config.toml`, the lowest layer: a repo config, `CARGO_BUILD_JOBS` and `-j` win). Nextest has no global default: a bare run in a repo without a nextest config uses one test thread per CPU, so pass `-j "$(jobs-budget)"` |
 | AI skills | `skills/<name>/` | `~/.claude/skills/<name>/`, `~/.agents/skills/<name>/` |
 
 The AI contract is the one exception: it is **rendered**, not symlinked. See
