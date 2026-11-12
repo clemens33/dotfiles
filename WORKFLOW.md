@@ -242,7 +242,16 @@ Git worktrees: do not pre-populate or copy `node_modules`, `.venv`, `target` or 
 
 Own cleanup of each worktree you create; record its path, branch (or detached HEAD) and cleanup owner. When no agent or process needs it any more, preserve required work and evidence, check its current state, and remove the clean worktree with `git worktree remove`; never force removal, and report any retained worktree and the reason. If you finish or hand off before cleanup is safe, report each remaining path, branch or detached HEAD, state and reason, and transfer cleanup to a named successor who accepts it; under ae, the spawner must resolve this ownership before retiring the creator.
 
-Delete only disposable branches you or your spawned worker created for that task, using `git branch -d` after verifying their work is merged into the intended target; leave existing/shared branches alone. A rebased or squashed slice fails `git branch -d` though its work landed. Then `git branch -D` is allowed without asking when all hold, checked against the fetched remote target (`<remote-target>`, e.g. `origin/main`): never pushed, not checked out in any worktree, no merge commits (`git rev-list --merges --count <remote-target>..<branch>` is 0), and `git cherry <remote-target> <branch>` is all `-` or, for a squash, the patch-id of `git diff <merge-base> <branch>` (merge-base with `<remote-target>`) equals that of a commit on `<remote-target>`. Record branch and tip SHA in evidence. Anything else: ask.
+Delete only disposable branches you or your spawned worker created for that task, using `git branch -d` after verifying their work is merged into the intended target; leave existing/shared branches alone. A rebased or squashed slice fails `git branch -d` though its work landed. Then `git branch -D` is allowed without asking when all hold, checked against the fetched remote target (`<remote-target>`, e.g. `origin/main`): not checked out in any worktree, no merge commits (`git rev-list --merges --count <remote-target>..<branch>` is 0), and `git cherry <remote-target> <branch>` is all `-` or, for a squash, the patch-id of `git diff <merge-base> <branch>` (merge-base with `<remote-target>`) equals that of a commit on `<remote-target>`. In addition, one of these holds:
+
+- The branch was never pushed.
+- The branch was pushed only as the head of exactly one GitHub pull request, and these conditions hold:
+  - `gh pr list --head <branch> --state all` lists only that pull request, open or closed.
+  - `gh pr view <number> --json state,headRefOid` reports `MERGED`.
+  - `headRefOid` equals the local tip SHA.
+  - The remote branch is deleted (`git ls-remote --heads <remote> <branch>` prints nothing) or points at that same tip.
+
+Record branch and tip SHA in evidence. For a merged pull request, also record its URL. Anything else: ask.
 
 ---
 
