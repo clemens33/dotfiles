@@ -399,7 +399,7 @@ Playwright is also off where a project `.mcp.json` declares it: `claude/settings
 sets `disabledMcpjsonServers: ["playwright"]` for all three Claude homes. The
 assistant repo's `.mcp.json` stays as it is. The ae profiles `sonnet55x-web`,
 `sonnet55x-p-web` and `opus55h-mic-web` (both servers, through `--mcp-config`)
-and `sol61h-web` (chrome-devtools only, through `-c`) opt in at spawn; they
+and `sol62h-web` (chrome-devtools only, through `-c`) opt in at spawn; they
 live in `~/.ae/config`, not in this repo. `./install` must have created the
 symlink before the first `-web` seat starts.
 

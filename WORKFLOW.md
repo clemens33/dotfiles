@@ -222,8 +222,8 @@ Pick the provider before the harness. These permission forms do not themselves p
 | Claude Code / Opus 5.5 | `medium` | Anthropic Opus 5.5 model page, 2026-11-07. This repo's deliberate interactive pin is `high` (`claude/settings.json` `effortLevel`, per-model `modelSettings.<id>.effortLevel`) |
 | Claude Code / Fable 5.1 | `high` | Anthropic Fable 5.1 model page, 2026-11-07 |
 | Claude Code / Opus 5 | `high` | `KNOWLEDGE.md` §2 table (launch notes; not re-checked 2026-11-07) |
-| Codex / GPT-6.1 Sol, Terra | `low` | `codex debug models` on 0.167.0, 2026-11-07 |
-| Codex / GPT-6 Sol/Luna/Astra | `medium` | `codex debug models` on 0.167.0, 2026-11-07 |
+| Codex / GPT-6.2 Sol, Astra; GPT-6.1 Sol, Terra | `low` | `codex debug models` on 0.170.0, 2026-11-18 |
+| Codex / GPT-6 Sol/Luna/Astra | `medium` | `codex debug models` on 0.170.0, 2026-11-18 |
 | Codex / GPT-5.6 Sol | `low` | `codex debug models` on 0.167.0, 2026-11-07 |
 | Codex / GPT-5.6 Luna, Terra | `medium` | `codex debug models` on 0.167.0, 2026-11-07 |
 | Grok / Grok 4.7 | not stated on the vendor pages read 2026-11-07 | repo pin `high` (`grok/config.toml` `default_reasoning_effort`) |
