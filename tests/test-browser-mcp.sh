@@ -48,7 +48,7 @@ jq_true() { # jq_true <file> <filter...>
 
 # The pre-change definition of chrome-devtools, byte for byte as a value.
 CD_DEF='{"type":"stdio","command":"npx","args":["-y","chrome-devtools-mcp@1.8.0","--browser-url=http://127.0.0.1:9222","--no-usage-statistics","--no-performance-crux"],"env":{}}'
-PW_DEF='{"command":"npx","args":["-y","@playwright/mcp@0.0.84"],"env":{"DISPLAY":""}}'
+PW_DEF='{"command":"npx","args":["-y","@playwright/mcp@0.0.84","--headless"],"env":{"DISPLAY":""}}'
 # The same pin as a command array (opencode shape) and as TOML args (codex).
 CD_CMD='["npx","-y","chrome-devtools-mcp@1.8.0","--browser-url=http://127.0.0.1:9222","--no-usage-statistics","--no-performance-crux"]'
 CD_ARGS='["-y","chrome-devtools-mcp@1.8.0","--browser-url=http://127.0.0.1:9222","--no-usage-statistics","--no-performance-crux"]'
@@ -69,12 +69,29 @@ check 'claude/browser-mcp.json holds exactly chrome-devtools and playwright' \
     jq_true "$OPTIN" '.mcpServers | keys == ["chrome-devtools", "playwright"]'
 check 'chrome-devtools in the opt-in file equals the pre-change definition' \
     jq_true "$OPTIN" --argjson want "$CD_DEF" '.mcpServers["chrome-devtools"] == $want'
-check 'playwright is pinned to @playwright/mcp@0.0.84 with DISPLAY empty' \
+check 'playwright is pinned to @playwright/mcp@0.0.84, headless, with DISPLAY empty' \
     jq_true "$OPTIN" --argjson want "$PW_DEF" '.mcpServers.playwright == $want'
 no_latest() {
     ! grep -Fq '@latest' "$OPTIN"
 }
 check 'the opt-in file never uses @latest' no_latest
+
+# --- 4b. chrome-debug starts the automation Chrome in the background on macOS ----
+
+# Live test 2026-11-20 (.local/bgfocus/live.md): -g alone never kept Chrome in the
+# background (8 of 8 launches became the front app); a launch with --no-startup-window did not.
+# Needs -n (a new instance, never the daily Chrome) and -g in the open flags, and
+# --no-startup-window as an argument after --args.
+chrome_debug_background() {
+    cdb_line=$(grep -E '^[[:space:]]*open ' "$ROOT/fish/functions/chrome-debug.fish") || return 1
+    cdb_flags=${cdb_line%%--args*}
+    cdb_args=${cdb_line#*--args}
+    [ "$cdb_flags" != "$cdb_line" ] || return 1
+    printf '%s\n' "$cdb_flags" | grep -Eq ' -[a-z]*n[a-z]*( |$)' || return 1
+    printf '%s\n' "$cdb_flags" | grep -Eq ' -[a-z]*g[a-z]*( |$)' || return 1
+    printf '%s\n' "$cdb_args" | grep -Eq '(^| )--no-startup-window( |$)'
+}
+check 'chrome-debug launches the macOS instance with open -n -g and --no-startup-window after --args' chrome_debug_background
 
 # --- 5. playwright is off by default for every Claude home -----------------------
 

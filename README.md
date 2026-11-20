@@ -395,6 +395,16 @@ in `opencode/opencode.jsonc` and in the commands below together.
 `chrome-devtools` needs Chrome with the DevTools port 9222 (`chrome-debug`);
 `playwright` launches its own browser.
 
+Neither server may take focus on macOS (2026-11-20). `playwright` runs
+`--headless`. `chrome-debug` starts the automation Chrome with
+`open -nga ... --no-startup-window`, because `-g` alone does not stop Chrome
+from activating itself: the instance starts without a window, and the first
+`new_page` with `background=true` opens one without taking focus. A
+`chrome-devtools` agent opens tabs with `new_page` `background=true` and no
+`isolatedContext` (chrome-devtools-mcp 1.8.0 drops `background` for an isolated
+context) and calls `select_page` without `bringToFront`. A manual SSO login
+needs a Dock click on the second Chrome icon to open a window (not verified).
+
 Playwright is also off where a project `.mcp.json` declares it: `claude/settings.json`
 sets `disabledMcpjsonServers: ["playwright"]` for all three Claude homes. The
 assistant repo's `.mcp.json` stays as it is. The ae profiles `sonnet55x-web`,
